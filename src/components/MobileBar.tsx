@@ -1,0 +1,168 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import type { Lang } from "@/data/types";
+import { useApp } from "@/lib/app-state";
+import { LANGS, useI18n } from "@/lib/i18n";
+import { streak } from "@/lib/stats";
+import { Logo } from "./Logo";
+import {
+  NavAdmin,
+  NavHome,
+  NavMock,
+  NavMore,
+  NavPractice,
+  NavProgress,
+  NavReview,
+  NavTutorial,
+} from "./NavIcons";
+
+const TABS = [
+  { href: "/", short: "nav.sHome", Icon: NavHome },
+  { href: "/practice", short: "nav.sPractice", Icon: NavPractice },
+  { href: "/mock", short: "nav.sMock", Icon: NavMock },
+  { href: "/review", short: "nav.sReview", Icon: NavReview },
+];
+
+/** Compact header for signed-in phones — the sidebar's job is done by the tabs. */
+export function MobileHeader() {
+  const { t, lang, setLang } = useI18n();
+  const { account, theme, toggleTheme, data } = useApp();
+  const days = streak(data.attempts);
+
+  return (
+    <header
+      className="md:hidden sticky top-0 z-30 border-b"
+      style={{ background: "var(--background)" }}
+    >
+      <div className="px-4 h-14 flex items-center gap-2">
+        <Link href="/" aria-label="1Elevate">
+          <Logo compact />
+        </Link>
+
+        <div className="ml-auto flex items-center gap-1.5">
+          {days > 0 && (
+            <span
+              className="badge h-8 px-2.5"
+              style={{
+                ["--tone" as string]: "var(--s-orange)",
+                ["--tone-soft" as string]: "var(--s-orange-soft)",
+              }}
+            >
+              🔥 <span className="num">{days}</span>
+            </span>
+          )}
+
+          <div className="seg h-8" role="group" aria-label={t("common.language")}>
+            {LANGS.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => setLang(l.id as Lang)}
+                className={`seg-item h-[26px] ${lang === l.id ? "seg-item-on" : ""}`}
+                aria-pressed={lang === l.id}
+              >
+                {l.id.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <button className="bar-btn w-8 h-8" onClick={toggleTheme} aria-label="Toggle theme">
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
+
+          <Link
+            href="/account"
+            className="grid place-items-center w-8 h-8 rounded-full text-[11px] font-semibold shrink-0"
+            style={{ background: "var(--ink)", color: "var(--ink-contrast)" }}
+            aria-label={account?.name}
+          >
+            {account?.name.slice(0, 2).toUpperCase()}
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/** Bottom tab bar plus a sheet for the overflow destinations. */
+export function MobileTabs() {
+  const { t } = useI18n();
+  const { account, signOut } = useApp();
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+
+  return (
+    <>
+      <nav className="tabbar md:hidden" aria-label="Primary">
+        {TABS.map(({ href, short, Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`tabbar-item ${isActive(href) ? "tabbar-item-on" : ""}`}
+          >
+            <Icon size={21} />
+            <span className="truncate max-w-full px-1">{t(short)}</span>
+          </Link>
+        ))}
+        <button
+          className={`tabbar-item ${open ? "tabbar-item-on" : ""}`}
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+        >
+          <NavMore size={21} />
+          <span className="truncate max-w-full px-1">{t("nav.more")}</span>
+        </button>
+      </nav>
+
+      <div className="md:hidden h-16" aria-hidden />
+
+      {open && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 z-30 fade-in"
+            style={{ background: "color-mix(in srgb, #0b0b0d 40%, transparent)" }}
+            onClick={() => setOpen(false)}
+          />
+          <div className="md:hidden fixed inset-x-0 bottom-16 z-40 fade-up px-3 pb-2" role="dialog">
+            <div className="panel p-2" style={{ boxShadow: "var(--overlay)" }}>
+              {[
+                { href: "/progress", key: "nav.progress", Icon: NavProgress },
+                { href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial },
+                { href: "/account", key: "nav.profile", Icon: NavHome },
+                ...(account?.role === "admin"
+                  ? [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }]
+                  : []),
+              ].map(({ href, key, Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-[15px]"
+                  style={{ color: isActive(href) ? "var(--accent)" : "var(--foreground)" }}
+                >
+                  <Icon size={19} />
+                  {t(key)}
+                </Link>
+              ))}
+              <button
+                className="w-full flex items-center gap-3 px-3 py-3 text-[15px]"
+                style={{ color: "var(--danger)" }}
+                onClick={() => {
+                  setOpen(false);
+                  signOut();
+                }}
+              >
+                {t("auth.signOut")}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}

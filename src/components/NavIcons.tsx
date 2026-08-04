@@ -1,0 +1,77 @@
+"use client";
+
+/** 20px line icons for navigation. Stroke follows currentColor. */
+const S = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+
+export function NavHome({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <path d="M3.5 10.5 12 4l8.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19v-8.5Z" {...S} />
+    </svg>
+  );
+}
+
+export function NavPractice({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <rect x="4" y="3.5" width="16" height="17" rx="2.5" {...S} />
+      <path d="M8 9h8M8 13h6M8 17h4" {...S} />
+    </svg>
+  );
+}
+
+export function NavMock({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <circle cx="12" cy="13" r="8" {...S} />
+      <path d="M12 9v4l2.5 2M9.5 2.5h5" {...S} />
+    </svg>
+  );
+}
+
+export function NavReview({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <path d="M20 12a8 8 0 1 1-2.6-5.9" {...S} />
+      <path d="M20 3.5V7h-3.5" {...S} />
+      <path d="M12 8.5v4l2.5 1.5" {...S} />
+    </svg>
+  );
+}
+
+export function NavProgress({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <path d="M4 20h16" {...S} />
+      <path d="M6.5 20v-6M12 20V8m5.5 12v-9" {...S} />
+    </svg>
+  );
+}
+
+export function NavTutorial({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <circle cx="12" cy="12" r="8.5" {...S} />
+      <path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.3" {...S} />
+      <circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function NavAdmin({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <path d="M12 3.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 8.8l5-.7L12 3.5Z" {...S} />
+    </svg>
+  );
+}
+
+export function NavMore({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <circle cx="5.5" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="18.5" cy="12" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
