@@ -4,7 +4,7 @@ import Link from "next/link";
 import { SUBJECTS, subjectColor, subjectColorSoft } from "@/data/exams";
 import { SEED_QUESTIONS } from "@/data";
 import { useI18n } from "@/lib/i18n";
-import { HeroLines, IconChat, IconClock, IconRule, IconTrend } from "./illustrations";
+import { HeroScoreCard, IconChat, IconClock, IconRule, IconTrend } from "./illustrations";
 import { CountUp, Reveal } from "./motion";
 import { LogoAnimation } from "./LogoAnimation";
 
@@ -73,23 +73,26 @@ export function Landing({ customCount }: { customCount: number }) {
               {t("landing.badge")}
             </span>
 
-            {/* The wordmark performs: 1 hops over "elevate", it becomes 1600. */}
-            <div className="mt-5 -ml-1">
-              <LogoAnimation />
-            </div>
-
+            {/* One dominant headline. The wordmark performs beneath it, at brand
+                scale rather than headline scale, so 1600 never competes for the
+                role of page title. */}
             <h1
-              className="display fade-up mt-4 text-[1.75rem] sm:text-[2.25rem] lg:text-[2.5rem]"
+              className="display fade-up mt-5 text-[2.5rem] sm:text-[3.25rem] lg:text-[3.75rem]"
               style={{ animationDelay: "60ms" }}
             >
-              {t("landing.titleA")} <span className="text-grad">{t("landing.titleB")}</span>
+              {t("landing.titleA")}
+              <br />
+              <span className="text-grad">{t("landing.titleB")}</span>
             </h1>
 
-            <p className="lede fade-up mt-6 max-w-lg" style={{ animationDelay: "140ms" }}>
+            <p className="lede fade-up mt-5 max-w-lg" style={{ animationDelay: "140ms" }}>
               {t("landing.sub")}
             </p>
 
-            <div className="fade-up mt-8 flex flex-wrap items-center gap-3" style={{ animationDelay: "220ms" }}>
+            <div
+              className="fade-up mt-7 flex flex-wrap items-center gap-3"
+              style={{ animationDelay: "220ms" }}
+            >
               <Link href="/signup" className="btn btn-primary btn-lg">
                 {t("landing.start")}
               </Link>
@@ -101,10 +104,15 @@ export function Landing({ customCount }: { customCount: number }) {
             <p className="fade-in mt-4 text-[13px] text-faint" style={{ animationDelay: "320ms" }}>
               {t("landing.noCard")}
             </p>
+
+            <div className="fade-in mt-9 pt-7 border-t" style={{ animationDelay: "380ms" }}>
+              <LogoAnimation size="clamp(2rem, 5.5vw, 2.75rem)" />
+              <p className="text-[12px] text-faint mt-2">{t("landing.markCaption")}</p>
+            </div>
           </div>
 
           <div className="fade-in" style={{ animationDelay: "180ms" }}>
-            <HeroLines className="w-full h-auto" />
+            <HeroScoreCard className="w-full h-auto" />
           </div>
         </div>
       </section>

@@ -179,6 +179,11 @@ const D: Dict = {
     ru: "Без карты и подтверждения почты — 30 секунд и вы внутри.",
     kk: "Картасыз, поштаны растаусыз — 30 секунд.",
   },
+  "landing.markCaption": {
+    en: "Tap the mark — 1600 is the perfect SAT score.",
+    ru: "Нажмите на логотип — 1600 это максимальный балл SAT.",
+    kk: "Логотипті басыңыз — 1600 SAT-тың ең жоғары балы.",
+  },
   "landing.statQuestions": { en: "questions", ru: "вопросов", kk: "сұрақ" },
   "landing.statSubjects": { en: "subjects", ru: "предметов", kk: "пән" },
   "landing.statLangs": { en: "languages", ru: "языка", kk: "тіл" },

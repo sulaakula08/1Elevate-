@@ -21,13 +21,17 @@ const GLYPHS: { letter: string; digit?: string }[] = [
   { letter: "e", digit: "0" },
 ];
 
-/** Matches the hop keyframes: the 1 is over glyph i at 0.12s + i × 0.22s. */
-const HOP_STEP = 0.22;
-const HOP_LEAD = 0.12;
-/** Forward pass, the hold on 1600, then the spring back. */
-const FORWARD_MS = 2550;
-const HOLD_MS = 1500;
-const BACK_MS = 1100;
+/**
+ * Matches the hop keyframes: over a 3.4s run, the 1 reaches its apex above glyph
+ * i at 13% + i × 10% of the timeline.
+ */
+const RUN_S = 3.4;
+const HOP_LEAD = RUN_S * 0.13;
+const HOP_STEP = RUN_S * 0.1;
+/** Forward run, a short beat on 1600, then the leap back to the wordmark. */
+const FORWARD_MS = RUN_S * 1000;
+const HOLD_MS = 900;
+const BACK_MS = 900;
 
 type Phase = "idle" | "forward" | "back";
 
@@ -72,6 +76,7 @@ export function LogoAnimation({
       data-phase={phase}
       style={{ fontSize: size, ["--slot" as string]: "0.56em" }}
     >
+      <span className="lg-shadow" aria-hidden />
       <span className="lg-one" aria-hidden>
         1
       </span>

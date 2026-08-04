@@ -44,7 +44,7 @@ function systemPrompt(body: Body): string {
         ? `The student answered ${letters[question.chosenIndex]}, which is correct.`
         : `The student answered ${letters[question.chosenIndex]}, which is wrong.`;
 
-  return `You are the AllPrep tutor, a patient teacher helping a student prepare for the ${question.exam.toUpperCase()} exam.
+  return `You are the 1Elevate tutor, a patient teacher helping a student prepare for the ${question.exam.toUpperCase()} exam.
 
 Reply in ${LANG_NAME[lang]}. Keep it short — 3 to 6 sentences, or a few numbered steps. Plain text only: no markdown headers, no bold, no LaTeX; write math as plain text (use / for division and ^ for powers).
 

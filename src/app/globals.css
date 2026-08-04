@@ -410,12 +410,15 @@ p {
   .glow {
     position: absolute;
     inset: -20% 0 auto 0;
-    height: 460px;
+    height: 520px;
     pointer-events: none;
+    /* One hue, not three. Overlapping indigo/rose/teal washes mixed to grey; a
+       single accent bloom plus a faint grid reads intentional instead of muddy. */
     background:
-      radial-gradient(38% 55% at 18% 30%, color-mix(in srgb, var(--s-indigo) 20%, transparent), transparent 70%),
-      radial-gradient(34% 50% at 78% 18%, color-mix(in srgb, var(--s-rose) 16%, transparent), transparent 70%),
-      radial-gradient(32% 46% at 52% 62%, color-mix(in srgb, var(--s-teal) 14%, transparent), transparent 70%);
+      linear-gradient(to bottom, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px) 0 0 / 100% 88px,
+      linear-gradient(to right, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px) 0 0 / 88px 100%,
+      radial-gradient(52% 62% at 22% 6%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 72%);
+    mask-image: linear-gradient(to bottom, black, transparent 82%);
   }
 
   /* ---------------- navigation ---------------- */
@@ -490,9 +493,21 @@ p {
   }
 
   /* ================= logo animation =================
-     The "1" hops across "elevate": four letters are kicked away, three flip into
-     digits, and the 1 lands in front to read 1600 — the top SAT score. Timings
-     are driven by --slot (glyph pitch) and per-glyph --d (delay). */
+     The "1" bounds across "elevate": it crouches, launches, arcs over each
+     letter, kicks four of them away and flips three into digits, then loops home
+     to read 1600 and springs back to the wordmark.
+
+     Animation principles, in CSS:
+     · anticipation — a crouch and squash before the launch
+     · arcs — each hop eases out on the rise and in on the fall (per-keyframe
+       timing functions), so gravity reads correctly
+     · squash and stretch — vertical stretch at speed, horizontal squash on impact
+     · follow-through — the letters jiggle a beat after each landing, and the
+       final landing settles with a decaying wobble
+     · a ground shadow tracks the 1 and shrinks as it rises
+
+     Geometry: glyph pitch is --slot; letter i sits at --slot × (1.045 + i), so
+     apexes land exactly over each letter. Per-glyph delays come from --d. */
   .lg {
     position: relative;
     display: inline-flex;
@@ -501,6 +516,7 @@ p {
     letter-spacing: -0.045em;
     line-height: 1;
     user-select: none;
+    padding-bottom: 0.14em;
   }
   /* Idle is the plain wordmark: the 1, then "elevate". Every animation below is
      scoped to a phase so returning to idle restores that state exactly. */
@@ -509,11 +525,30 @@ p {
     left: 0;
     top: 0;
     z-index: 2;
+    /* Squash pivots on the feet, the way a body compresses on landing. */
+    transform-origin: 50% 100%;
   }
   .lg[data-phase="forward"] .lg-one {
-    /* Bouncy: overshoot on the way down of every arc. */
-    animation: lg-hop 2.55s cubic-bezier(0.32, 0.02, 0.4, 1) forwards;
+    animation: lg-hop 3.4s linear forwards;
   }
+
+  /* contact shadow */
+  .lg-shadow {
+    position: absolute;
+    left: 0;
+    bottom: 0.02em;
+    width: 0.42em;
+    height: 0.09em;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .lg[data-phase="forward"] .lg-shadow {
+    animation: lg-shadow 3.4s linear forwards;
+  }
+
   .lg-word {
     display: inline-flex;
     /* Room for the 1 to land in front. */
@@ -529,6 +564,7 @@ p {
   .lg-letter,
   .lg-digit {
     display: inline-block;
+    transform-origin: 50% 90%;
     will-change: transform, opacity;
   }
   .lg-digit {
@@ -537,146 +573,295 @@ p {
     opacity: 0;
   }
 
-  /* letters that get kicked out of the way */
+  /* letters that get knocked out of the way — up on impact, then gravity.
+     Each starts with a small flinch, so the hit reads as contact rather than a
+     letter that simply leaves. (One animation per element: a second rule on
+     .lg-letter would replace this one rather than compose with it.) */
   .lg[data-phase="forward"] .lg-slot[data-fate="drop"] .lg-letter {
-    animation: lg-kick 0.62s cubic-bezier(0.3, -0.5, 0.68, 1.3) var(--d) forwards;
+    animation: lg-tumble 0.9s linear var(--d) forwards;
   }
   .lg[data-phase="forward"] .lg-slot[data-fate="drop"] {
-    animation: lg-collapse 0.44s cubic-bezier(0.34, 1.32, 0.5, 1) calc(var(--d) + 0.22s) forwards;
+    animation: lg-collapse 0.5s cubic-bezier(0.5, 0, 0.3, 1) calc(var(--d) + 0.26s) forwards;
   }
   /* letters that become digits */
   .lg[data-phase="forward"] .lg-slot[data-fate="keep"] .lg-letter {
-    animation: lg-flip-out 0.26s ease-in var(--d) forwards;
+    animation: lg-flip-out 0.24s cubic-bezier(0.5, 0, 0.9, 0.4) var(--d) forwards;
   }
   .lg[data-phase="forward"] .lg-slot[data-fate="keep"] .lg-digit {
-    animation: lg-flip-in 0.52s cubic-bezier(0.34, 1.56, 0.44, 1) calc(var(--d) + 0.18s) forwards;
+    animation: lg-flip-in 0.62s cubic-bezier(0.2, 1.5, 0.4, 1) calc(var(--d) + 0.16s) forwards;
   }
 
   /* replay: springs the wordmark back so the brand name is what remains */
   .lg[data-phase="back"] .lg-one {
-    animation: lg-return 0.72s cubic-bezier(0.34, 1.4, 0.5, 1) forwards;
+    animation: lg-return 0.86s cubic-bezier(0.2, 1.3, 0.4, 1) forwards;
   }
   .lg[data-phase="back"] .lg-slot[data-fate="drop"] .lg-letter {
-    animation: lg-unkick 0.5s cubic-bezier(0.34, 1.42, 0.5, 1) var(--db) forwards;
+    animation: lg-untumble 0.62s cubic-bezier(0.2, 1.5, 0.4, 1) var(--db) forwards;
   }
   .lg[data-phase="back"] .lg-slot[data-fate="drop"] {
-    animation: lg-expand 0.42s cubic-bezier(0.34, 1.32, 0.5, 1) var(--db) forwards;
+    animation: lg-expand 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) var(--db) forwards;
   }
   .lg[data-phase="back"] .lg-slot[data-fate="keep"] .lg-digit {
-    animation: lg-flip-out 0.22s ease-in var(--db) forwards;
+    animation: lg-flip-out 0.2s ease-in var(--db) forwards;
   }
   .lg[data-phase="back"] .lg-slot[data-fate="keep"] .lg-letter {
-    animation: lg-flip-in 0.46s cubic-bezier(0.34, 1.5, 0.44, 1) calc(var(--db) + 0.12s) forwards;
+    animation: lg-flip-in 0.54s cubic-bezier(0.2, 1.5, 0.4, 1) calc(var(--db) + 0.1s) forwards;
   }
 }
 
-/* Seven arcs left→right, then one big arc back to the front, then a squash. */
+/* The run. Rises ease out, falls ease in, impacts snap — the timing function set
+   on a keyframe governs the segment that starts there. */
 @keyframes lg-hop {
+  /* --- anticipation --- */
   0% {
-    transform: translate(calc(var(--slot) * -1.6), 0) scale(0.9, 1.1);
+    transform: translate(calc(var(--slot) * -1.9), 0) scale(1, 1);
     opacity: 0;
+    animation-timing-function: cubic-bezier(0.3, 0.7, 0.4, 1);
   }
-  6% {
+  2% {
     opacity: 1;
   }
-  /* over letter 1 */
-  10% {
-    transform: translate(calc(var(--slot) * 0.35), -0.62em) rotate(-8deg);
+  3% {
+    /* arrives and crouches */
+    transform: translate(calc(var(--slot) * -0.55), 0) scale(1.2, 0.8);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.4);
   }
-  16% {
-    transform: translate(calc(var(--slot) * 0.92), 0.04em) scale(1.12, 0.88);
+  7% {
+    /* launch: stretched along the direction of travel */
+    transform: translate(calc(var(--slot) * -0.1), -0.4em) scale(0.86, 1.2) rotate(-3deg);
+    animation-timing-function: cubic-bezier(0.16, 0.7, 0.3, 1);
   }
-  /* letter 2 */
-  22% {
-    transform: translate(calc(var(--slot) * 1.35), -0.6em) rotate(6deg);
+
+  /* --- letter 1 --- */
+  13% {
+    transform: translate(calc(var(--slot) * 1.045), -0.98em) scale(0.96, 1.05) rotate(4deg);
+    animation-timing-function: cubic-bezier(0.6, 0.05, 0.9, 0.4);
+  }
+  18% {
+    transform: translate(calc(var(--slot) * 1.545), 0) scale(1.22, 0.78);
+    animation-timing-function: cubic-bezier(0.16, 0.7, 0.3, 1);
+  }
+  /* --- letter 2 --- */
+  23% {
+    transform: translate(calc(var(--slot) * 2.045), -0.94em) scale(0.96, 1.05) rotate(-4deg);
+    animation-timing-function: cubic-bezier(0.6, 0.05, 0.9, 0.4);
   }
   28% {
-    transform: translate(calc(var(--slot) * 1.92), 0.04em) scale(1.1, 0.9);
+    transform: translate(calc(var(--slot) * 2.545), 0) scale(1.2, 0.8);
+    animation-timing-function: cubic-bezier(0.16, 0.7, 0.3, 1);
   }
-  /* letter 3 */
-  34% {
-    transform: translate(calc(var(--slot) * 2.35), -0.58em) rotate(-6deg);
+  /* --- letter 3 --- */
+  33% {
+    transform: translate(calc(var(--slot) * 3.045), -0.92em) scale(0.96, 1.05) rotate(4deg);
+    animation-timing-function: cubic-bezier(0.6, 0.05, 0.9, 0.4);
   }
-  40% {
-    transform: translate(calc(var(--slot) * 2.92), 0.04em) scale(1.1, 0.9);
+  38% {
+    transform: translate(calc(var(--slot) * 3.545), 0) scale(1.2, 0.8);
+    animation-timing-function: cubic-bezier(0.16, 0.7, 0.3, 1);
   }
-  /* letter 4 */
-  46% {
-    transform: translate(calc(var(--slot) * 3.35), -0.58em) rotate(6deg);
+  /* --- letter 4 --- */
+  43% {
+    transform: translate(calc(var(--slot) * 4.045), -0.9em) scale(0.96, 1.05) rotate(-4deg);
+    animation-timing-function: cubic-bezier(0.6, 0.05, 0.9, 0.4);
   }
-  52% {
-    transform: translate(calc(var(--slot) * 3.92), 0.04em) scale(1.1, 0.9);
+  48% {
+    transform: translate(calc(var(--slot) * 4.545), 0) scale(1.18, 0.82);
+    animation-timing-function: cubic-bezier(0.16, 0.7, 0.3, 1);
   }
-  /* letter 5 */
+  /* --- letter 5 --- */
+  53% {
+    transform: translate(calc(var(--slot) * 5.045), -0.88em) scale(0.96, 1.05) rotate(4deg);
+    animation-timing-function: cubic-bezier(0.6, 0.05, 0.9, 0.4);
+  }
   58% {
-    transform: translate(calc(var(--slot) * 4.35), -0.56em) rotate(-5deg);
+    transform: translate(calc(var(--slot) * 5.545), 0) scale(1.18, 0.82);
+    animation-timing-function: cubic-bezier(0.16, 0.7, 0.3, 1);
   }
-  64% {
-    transform: translate(calc(var(--slot) * 4.92), 0.04em) scale(1.08, 0.92);
+  /* --- letter 6 --- */
+  63% {
+    transform: translate(calc(var(--slot) * 6.045), -0.86em) scale(0.96, 1.05) rotate(-4deg);
+    animation-timing-function: cubic-bezier(0.6, 0.05, 0.9, 0.4);
   }
-  /* letter 6 */
-  70% {
-    transform: translate(calc(var(--slot) * 5.35), -0.56em) rotate(5deg);
+  68% {
+    transform: translate(calc(var(--slot) * 6.545), 0) scale(1.16, 0.84);
+    animation-timing-function: cubic-bezier(0.16, 0.7, 0.3, 1);
   }
-  75% {
-    transform: translate(calc(var(--slot) * 5.92), 0.04em) scale(1.08, 0.92);
+  /* --- letter 7 --- */
+  73% {
+    transform: translate(calc(var(--slot) * 7.045), -0.86em) scale(0.96, 1.05) rotate(4deg);
+    animation-timing-function: cubic-bezier(0.6, 0.05, 0.9, 0.4);
   }
-  /* letter 7 */
-  80% {
-    transform: translate(calc(var(--slot) * 6.4), -0.54em) rotate(-4deg);
+  78% {
+    transform: translate(calc(var(--slot) * 7.545), 0) scale(1.2, 0.8);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.5);
   }
-  84% {
-    transform: translate(calc(var(--slot) * 6.95), 0.02em) scale(1.06, 0.94);
+
+  /* --- the long way home --- */
+  81% {
+    /* gathers itself */
+    transform: translate(calc(var(--slot) * 7.545), 0) scale(1.26, 0.74);
+    animation-timing-function: cubic-bezier(0.14, 0.8, 0.3, 1);
   }
-  /* big arc home */
-  93% {
-    transform: translate(calc(var(--slot) * 1.4), -1.1em) rotate(-14deg);
+  90% {
+    transform: translate(calc(var(--slot) * 3.4), -1.85em) scale(0.88, 1.16) rotate(-16deg);
+    animation-timing-function: cubic-bezier(0.62, 0.02, 0.9, 0.35);
   }
-  98% {
-    transform: translate(0, 0.06em) scale(1.16, 0.84);
+  95% {
+    /* impact */
+    transform: translate(0, 0) scale(1.3, 0.72);
+    animation-timing-function: cubic-bezier(0.1, 0.9, 0.3, 1);
+  }
+  97.5% {
+    /* rebound */
+    transform: translate(0, -0.2em) scale(0.94, 1.1);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1);
+  }
+  99% {
+    transform: translate(0, 0) scale(1.06, 0.95);
+    animation-timing-function: ease-out;
   }
   100% {
     transform: translate(0, 0) scale(1, 1);
   }
 }
 
-/* the return trip: from the front of 1600 back to the front of the wordmark */
+/* The shadow keeps contact with the ground: wide and dark on impact, small and
+   faint at the top of an arc. Same x-positions as the hop. */
+@keyframes lg-shadow {
+  0%,
+  2% {
+    transform: translate(calc(var(--slot) * -1.9), 0) scale(0.7, 1);
+    opacity: 0;
+  }
+  3% {
+    transform: translate(calc(var(--slot) * -0.55), 0) scale(1.25, 1);
+    opacity: 0.2;
+  }
+  13% {
+    transform: translate(calc(var(--slot) * 1.045), 0) scale(0.5, 1);
+    opacity: 0.06;
+  }
+  18% {
+    transform: translate(calc(var(--slot) * 1.545), 0) scale(1.25, 1);
+    opacity: 0.2;
+  }
+  23% {
+    transform: translate(calc(var(--slot) * 2.045), 0) scale(0.5, 1);
+    opacity: 0.06;
+  }
+  28% {
+    transform: translate(calc(var(--slot) * 2.545), 0) scale(1.22, 1);
+    opacity: 0.2;
+  }
+  33% {
+    transform: translate(calc(var(--slot) * 3.045), 0) scale(0.5, 1);
+    opacity: 0.06;
+  }
+  38% {
+    transform: translate(calc(var(--slot) * 3.545), 0) scale(1.22, 1);
+    opacity: 0.2;
+  }
+  43% {
+    transform: translate(calc(var(--slot) * 4.045), 0) scale(0.5, 1);
+    opacity: 0.06;
+  }
+  48% {
+    transform: translate(calc(var(--slot) * 4.545), 0) scale(1.2, 1);
+    opacity: 0.2;
+  }
+  53% {
+    transform: translate(calc(var(--slot) * 5.045), 0) scale(0.52, 1);
+    opacity: 0.06;
+  }
+  58% {
+    transform: translate(calc(var(--slot) * 5.545), 0) scale(1.2, 1);
+    opacity: 0.2;
+  }
+  63% {
+    transform: translate(calc(var(--slot) * 6.045), 0) scale(0.52, 1);
+    opacity: 0.06;
+  }
+  68% {
+    transform: translate(calc(var(--slot) * 6.545), 0) scale(1.18, 1);
+    opacity: 0.2;
+  }
+  73% {
+    transform: translate(calc(var(--slot) * 7.045), 0) scale(0.52, 1);
+    opacity: 0.06;
+  }
+  78%,
+  81% {
+    transform: translate(calc(var(--slot) * 7.545), 0) scale(1.3, 1);
+    opacity: 0.22;
+  }
+  90% {
+    transform: translate(calc(var(--slot) * 3.4), 0) scale(0.34, 1);
+    opacity: 0.04;
+  }
+  95% {
+    transform: translate(0, 0) scale(1.4, 1);
+    opacity: 0.24;
+  }
+  100% {
+    transform: translate(0, 0) scale(1, 1);
+    opacity: 0.14;
+  }
+}
+
+/* The return leap: one arc from the front of 1600 back to the wordmark. */
 @keyframes lg-return {
   0% {
-    transform: translate(0, 0);
+    transform: translate(0, 0) scale(1.16, 0.86);
   }
-  55% {
-    transform: translate(calc(var(--slot) * 0.5), -0.85em) rotate(12deg);
+  45% {
+    transform: translate(calc(var(--slot) * 0.9), -1.15em) scale(0.9, 1.14) rotate(14deg);
   }
-  85% {
-    transform: translate(0, 0.05em) scale(1.12, 0.88);
+  78% {
+    transform: translate(0, 0) scale(1.22, 0.8);
+  }
+  90% {
+    transform: translate(0, -0.1em) scale(0.97, 1.05);
   }
   100% {
     transform: translate(0, 0) scale(1, 1);
   }
 }
 
-@keyframes lg-kick {
+/* Knocked aside: a flinch, a hit, then gravity takes it. */
+@keyframes lg-tumble {
   0% {
     transform: translate(0, 0) rotate(0) scale(1);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.3, 0.8, 0.4, 1);
   }
-  25% {
-    transform: translate(0.06em, -0.34em) rotate(-16deg) scale(1.14, 0.9);
+  7% {
+    /* flinch — it feels the 1 coming */
+    transform: translate(0, -0.07em) scale(1.04, 1.06);
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.35, 1);
+  }
+  22% {
+    /* struck upward and spun */
+    transform: translate(0.1em, -0.5em) rotate(-22deg) scale(1.12, 0.92);
     opacity: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.35);
   }
   100% {
-    transform: translate(0.5em, 1.5em) rotate(-70deg) scale(0.6);
+    /* falls out of frame, accelerating */
+    transform: translate(0.66em, 2.1em) rotate(-118deg) scale(0.55);
     opacity: 0;
   }
 }
-@keyframes lg-unkick {
+@keyframes lg-untumble {
   0% {
-    transform: translate(0.5em, 1.5em) rotate(-70deg) scale(0.6);
+    transform: translate(0.66em, 2.1em) rotate(-118deg) scale(0.55);
     opacity: 0;
   }
-  60% {
-    transform: translate(0, -0.16em) rotate(6deg) scale(1.08);
+  55% {
+    transform: translate(0, -0.2em) rotate(8deg) scale(1.1);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(0, 0.04em) rotate(-2deg) scale(0.98);
     opacity: 1;
   }
   100% {
@@ -697,24 +882,35 @@ p {
     width: var(--slot);
   }
 }
+/* The swap: a letter tips away on its baseline and a digit tips in after it. */
 @keyframes lg-flip-out {
   0% {
     transform: rotateX(0) scale(1);
     opacity: 1;
   }
+  18% {
+    transform: rotateX(-10deg) scale(1.05);
+    opacity: 1;
+  }
   100% {
-    transform: rotateX(85deg) scale(0.86);
+    transform: rotateX(88deg) scale(0.84);
     opacity: 0;
   }
 }
 @keyframes lg-flip-in {
   0% {
-    transform: rotateX(-85deg) scale(0.8);
+    transform: rotateX(-90deg) scale(0.74) translateY(0.12em);
     opacity: 0;
   }
-  60% {
-    transform: rotateX(0) scale(1.16);
+  45% {
+    transform: rotateX(8deg) scale(1.2) translateY(-0.04em);
     opacity: 1;
+  }
+  72% {
+    transform: rotateX(-4deg) scale(0.96);
+  }
+  88% {
+    transform: rotateX(1deg) scale(1.03);
   }
   100% {
     transform: rotateX(0) scale(1);
@@ -1114,6 +1310,7 @@ p {
   }
   /* The logo keeps its brand state rather than snapping to the 1600 end frame. */
   .lg .lg-one,
+  .lg .lg-shadow,
   .lg .lg-slot,
   .lg .lg-letter,
   .lg .lg-digit {
