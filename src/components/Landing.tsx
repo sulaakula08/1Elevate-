@@ -1,16 +1,25 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
-import { SUBJECTS, subjectColor, subjectColorSoft } from "@/data/exams";
+import { SUBJECTS, subjectColor } from "@/data/exams";
 import { SEED_QUESTIONS } from "@/data";
 import { useI18n } from "@/lib/i18n";
 import { HeroScoreCard, IconChat, IconClock, IconRule, IconTrend } from "./illustrations";
 import { CountUp, Reveal } from "./motion";
 import { LogoAnimation } from "./LogoAnimation";
+import { SplitChars } from "./SplitChars";
+import { useLandingMotion } from "./useLandingMotion";
+import { SubjectScene } from "./three/SubjectScene";
 
 export function Landing({ customCount }: { customCount: number }) {
   const { t, tx } = useI18n();
   const questionCount = SEED_QUESTIONS.length + customCount;
+
+  // GSAP is scoped to this subtree, so its selectors can never reach the app
+  // shell or another route's markup.
+  const scope = useRef<HTMLDivElement>(null);
+  useLandingMotion(scope);
 
   const features = [
     {
@@ -57,9 +66,9 @@ export function Landing({ customCount }: { customCount: number }) {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto" ref={scope}>
       {/* ---------------- hero ---------------- */}
-      <section className="relative pt-10 sm:pt-16 pb-14">
+      <section className="relative pt-10 sm:pt-16 pb-14" data-motion="hero">
         <div className="glow" aria-hidden />
         <div className="relative grid lg:grid-cols-[1fr_0.85fr] gap-12 lg:gap-16 items-center">
           <div>
@@ -75,33 +84,38 @@ export function Landing({ customCount }: { customCount: number }) {
 
             {/* One dominant headline. The wordmark performs beneath it, at brand
                 scale rather than headline scale, so 1600 never competes for the
-                role of page title. */}
+                role of page title.
+
+                GSAP drives the hero, so these elements carry no fade-up class —
+                two animation systems on one element fight over its transform.
+                aria-label holds the real sentence; the per-character spans in
+                SplitChars are aria-hidden. */}
             <h1
-              className="display fade-up mt-5 text-[2.5rem] sm:text-[3.25rem] lg:text-[3.75rem]"
-              style={{ animationDelay: "60ms" }}
+              className="display split mt-5 text-[2.5rem] sm:text-[3.25rem] lg:text-[3.75rem]"
+              data-motion="headline"
+              aria-label={`${t("landing.titleA")} ${t("landing.titleB")}`}
             >
-              {t("landing.titleA")}
+              <SplitChars text={t("landing.titleA")} />
               <br />
-              <span className="text-grad">{t("landing.titleB")}</span>
+              <span className="text-grad">
+                <SplitChars text={t("landing.titleB")} />
+              </span>
             </h1>
 
-            <p className="lede fade-up mt-5 max-w-lg" style={{ animationDelay: "140ms" }}>
+            <p className="lede mt-5 max-w-lg" data-motion="lede">
               {t("landing.sub")}
             </p>
 
-            <div
-              className="fade-up mt-7 flex flex-wrap items-center gap-3"
-              style={{ animationDelay: "220ms" }}
-            >
-              <Link href="/signup" className="btn btn-primary btn-lg">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link href="/signup" className="btn btn-primary btn-lg" data-motion="action">
                 {t("landing.start")}
               </Link>
-              <Link href="/login" className="btn btn-lg">
+              <Link href="/login" className="btn btn-lg" data-motion="action">
                 {t("landing.haveAccount")}
               </Link>
             </div>
 
-            <p className="fade-in mt-4 text-[13px] text-faint" style={{ animationDelay: "320ms" }}>
+            <p className="mt-4 text-[13px] text-faint" data-motion="fine-print">
               {t("landing.noCard")}
             </p>
 
@@ -111,8 +125,14 @@ export function Landing({ customCount }: { customCount: number }) {
             </div>
           </div>
 
-          <div className="fade-in" style={{ animationDelay: "180ms" }}>
-            <HeroScoreCard className="w-full h-auto" />
+          {/* Two wrappers, because two animations write y to the card: the intro
+              rise (time-based) and the parallax drift (scroll-based). On one
+              element they would overwrite each other; nested, each owns its own
+              transform and the browser composes them. */}
+          <div data-motion="hero-card" style={{ willChange: "transform" }}>
+            <div data-motion="hero-card-in">
+              <HeroScoreCard className="w-full h-auto" />
+            </div>
           </div>
         </div>
       </section>
@@ -138,30 +158,35 @@ export function Landing({ customCount }: { customCount: number }) {
         </dl>
       </section>
 
-      {/* ---------------- features ---------------- */}
-      <section className="py-20">
-        <Reveal className="max-w-xl">
+      {/* ---------------- features (pinned) ----------------
+          ScrollTrigger pins this section and scrubs the cards in. Reveal is gone
+          from here on purpose: its IntersectionObserver would set opacity on the
+          same nodes GSAP is tweening, and the last writer would win at random.
+          The pin needs a fixed-height subject, so the section itself is the
+          trigger and the inner wrapper is what gets measured. */}
+      <section className="py-20" data-motion="features">
+        <div className="max-w-xl" data-motion="features-heading">
           <p className="label-xs">{t("landing.featuresEyebrow")}</p>
           <h2 className="display mt-4 text-3xl sm:text-[2.5rem]">{t("landing.featuresTitle")}</h2>
-        </Reveal>
+        </div>
 
         <div className="mt-12 grid sm:grid-cols-2 gap-3">
-          {features.map((feature, i) => (
-            <Reveal key={feature.title} delay={i * 80}>
-              <article
-                className="card-tone p-5 h-full"
-                style={{
-                  ["--tone" as string]: feature.color,
-                  ["--tone-soft" as string]: feature.soft,
-                }}
-              >
-                <span className="glyph" style={{ color: feature.color }}>
-                  {feature.icon}
-                </span>
-                <h3 className="mt-4 text-[16.5px] font-medium">{feature.title}</h3>
-                <p className="mt-2 text-[14.5px] leading-relaxed text-muted">{feature.text}</p>
-              </article>
-            </Reveal>
+          {features.map((feature) => (
+            <article
+              key={feature.title}
+              className="card-tone p-5 h-full"
+              data-motion="feature-card"
+              style={{
+                ["--tone" as string]: feature.color,
+                ["--tone-soft" as string]: feature.soft,
+              }}
+            >
+              <span className="glyph" style={{ color: feature.color }}>
+                {feature.icon}
+              </span>
+              <h3 className="mt-4 text-[16.5px] font-medium">{feature.title}</h3>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-muted">{feature.text}</p>
+            </article>
           ))}
         </div>
       </section>
@@ -188,32 +213,62 @@ export function Landing({ customCount }: { customCount: number }) {
         </ol>
       </section>
 
-      {/* ---------------- subjects ---------------- */}
+      {/* ---------------- the two sections ----------------
+          Each card carries its own WebGL scene: a coordinate field for Math, a
+          resolving page of text for Reading & Writing. The scenes are lazy and
+          only boot when a card scrolls into view. */}
       <section className="py-20 border-t">
         <Reveal>
           <p className="label-xs">{t("landing.subjectsTitle")}</p>
-          <ul className="mt-6 flex flex-wrap gap-2.5">
-            {SUBJECTS.map((subject) => (
-              <li
-                key={subject.id}
-                className="flex items-center gap-2.5 pl-1.5 pr-3.5 py-1.5 rounded-full border"
-                style={{ borderColor: "var(--line)" }}
-              >
-                <span
-                  className="glyph glyph-sm"
+          <h2 className="display mt-4 max-w-xl text-3xl sm:text-[2.5rem]">
+            {t("landing.subjectsHeadline")}
+          </h2>
+        </Reveal>
+
+        <div className="mt-10 grid sm:grid-cols-2 gap-4">
+          {SUBJECTS.map((subject, i) => {
+            const total = SEED_QUESTIONS.filter((q) => q.subjectId === subject.id).length;
+            const isMath = subject.id === "sat-math";
+            return (
+              <Reveal key={subject.id} delay={i * 90}>
+                <Link
+                  href="/signup"
+                  className="bank-card showcase-card"
                   style={{
                     ["--tone" as string]: subjectColor(subject.id),
-                    ["--tone-soft" as string]: subjectColorSoft(subject.id),
+                    ["--tone-2" as string]: `color-mix(in srgb, ${subjectColor(
+                      subject.id,
+                    )} 62%, #1b1033)`,
                   }}
                 >
-                  {subject.glyph}
-                </span>
-                <span className="text-[14px]">{tx(subject.name)}</span>
-                <span className="num text-[10px] text-faint uppercase">{subject.exam}</span>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
+                  <SubjectScene kind={isMath ? "math" : "verbal"} />
+
+                  <span className="relative block">
+                    <span
+                      className="glyph glyph-sm"
+                      style={{
+                        ["--tone" as string]: "rgba(255,255,255,0.22)",
+                        ["--tone-soft" as string]: "rgba(255,255,255,0.16)",
+                      }}
+                    >
+                      {subject.glyph}
+                    </span>
+
+                    <span className="block mt-4 text-[21px] font-semibold tracking-[-0.02em]">
+                      {tx(subject.name)}
+                    </span>
+                    <span className="block mt-2 text-[14px] leading-relaxed opacity-85 max-w-[26ch]">
+                      {t(isMath ? "landing.mathBlurb" : "landing.verbalBlurb")}
+                    </span>
+                    <span className="num block mt-5 text-[12.5px] opacity-75">
+                      {total} {t("landing.statQuestions")}
+                    </span>
+                  </span>
+                </Link>
+              </Reveal>
+            );
+          })}
+        </div>
       </section>
 
       {/* ---------------- closing ---------------- */}

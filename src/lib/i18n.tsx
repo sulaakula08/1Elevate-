@@ -179,6 +179,21 @@ const D: Dict = {
     ru: "Без карты и подтверждения почты — 30 секунд и вы внутри.",
     kk: "Картасыз, поштаны растаусыз — 30 секунд.",
   },
+  "landing.subjectsHeadline": {
+    en: "Two sections. Two very different kinds of thinking.",
+    ru: "Два раздела. Два совершенно разных типа мышления.",
+    kk: "Екі бөлім. Ойлаудың екі түрлі тәсілі.",
+  },
+  "landing.mathBlurb": {
+    en: "Algebra, advanced math, problem solving and geometry — worked through until the graph makes sense.",
+    ru: "Алгебра, продвинутая математика, решение задач и геометрия — до момента, когда график становится понятным.",
+    kk: "Алгебра, жоғары математика, есеп шығару және геометрия — график түсінікті болғанша.",
+  },
+  "landing.verbalBlurb": {
+    en: "Reading closely, using evidence, and revising sentences until the writing is clear.",
+    ru: "Внимательное чтение, работа с доказательствами и редактирование предложений до полной ясности.",
+    kk: "Мұқият оқу, дәлелмен жұмыс және сөйлемдерді анық болғанша өңдеу.",
+  },
   "landing.markCaption": {
     en: "Tap the mark — 1600 is the perfect SAT score.",
     ru: "Нажмите на логотип — 1600 это максимальный балл SAT.",

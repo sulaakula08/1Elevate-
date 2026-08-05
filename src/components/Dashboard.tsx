@@ -17,6 +17,7 @@ import {
 } from "@/lib/stats";
 import { CountUp, ProgressBar, Reveal } from "./motion";
 import { IconChat, IconClock, IconRule, IconTrend } from "./illustrations";
+import { SubjectScene } from "./three/SubjectScene";
 
 /** Corner artwork, cycled across the bank cards. */
 const CARD_ART = [IconRule, IconClock, IconChat, IconTrend];
@@ -80,9 +81,12 @@ export function Dashboard({ account }: { account: Account }) {
             return (
               <Reveal key={subject.id} delay={i * 70}>
                 <Link href="/practice" className="bank-card" style={bankTone(subject)}>
+                  {/* The 2D glyph is the fallback and the first paint; the WebGL
+                      scene fades over it once its chunk has loaded. */}
                   <span className="bank-card-art">
                     <Art size={136} className="text-white" />
                   </span>
+                  <SubjectScene kind={subject.id === "sat-math" ? "math" : "verbal"} />
 
                   <span className="relative block">
                     <span className="block text-[19px] font-semibold tracking-[-0.02em]">
