@@ -1,15 +1,28 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext } from "react";
 import type { Lang, LocalizedText } from "@/data/types";
+import { COPY, type CopyDict } from "./copy";
 
+/**
+ * The languages *question content* can be authored in. The admin editor writes
+ * all three so a question is ready when the interface gains a language; the
+ * interface itself is Russian-only for this release (see UI_LANG).
+ */
 export const LANGS: { id: Lang; label: string }[] = [
   { id: "kk", label: "Қазақша" },
   { id: "ru", label: "Русский" },
   { id: "en", label: "English" },
 ];
 
-type Dict = Record<string, { en: string; ru: string; kk: string }>;
+/**
+ * The one interface language. There is no in-app switcher: shipping one
+ * carefully written locale beats three half-maintained ones, and the dictionary
+ * keeps its other columns so adding a switcher back is a one-line change.
+ */
+export const UI_LANG: Lang = "ru";
+
+type Dict = CopyDict;
 
 const D: Dict = {
   "app.tagline": {
@@ -160,17 +173,10 @@ const D: Dict = {
   },
 
   /* ---------------- landing ---------------- */
-  "landing.badge": {
-    en: "Built in Kazakhstan · by Mentoria Organization",
-    ru: "Сделано в Казахстане · Mentoria Organization",
-    kk: "Қазақстанда жасалған · Mentoria Organization",
-  },
-  "landing.titleA": { en: "Prep smarter for", ru: "Готовься умнее к", kk: "Ақылды дайындал:" },
-  "landing.titleB": { en: "the SAT", ru: "SAT", kk: "SAT-қа" },
   "landing.sub": {
-    en: "A trilingual question bank, timed mock exams that mirror the real format, analytics that find your weak topics — and an AI tutor that explains any task the moment you get stuck.",
-    ru: "Трёхъязычный банк вопросов, пробные экзамены с реальным таймингом, аналитика слабых тем — и ИИ-репетитор, который объяснит любое задание, как только вы застряли.",
-    kk: "Үш тілдегі сұрақ банкі, нақты форматтағы сынақ емтихандары, әлсіз тақырыптар аналитикасы — және кез келген тапсырманы түсіндіретін AI-тәлімгер.",
+    en: "A question bank on the official blueprint, timed mock exams, analytics that find your weak topics — and an AI tutor that explains any task the moment you get stuck.",
+    ru: "Банк вопросов по официальной спецификации, пробные экзамены с реальным таймингом, аналитика слабых тем — и ИИ-репетитор, который объяснит любое задание, как только вы застряли.",
+    kk: "Ресми сипаттама бойынша сұрақ банкі, нақты форматтағы сынақ емтихандары, әлсіз тақырыптар аналитикасы — және кез келген тапсырманы түсіндіретін AI-тәлімгер.",
   },
   "landing.start": { en: "Start free", ru: "Начать бесплатно", kk: "Тегін бастау" },
   "landing.haveAccount": { en: "I have an account", ru: "У меня есть аккаунт", kk: "Аккаунтым бар" },
@@ -201,8 +207,6 @@ const D: Dict = {
   },
   "landing.statQuestions": { en: "questions", ru: "вопросов", kk: "сұрақ" },
   "landing.statSubjects": { en: "subjects", ru: "предметов", kk: "пән" },
-  "landing.statLangs": { en: "languages", ru: "языка", kk: "тіл" },
-  "landing.statPrice": { en: "tenge to start", ru: "тенге на старт", kk: "теңге бастауға" },
 
   "landing.featuresEyebrow": { en: "Everything in one place", ru: "Всё в одном месте", kk: "Барлығы бір жерде" },
   "landing.featuresTitle": {
@@ -520,9 +524,12 @@ const D: Dict = {
   },
 };
 
+/** Base dictionary plus the per-area fragments in `lib/copy`. */
+const STRINGS: Dict = { ...D, ...COPY };
+
 type Ctx = {
+  /** The interface language. Always UI_LANG for now. */
   lang: Lang;
-  setLang: (l: Lang) => void;
   /** UI string by key. */
   t: (key: string) => string;
   /** Content text with fallback to English. */
@@ -530,40 +537,19 @@ type Ctx = {
 };
 
 const I18nContext = createContext<Ctx | null>(null);
-const LANG_KEY = "elevate.lang";
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
+  // A fixed language means no post-mount language adoption, and therefore no
+  // hydration mismatch and no flash of English on first paint.
+  const lang = UI_LANG;
 
-  // localStorage and navigator.language only exist on the client, so the stored
-  // language has to be adopted after mount — rendering it directly would break
-  // hydration. setState here is deliberate.
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    const stored = window.localStorage.getItem(LANG_KEY) as Lang | null;
-    if (stored && LANGS.some((l) => l.id === stored)) {
-      setLangState(stored);
-      return;
-    }
-    const nav = window.navigator.language.slice(0, 2);
-    setLangState(nav === "kk" ? "kk" : nav === "ru" ? "ru" : "en");
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const setLang = useCallback((l: Lang) => {
-    setLangState(l);
-    window.localStorage.setItem(LANG_KEY, l);
-  }, []);
-
-  const t = useCallback((key: string) => D[key]?.[lang] ?? D[key]?.en ?? key, [lang]);
+  const t = useCallback((key: string) => STRINGS[key]?.[lang] ?? STRINGS[key]?.en ?? key, [lang]);
   const tx = useCallback(
     (text: LocalizedText | undefined) => (text ? text[lang] || text.en : ""),
     [lang],
   );
 
-  return (
-    <I18nContext.Provider value={{ lang, setLang, t, tx }}>{children}</I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={{ lang, t, tx }}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n(): Ctx {

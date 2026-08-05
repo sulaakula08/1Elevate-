@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/lib/app-state";
-import { LANGS, useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
-import type { Lang } from "@/data/types";
 import { Logo } from "./Logo";
 import {
   NavAdmin,
@@ -32,7 +31,7 @@ const LINKS = [
 const MOBILE_TABS = LINKS.slice(0, 4);
 
 export function TopBar() {
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   const { account, theme, toggleTheme, signOut, ready, data } = useApp();
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -113,29 +112,14 @@ export function TopBar() {
               <span
                 className="badge h-9 px-3"
                 style={{
-                  ["--tone" as string]: "var(--s-orange)",
-                  ["--tone-soft" as string]: "var(--s-orange-soft)",
+                  ["--tone" as string]: "var(--brand)",
+                  ["--tone-soft" as string]: "var(--brand-soft)",
                 }}
                 title={t("progress.streak")}
               >
                 🔥 <span className="num">{days}</span>
               </span>
             )}
-
-            {/* language: three codes, no native select chrome */}
-            <div className="seg" role="group" aria-label={t("common.language")}>
-              {LANGS.map((l) => (
-                <button
-                  key={l.id}
-                  onClick={() => setLang(l.id as Lang)}
-                  className={`seg-item ${lang === l.id ? "seg-item-on" : ""}`}
-                  aria-pressed={lang === l.id}
-                  title={l.label}
-                >
-                  {l.id.toUpperCase()}
-                </button>
-              ))}
-            </div>
 
             <button className="bar-btn" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
               {theme === "dark" ? "☀" : "☾"}

@@ -39,17 +39,18 @@ export function byDifficulty(attempts: Attempt[]): Bucket[] {
   ).sort((x, y) => Number(x.key) - Number(y.key));
 }
 
-/** Colour for a difficulty level: green, amber, rose. */
+/**
+ * Colour for a difficulty level. One ramp inside the brand family — blue,
+ * indigo, violet — so "harder" reads as further along a scale rather than as a
+ * traffic light. Difficulty always carries its word label too, so colour is
+ * never the only channel.
+ */
 export function difficultyColor(level: number): string {
-  return level === 1 ? "var(--s-green)" : level === 2 ? "var(--s-amber)" : "var(--s-rose)";
+  return `var(--lvl-${level === 1 ? 1 : level === 2 ? 2 : 3})`;
 }
 
 export function difficultyColorSoft(level: number): string {
-  return level === 1
-    ? "var(--s-green-soft)"
-    : level === 2
-      ? "var(--s-amber-soft)"
-      : "var(--s-rose-soft)";
+  return `var(--lvl-${level === 1 ? 1 : level === 2 ? 2 : 3}-soft)`;
 }
 
 export function overall(attempts: Attempt[]) {

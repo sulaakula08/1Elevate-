@@ -20,6 +20,6 @@ export default function HomePage() {
     );
   }
 
-  if (!account) return <Landing customCount={bank.filter((q) => q.custom).length} />;
+  if (!account) return <Landing bank={bank} />;
   return <Dashboard account={account} />;
 }

@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import type { Lang } from "@/data/types";
 import { useApp } from "@/lib/app-state";
-import { LANGS, useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
 import {
@@ -28,7 +27,6 @@ const TABS = [
 
 /** Compact header for signed-in phones — the sidebar's job is done by the tabs. */
 export function MobileHeader() {
-  const { t, lang, setLang } = useI18n();
   const { account, theme, toggleTheme, data } = useApp();
   const days = streak(data.attempts);
 
@@ -47,26 +45,13 @@ export function MobileHeader() {
             <span
               className="badge h-8 px-2.5"
               style={{
-                ["--tone" as string]: "var(--s-orange)",
-                ["--tone-soft" as string]: "var(--s-orange-soft)",
+                ["--tone" as string]: "var(--brand)",
+                ["--tone-soft" as string]: "var(--brand-soft)",
               }}
             >
               🔥 <span className="num">{days}</span>
             </span>
           )}
-
-          <div className="seg h-8" role="group" aria-label={t("common.language")}>
-            {LANGS.map((l) => (
-              <button
-                key={l.id}
-                onClick={() => setLang(l.id as Lang)}
-                className={`seg-item h-[26px] ${lang === l.id ? "seg-item-on" : ""}`}
-                aria-pressed={lang === l.id}
-              >
-                {l.id.toUpperCase()}
-              </button>
-            ))}
-          </div>
 
           <button className="bar-btn w-8 h-8" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "dark" ? "☀" : "☾"}

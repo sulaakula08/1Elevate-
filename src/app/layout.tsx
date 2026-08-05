@@ -5,9 +5,9 @@ import { Providers } from "@/components/Providers";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "1Elevate — SAT preparation",
+  title: "1Elevate — подготовка к SAT",
   description:
-    "SAT preparation by Mentoria Organization: a question bank, timed mock tests on the official format, progress analytics and an AI tutor.",
+    "Подготовка к SAT: банк вопросов по официальной спецификации, пробные тесты с реальным таймингом, аналитика прогресса и ИИ-репетитор.",
 };
 
 /**
@@ -41,7 +41,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-theme="light" className="h-full" suppressHydrationWarning>
+    <html lang="ru" data-theme="light" className="h-full" suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {THEME_BOOTSTRAP}

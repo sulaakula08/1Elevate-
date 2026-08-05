@@ -22,9 +22,6 @@ export function Footer() {
             <p className="text-muted mt-1.5">
               {t("common.footer")}
             </p>
-            <p className="text-muted mt-3">
-              Founded by <span className="text-foreground">Mentoria Organization</span>
-            </p>
           </div>
 
           <nav className="flex flex-col gap-2">
