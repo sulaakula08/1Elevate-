@@ -60,12 +60,7 @@ const D: Dict = {
   "bank.open": { en: "Open", ru: "Открыть", kk: "Ашу" },
   "bank.allSubjects": { en: "All subjects", ru: "Все предметы", kk: "Барлық пән" },
 
-  "an.title": { en: "Question Analytics", ru: "Аналитика вопросов", kk: "Сұрақ аналитикасы" },
   "an.viewAll": { en: "View all analytics", ru: "Вся аналитика", kk: "Барлық аналитика" },
-  "an.attempted": { en: "Questions attempted", ru: "Отвечено вопросов", kk: "Жауап берілген сұрақ" },
-  "an.accuracy": { en: "Current accuracy", ru: "Текущая точность", kk: "Ағымдағы дәлдік" },
-  "an.queue": { en: "In review queue", ru: "В очереди повторения", kk: "Қайталау кезегінде" },
-  "an.streak": { en: "Study streak", ru: "Серия дней", kk: "Оқу сериясы" },
   "an.trend": { en: "Activity trend", ru: "Динамика активности", kk: "Белсенділік динамикасы" },
   "an.openQueue": { en: "Open queue", ru: "Открыть очередь", kk: "Кезекті ашу" },
   "an.last14": { en: "last 14 days", ru: "последние 14 дней", kk: "соңғы 14 күн" },
@@ -100,9 +95,9 @@ const D: Dict = {
   },
   "tour.t4": { en: "Stuck? Ask the tutor", ru: "Застряли? Спросите репетитора", kk: "Тұрып қалдыңыз ба? Тәлімгерден сұраңыз" },
   "tour.d4": {
-    en: "The AI tutor explains any question step by step in your language — or gives just a hint if you'd rather work it out.",
-    ru: "ИИ-репетитор объяснит любой вопрос пошагово на вашем языке — или даст лишь подсказку.",
-    kk: "AI-тәлімгер кез келген сұрақты қадаммен түсіндіреді — немесе тек нұсқау береді.",
+    en: "Elevate explains any question step by step — or gives just a hint if you'd rather work it out.",
+    ru: "Elevate объяснит любой вопрос пошагово — или даст лишь подсказку, если хотите дойти сами.",
+    kk: "Elevate кез келген сұрақты қадаммен түсіндіреді — немесе тек нұсқау береді.",
   },
   "tour.t5": { en: "Track what's improving", ru: "Следите за прогрессом", kk: "Үлгерімді қадағалаңыз" },
   "tour.d5": {
@@ -174,12 +169,11 @@ const D: Dict = {
 
   /* ---------------- landing ---------------- */
   "landing.sub": {
-    en: "A question bank on the official blueprint, timed mock exams, analytics that find your weak topics — and an AI tutor that explains any task the moment you get stuck.",
-    ru: "Банк вопросов по официальной спецификации, пробные экзамены с реальным таймингом, аналитика слабых тем — и ИИ-репетитор, который объяснит любое задание, как только вы застряли.",
+    en: "A question bank on the official blueprint, timed mock exams, analytics that find your weak topics — and Elevate, an AI assistant that explains any task the moment you get stuck.",
+    ru: "Банк вопросов по официальной спецификации, пробные экзамены с реальным таймингом, аналитика слабых тем — и Elevate, ИИ-помощник, который объяснит любое задание, как только вы застряли.",
     kk: "Ресми сипаттама бойынша сұрақ банкі, нақты форматтағы сынақ емтихандары, әлсіз тақырыптар аналитикасы — және кез келген тапсырманы түсіндіретін AI-тәлімгер.",
   },
   "landing.start": { en: "Start free", ru: "Начать бесплатно", kk: "Тегін бастау" },
-  "landing.haveAccount": { en: "I have an account", ru: "У меня есть аккаунт", kk: "Аккаунтым бар" },
   "landing.noCard": {
     en: "No card, no email confirmation — 30 seconds and you're in.",
     ru: "Без карты и подтверждения почты — 30 секунд и вы внутри.",
@@ -190,23 +184,11 @@ const D: Dict = {
     ru: "Два раздела. Два совершенно разных типа мышления.",
     kk: "Екі бөлім. Ойлаудың екі түрлі тәсілі.",
   },
-  "landing.mathBlurb": {
-    en: "Algebra, advanced math, problem solving and geometry — worked through until the graph makes sense.",
-    ru: "Алгебра, продвинутая математика, решение задач и геометрия — до момента, когда график становится понятным.",
-    kk: "Алгебра, жоғары математика, есеп шығару және геометрия — график түсінікті болғанша.",
-  },
-  "landing.verbalBlurb": {
-    en: "Reading closely, using evidence, and revising sentences until the writing is clear.",
-    ru: "Внимательное чтение, работа с доказательствами и редактирование предложений до полной ясности.",
-    kk: "Мұқият оқу, дәлелмен жұмыс және сөйлемдерді анық болғанша өңдеу.",
-  },
   "landing.markCaption": {
     en: "Tap the mark — 1600 is the perfect SAT score.",
     ru: "Нажмите на логотип — 1600 это максимальный балл SAT.",
     kk: "Логотипті басыңыз — 1600 SAT-тың ең жоғары балы.",
   },
-  "landing.statQuestions": { en: "questions", ru: "вопросов", kk: "сұрақ" },
-  "landing.statSubjects": { en: "subjects", ru: "предметов", kk: "пән" },
 
   "landing.featuresEyebrow": { en: "Everything in one place", ru: "Всё в одном месте", kk: "Барлығы бір жерде" },
   "landing.featuresTitle": {
@@ -226,7 +208,7 @@ const D: Dict = {
     ru: "Настоящая структура SAT, таймеры модулей с авто-сдачей и отчёт по шкале 400–1600.",
     kk: "Нақты SAT құрылымы, авто-тапсыратын модуль таймерлері және 400–1600 шкаласы бойынша есеп.",
   },
-  "landing.f3Title": { en: "AI tutor on every task", ru: "ИИ-репетитор в каждом задании", kk: "Әр тапсырмада AI-тәлімгер" },
+  "landing.f3Title": { en: "Elevate on every task", ru: "Elevate в каждом задании", kk: "Әр тапсырмада Elevate" },
   "landing.f3Text": {
     en: "Stuck? It explains the step you're missing in your language, gives hints instead of answers, and takes follow-up questions.",
     ru: "Застряли? Он объяснит пропущенный шаг на вашем языке, даст подсказку вместо ответа и ответит на уточнения.",
@@ -342,9 +324,6 @@ const D: Dict = {
     kk: "Сұрақтарға жауап берсеңіз, әлсіз тақырыптар осында шығады.",
   },
 
-  "practice.title": { en: "Practice by subject", ru: "Практика по предметам", kk: "Пән бойынша жаттығу" },
-  "practice.pickSubject": { en: "Pick a subject to start.", ru: "Выберите предмет, чтобы начать.", kk: "Бастау үшін пән таңдаңыз." },
-  "practice.questions": { en: "questions", ru: "вопросов", kk: "сұрақ" },
   "practice.accuracy": { en: "accuracy", ru: "точность", kk: "дәлдік" },
   "practice.start": { en: "Start", ru: "Начать", kk: "Бастау" },
   "practice.empty": {
@@ -377,8 +356,6 @@ const D: Dict = {
   },
   "quiz.answered": { en: "answered", ru: "отвечено", kk: "жауап берілді" },
 
-  "mock.title": { en: "Full timed mock test", ru: "Полный пробный тест с таймером", kk: "Толық хронометражды сынақ тест" },
-  "mock.structure": { en: "Structure", ru: "Структура", kk: "Құрылымы" },
   "mock.begin": { en: "Begin test", ru: "Начать тест", kk: "Тестті бастау" },
   "mock.section": { en: "Section", ru: "Раздел", kk: "Бөлім" },
   "mock.module": { en: "Module", ru: "Модуль", kk: "Модуль" },
@@ -389,11 +366,6 @@ const D: Dict = {
   "mock.estimated": { en: "Estimated score", ru: "Оценочный балл", kk: "Болжамды балл" },
   "mock.perSection": { en: "By section", ru: "По разделам", kk: "Бөлімдер бойынша" },
   "mock.reviewMistakes": { en: "Review mistakes", ru: "Разобрать ошибки", kk: "Қателерді талдау" },
-  "mock.notEnough": {
-    en: "Not enough questions in the bank for a full test — the sections below were shortened.",
-    ru: "В банке недостаточно вопросов для полного теста — разделы ниже сокращены.",
-    kk: "Толық тестке сұрақ жетпейді — төмендегі бөлімдер қысқартылды.",
-  },
   "mock.history": { en: "Past mock tests", ru: "Прошлые пробные тесты", kk: "Өткен сынақ тестер" },
   "mock.noHistory": { en: "No mock tests yet.", ru: "Пробных тестов ещё нет.", kk: "Әзірге сынақ тест жоқ." },
 
@@ -469,17 +441,6 @@ const D: Dict = {
   "admin.importBad": { en: "That file could not be read as a question bank.", ru: "Не удалось прочитать файл как банк вопросов.", kk: "Файлды сұрақ банкі ретінде оқу мүмкін болмады." },
   "admin.importOk": { en: "Imported", ru: "Импортировано", kk: "Импортталды" },
 
-  "tutor.name": { en: "Ai-tutor", ru: "ИИ-репетитор", kk: "AI-тәлімгер" },
-  "tutor.open": {
-    en: "I don't understand — explain it",
-    ru: "Не понимаю — объясни",
-    kk: "Түсінбедім — түсіндір",
-  },
-  "tutor.greeting": {
-    en: "Stuck on this one? Pick a question below or type your own.",
-    ru: "Застряли на этом вопросе? Выберите вариант ниже или напишите свой.",
-    kk: "Осы сұрақта тұрып қалдыңыз ба? Төменнен таңдаңыз немесе өз сұрағыңызды жазыңыз.",
-  },
   "tutor.explain": { en: "Explain this task", ru: "Объясни это задание", kk: "Осы тапсырманы түсіндір" },
   "tutor.hint": { en: "Just a hint", ru: "Только подсказку", kk: "Тек нұсқау бер" },
   "tutor.whyWrong": {
@@ -498,13 +459,7 @@ const D: Dict = {
     kk: "Тәлімгерден сұраңыз…",
   },
   "tutor.send": { en: "Send", ru: "Отправить", kk: "Жіберу" },
-  "tutor.thinking": { en: "Thinking…", ru: "Думаю…", kk: "Ойланып жатырмын…" },
   "tutor.close": { en: "Close", ru: "Закрыть", kk: "Жабу" },
-  "tutor.noKey": {
-    en: "The tutor needs an Anthropic API key. Add ANTHROPIC_API_KEY to .env.local and restart the dev server.",
-    ru: "Репетитору нужен ключ Anthropic API. Добавьте ANTHROPIC_API_KEY в .env.local и перезапустите сервер.",
-    kk: "Тәлімгерге Anthropic API кілті қажет. .env.local файлына ANTHROPIC_API_KEY қосып, серверді қайта іске қосыңыз.",
-  },
 
   "common.subjects": { en: "Subjects", ru: "Предметы", kk: "Пәндер" },
   "common.minutes": { en: "min", ru: "мин", kk: "мин" },
@@ -516,7 +471,6 @@ const D: Dict = {
     ru: "Удалить все аккаунты, прогресс и свои вопросы из этого браузера?",
     kk: "Осы браузердегі барлық аккаунт, үлгерім және өз сұрақтарыңызды жою керек пе?",
   },
-  "common.language": { en: "Language", ru: "Язык", kk: "Тіл" },
   "common.footer": {
     en: "Local build — everything is stored in this browser.",
     ru: "Локальная сборка — все данные хранятся в этом браузере.",

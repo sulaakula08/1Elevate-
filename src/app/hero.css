@@ -1,1 +1,327 @@
-/* hero area component styles. Tokens live in globals.css. */
+/* Header, hero and site-chrome component styles. Tokens live in globals.css. */
+
+@layer components {
+  /* ---------------- hero headline ----------------
+     One word carries the brand ramp. Applied to a span inside the h1 rather
+     than the h1 itself, because the GSAP reveal animates the character spans
+     and a clipped background on the animating element would flicker. */
+  .hero-title-accent {
+    background: linear-gradient(96deg, var(--s-blue), var(--s-indigo) 48%, var(--s-violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ---------------- signed-out top bar ----------------
+     The tagline replaces the product navigation a visitor does not have yet,
+     so the left half of the bar has something to hold. Hidden below `sm`,
+     where the wordmark alone is the right amount of chrome. */
+  .hero-nav-tagline {
+    position: relative;
+    padding-left: 0.875rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .hero-nav-tagline::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 1px;
+    height: 1rem;
+    transform: translateY(-50%);
+    background: var(--line-strong);
+  }
+
+  /* ---------------- footer ---------------- */
+  .hero-footer-heading {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 0.75rem;
+  }
+  .hero-footer-link {
+    color: var(--muted);
+    transition: color 160ms ease;
+  }
+  .hero-footer-link:hover {
+    color: var(--foreground);
+  }
+
+  /* ================= hero score chart =================
+     Nothing in here runs on a timer. The only keyframe animation is the
+     one-shot line draw on mount; every other moving part is a CSS transition
+     that fires when React flips `.is-active`. An idle chart costs zero frames.
+
+     Reduced motion is handled by scoping the draw-in — and only the draw-in —
+     to (prefers-reduced-motion: no-preference), so the line is simply complete
+     from the first paint when the user has asked for less movement. */
+  .hero-chart {
+    display: block;
+    margin: 0;
+  }
+
+  .hero-chart-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 1.125rem 1.25rem 1rem;
+    /* A brand-tinted bloom instead of a grey drop shadow, kept low enough that
+       it reads as depth rather than as glow. */
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--brand) 8%, transparent),
+      0 12px 32px color-mix(in srgb, var(--brand) 10%, transparent);
+    transition:
+      box-shadow 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 320ms ease,
+      transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  /* :focus-within, not only :hover — a keyboard user tabbing into a data point
+     should get the same lift a pointer user gets. */
+  .hero-chart-card:hover,
+  .hero-chart-card:focus-within {
+    border-color: color-mix(in srgb, var(--brand) 32%, var(--line));
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--brand) 12%, transparent),
+      0 18px 44px color-mix(in srgb, var(--brand) 18%, transparent);
+    transform: translateY(-2px);
+  }
+
+  .hero-chart-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.375rem;
+  }
+  .hero-chart-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .hero-chart-sub {
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    color: var(--faint);
+  }
+
+  /* The overlay below is positioned in percentages of this box, which only maps
+     onto the viewBox because the SVG keeps its intrinsic 2:1 ratio. Do not give
+     the SVG a height. */
+  .hero-chart-plot {
+    position: relative;
+  }
+  .hero-chart-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .hero-chart-grid {
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+  .hero-chart-axis,
+  .hero-chart-xlabel {
+    font-size: 9px;
+    fill: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-chart-goal {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    fill: var(--accent);
+  }
+
+  .hero-chart-area {
+    stroke: none;
+  }
+
+  /* Drops from the active point to the baseline, so the eye can carry a value
+     down to its label without a second glance. */
+  .hero-chart-guide {
+    fill: var(--accent);
+    opacity: 0.28;
+    transition:
+      x 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      y 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      height 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  /* The glow is the same path drawn once more, blurred, underneath. Cheap, and
+     it follows the curve exactly — a box-shadow could not. */
+  .hero-chart-glow {
+    fill: none;
+    stroke-width: 7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.16;
+    filter: blur(5px);
+  }
+  .hero-chart-line {
+    fill: none;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  .hero-chart-halo {
+    fill: var(--accent);
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(0.5);
+    transition:
+      opacity 240ms ease,
+      transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .hero-chart-dot {
+    fill: var(--surface);
+    stroke-width: 2.4;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .hero-chart-point.is-active .hero-chart-halo {
+    opacity: 0.18;
+    transform: scale(1);
+  }
+  .hero-chart-point.is-active .hero-chart-dot {
+    transform: scale(1.3);
+  }
+
+  /* Hit targets: real buttons, laid over the plot at the data coordinates. */
+  .hero-chart-hits {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .hero-chart-hits > li {
+    position: absolute;
+    transform: translate(-50%, -50%);
+  }
+  .hero-chart-hit {
+    display: block;
+    /* 44px is the smallest target a finger can hit reliably. */
+    width: 2.75rem;
+    height: 2.75rem;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Rides above the active point. `left` is clamped by the component so the
+     callout can never hang off either edge of the card. */
+  .hero-chart-tip {
+    position: absolute;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4375rem;
+    padding: 0.25rem 0.5625rem;
+    border-radius: var(--radius-pill);
+    background: var(--foreground);
+    color: var(--background);
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, calc(-100% - 0.9rem));
+    transition:
+      left 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      top 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .hero-chart-tip-label {
+    font-size: 0.6875rem;
+    opacity: 0.72;
+  }
+  .hero-chart-tip-score {
+    font-size: 0.8125rem;
+    font-weight: 650;
+  }
+
+  /* Section split for whichever result is active: the payoff of pointing at a
+     dot, and the reason the card reads as a product screen. */
+  .hero-chart-foot {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
+  }
+  .hero-chart-split {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .hero-chart-split-name {
+    font-size: 0.75rem;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hero-chart-split-value {
+    margin-left: auto;
+    font-size: 0.875rem;
+    font-weight: 650;
+  }
+
+  .hero-chart-note {
+    margin-top: 0.75rem;
+    font-size: 0.6875rem;
+    color: var(--faint);
+    text-align: center;
+  }
+
+  @media (max-width: 25rem) {
+    .hero-chart-card {
+      padding: 1rem 0.875rem 0.875rem;
+    }
+    /* Two rows below a phone width, where an ellipsised section name tells the
+       student nothing. */
+    .hero-chart-foot {
+      grid-template-columns: 1fr;
+      gap: 0.375rem;
+    }
+  }
+}
+
+/* The only keyframe animation in the chart, and the only thing gated on motion
+   preference. Everything above is already in its finished state. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-chart-line {
+    animation: hero-chart-draw 1.15s cubic-bezier(0.22, 0.61, 0.36, 1) 160ms both;
+  }
+  .hero-chart-point {
+    animation: hero-chart-pop 320ms cubic-bezier(0.22, 0.61, 0.36, 1) calc(760ms + var(--i) * 110ms)
+      both;
+  }
+}
+
+@keyframes hero-chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes hero-chart-pop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

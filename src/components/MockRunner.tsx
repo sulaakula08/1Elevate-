@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Question } from "@/data/types";
+import { generatedIds } from "@/lib/generation/provenance";
 import { useI18n } from "@/lib/i18n";
 import { QuestionView } from "./QuestionView";
 
@@ -142,6 +143,14 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
           {answeredInSection}/{section.questions.length}
         </span>
       </div>
+
+      {generatedIds().has(question.id) && (
+        <p className="mt-6">
+          <span className="pl-ai-badge" title={t("plan.aiBadgeTitle")}>
+            {t("plan.aiBadge")}
+          </span>
+        </p>
+      )}
 
       <div className="mt-8">
         <QuestionView

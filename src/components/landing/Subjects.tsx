@@ -5,6 +5,7 @@ import { SUBJECTS, subjectColor } from "@/data/exams";
 import type { Question } from "@/data/types";
 import { statsFor, bankStats } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
+import { NOUNS, pluralize } from "@/lib/ru";
 import { Reveal } from "../motion";
 import { SubjectScene } from "../three/SubjectScene";
 
@@ -12,6 +13,10 @@ import { SubjectScene } from "../three/SubjectScene";
  * The two SAT sections, each with its own WebGL scene: a coordinate field for
  * Math, a resolving page of text for Reading & Writing. The scenes are lazy and
  * only boot when a card scrolls into view.
+ *
+ * The scene renders whatever it likes behind the copy, so the card cannot get
+ * its contrast from the tone gradient alone — `.sc-scrim` puts a fixed floor
+ * under the text block and the type sits on top of that, never on the scene.
  */
 export function Subjects({ bank }: { bank: Question[] }) {
   const { t, tx } = useI18n();
@@ -29,12 +34,12 @@ export function Subjects({ bank }: { bank: Question[] }) {
       <div className="mt-10 grid sm:grid-cols-2 gap-4">
         {SUBJECTS.map((subject, i) => {
           const isMath = subject.id === "sat-math";
-          const total = statsFor(stats, subject.id).total;
+          const subjectStats = statsFor(stats, subject.id);
           return (
             <Reveal key={subject.id} delay={i * 90}>
               <Link
                 href="/signup"
-                className="bank-card showcase-card"
+                className="bank-card showcase-card sc-subject h-full"
                 style={{
                   ["--tone" as string]: subjectColor(subject.id),
                   ["--tone-2" as string]: `color-mix(in srgb, ${subjectColor(
@@ -43,26 +48,21 @@ export function Subjects({ bank }: { bank: Question[] }) {
                 }}
               >
                 <SubjectScene kind={isMath ? "math" : "verbal"} />
+                <span className="sc-scrim" aria-hidden />
 
-                <span className="relative block">
-                  <span
-                    className="glyph glyph-sm"
-                    style={{
-                      ["--tone" as string]: "rgba(255,255,255,0.22)",
-                      ["--tone-soft" as string]: "rgba(255,255,255,0.16)",
-                    }}
-                  >
+                <span className="sc-body">
+                  <span className="sc-mark" aria-hidden>
                     {subject.glyph}
                   </span>
 
-                  <span className="block mt-4 text-[21px] font-semibold tracking-[-0.02em]">
-                    {tx(subject.name)}
+                  <span className="sc-name">{tx(subject.name)}</span>
+                  <span className="sc-blurb">
+                    {t(isMath ? "showcase.mathBlurb" : "showcase.rwBlurb")}
                   </span>
-                  <span className="block mt-2 text-[14px] leading-relaxed opacity-85 max-w-[26ch]">
-                    {t(isMath ? "landing.mathBlurb" : "landing.verbalBlurb")}
-                  </span>
-                  <span className="num block mt-5 text-[12.5px] opacity-75">
-                    {total} {t("landing.statQuestions")}
+                  <span className="sc-meta num">
+                    {pluralize(subjectStats.total, NOUNS.question)}
+                    {" · "}
+                    {pluralize(subjectStats.topics, NOUNS.topic)}
                   </span>
                 </span>
               </Link>

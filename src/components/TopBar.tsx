@@ -90,7 +90,7 @@ export function TopBar() {
           {/*
             Icon-only pills until there's room for labels, so nothing ever wraps.
           */}
-          {signedIn && (
+          {signedIn ? (
             <nav className="hidden md:flex items-center gap-0.5 ml-3" data-tour="nav">
               {LINKS.map(({ href, key, Icon }) => (
                 <Link
@@ -105,6 +105,13 @@ export function TopBar() {
                 </Link>
               ))}
             </nav>
+          ) : (
+            /* A visitor has no product navigation, so the left half of the bar
+               would otherwise be a wordmark alone against a run of controls.
+               The tagline gives the row a second beat and says what this is. */
+            <span className="hero-nav-tagline hidden sm:inline-block">
+              {t("hero.navTagline")}
+            </span>
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
@@ -196,14 +203,16 @@ export function TopBar() {
                   )}
                 </div>
               ) : (
-                <>
+                /* Slightly wider gap than the icon controls to its left: these
+                   two are one decision, not part of the utility cluster. */
+                <div className="flex items-center gap-1 ml-1">
                   <Link href="/login" className="hidden sm:inline-flex btn btn-ghost btn-sm">
                     {t("auth.signIn")}
                   </Link>
                   <Link href="/signup" className="btn btn-primary btn-sm">
                     {t("landing.start")}
                   </Link>
-                </>
+                </div>
               ))}
           </div>
         </div>

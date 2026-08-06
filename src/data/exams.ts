@@ -3,6 +3,12 @@ import type { ExamBlueprint, Subject } from "./types";
 /**
  * Subjects carry their own hue so the whole UI can colour-code consistently:
  * `--s-<id>` tokens are declared in globals.css and referenced here by name.
+ *
+ * `glyph` holds a typographic symbol rather than an initialism. "RW" and "M"
+ * were English abbreviations shown to a Russian-only interface, so they carried
+ * no meaning until the reader already knew the answer; ¶ and ∑ are conventions
+ * a reader decodes without being taught — one marks text, the other marks
+ * mathematics — and they survive being scaled down to the 10px monogram tile.
  */
 export const SUBJECTS: Subject[] = [
   {
@@ -10,14 +16,14 @@ export const SUBJECTS: Subject[] = [
     exam: "sat",
     name: { en: "Reading & Writing", ru: "Чтение и письмо", kk: "Оқу және жазу" },
     color: "violet",
-    glyph: "RW",
+    glyph: "¶",
   },
   {
     id: "sat-math",
     exam: "sat",
     name: { en: "Math", ru: "Математика", kk: "Математика" },
     color: "blue",
-    glyph: "M",
+    glyph: "∑",
   },
 ];
 

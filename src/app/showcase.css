@@ -1,1 +1,93 @@
 /* showcase area component styles. Tokens live in globals.css. */
+
+@layer components {
+  /* ---------------- subject showcase cards ----------------
+     Everything here is prefixed `sc-` and only ever used inside a
+     `.bank-card.showcase-card`, whose white text colour these rules inherit.
+
+     The card is a live WebGL surface, so the copy cannot borrow its contrast
+     from the tone gradient underneath — the scene paints over it. The scrim is
+     the fix: an opaque-enough wash pinned to the lower half of the card, sitting
+     between the canvas and the text, so the type always lands on a known value
+     no matter what the scene renders that frame. Ramped rather than flat, so the
+     top of the card stays the subject's hue instead of turning into a grey box. */
+  .sc-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      rgba(9, 7, 26, 0.8) 0%,
+      rgba(9, 7, 26, 0.52) 34%,
+      rgba(9, 7, 26, 0) 68%
+    );
+  }
+
+  /* The text block is the card's only in-flow child, so it sets the width the
+     meta rule spans. Positioned, and last in the DOM, to paint above the scrim. */
+  .sc-body {
+    position: relative;
+    width: 100%;
+  }
+
+  /* The subject's symbol. Sized here instead of reusing `.glyph`, whose 13px
+     type was cut for two-letter monograms and leaves a single symbol looking
+     lost in the tile. */
+  .sc-mark {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.625rem;
+    font-size: 1.0625rem;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+  }
+
+  .sc-name {
+    display: block;
+    margin-top: 0.875rem;
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+
+  /* A caption for the name, not a paragraph: one measure, two short sentences.
+     Held below full white so the name keeps the top of the hierarchy. */
+  .sc-blurb {
+    display: block;
+    margin-top: 0.5rem;
+    max-width: 32ch;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  /* Derived counts, ruled off from the prose so they read as data. */
+  .sc-meta {
+    display: block;
+    margin-top: 1.0625rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  /* One card per row on phones, where a 19rem card would push the second one
+     off-screen entirely. The scene still has room to read as a space.
+
+     Both class names, because `.showcase-card` sets these same two properties
+     and is declared later in this layer — a media query adds no specificity, so
+     a single-class selector here would simply lose. */
+  @media (max-width: 40rem) {
+    .showcase-card.sc-subject {
+      min-height: 16.5rem;
+      padding: 1.25rem;
+    }
+    .sc-name {
+      font-size: 1.25rem;
+    }
+  }
+}

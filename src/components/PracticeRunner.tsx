@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
+import { generatedIds } from "@/lib/generation/provenance";
 import { useI18n } from "@/lib/i18n";
 import type { QuizMode } from "@/lib/storage";
 import { difficultyColor, difficultyColorSoft, pct } from "@/lib/stats";
@@ -136,6 +137,12 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
           {t(`diff.${question.difficulty}`)}
         </span>
         {question.domain && <span className="text-[11px] text-faint">{question.domain}</span>}
+        {/* A student is entitled to know which questions a model wrote. */}
+        {generatedIds().has(question.id) && (
+          <span className="pl-ai-badge" title={t("plan.aiBadgeTitle")}>
+            {t("plan.aiBadge")}
+          </span>
+        )}
         {streak >= 3 && <span className="ml-auto num text-[12px] text-muted">↑ {streak}</span>}
       </div>
 

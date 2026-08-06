@@ -102,9 +102,15 @@
 
   --ink: #f3f3f1;
   --ink-contrast: #0b0b0d;
-  /* Lifted on a dark canvas so brand fills keep white text legible. */
-  --brand: #6d63ff;
-  --brand-strong: #7d74ff;
+  /* Two constraints pull opposite ways here: the fill has to separate from a
+     near-black page (≥3:1, as a UI component), and white text on that fill has
+     to stay readable (≥4.5:1, as normal text). #635aff is the band where both
+     hold — 4.15 against the page, 4.73 against its own label. Lighter and the
+     label fails; darker and the chip disappears into the background.
+     Hover therefore goes *darker*, not lighter, which is the opposite of the
+     usual dark-theme instinct but the only direction that keeps the label. */
+  --brand: #635aff;
+  --brand-strong: #564ce8;
   --brand-2: #a78bfa;
   --brand-contrast: #ffffff;
   --accent: #9d97ff;

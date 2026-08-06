@@ -1,11 +1,13 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
-import { SAT, subjectColor, subjectColorSoft, subjectsFor } from "@/data/exams";
+import { SAT, subjectColor, subjectsFor } from "@/data/exams";
 import type { Subject } from "@/data/types";
 import type { Account } from "@/lib/storage";
 import { useApp } from "@/lib/app-state";
+import { bankStats, statsFor } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
+import { NOUNS, pluralize } from "@/lib/ru";
 import {
   maxScore,
   overall,
@@ -16,11 +18,9 @@ import {
   weakTopics,
 } from "@/lib/stats";
 import { CountUp, ProgressBar, Reveal } from "./motion";
-import { IconChat, IconClock, IconRule, IconTrend } from "./illustrations";
+import { ExamCountdown } from "./dashboard/ExamCountdown";
+import { IconRule, IconTrend } from "./illustrations";
 import { SubjectScene } from "./three/SubjectScene";
-
-/** Corner artwork, cycled across the bank cards. */
-const CARD_ART = [IconRule, IconClock, IconChat, IconTrend];
 
 /** Slightly darker second stop, so each card is a gradient of its own hue. */
 function bankTone(subject: Subject): React.CSSProperties {
@@ -35,16 +35,18 @@ export function Dashboard({ account }: { account: Account }) {
   const { data, bank } = useApp();
 
   const exam = SAT.exam;
-  const blueprint = SAT;
   const examAttempts = data.attempts.filter((a) => a.exam === exam);
   const stats = overall(examAttempts);
+  const totals = bankStats(bank);
   const queue = reviewQueue(data, bank);
   const weak = weakTopics(examAttempts, 2, 3);
   const lastMock = [...data.mocks].reverse().find((m) => m.exam === exam);
   const activity = recentActivity(data.attempts);
   const peak = Math.max(1, ...activity.map((d) => d.count));
+  const days = streak(data.attempts);
+  const fresh = stats.total === 0;
 
-  /** Distinct questions answered per subject — "solved of total", as in the card. */
+  /** Distinct questions answered per subject — "solved of total", as on the card. */
   const solvedBySubject = new Map<string, number>();
   for (const subjectId of new Set(data.attempts.map((a) => a.subjectId))) {
     solvedBySubject.set(
@@ -53,15 +55,49 @@ export function Dashboard({ account }: { account: Account }) {
     );
   }
 
-  const headline = subjectsFor(exam);
-
+  /**
+   * One shape for every metric. `rule` is a 0–1 progress value where the number
+   * has a ceiling worth drawing; the rest carry a hint instead, because a bar
+   * against an invented maximum is decoration pretending to be data.
+   */
+  const metrics = [
+    {
+      label: t("plan.answered"),
+      value: stats.total,
+      suffix: "",
+      hint: `${t("plan.ofBank")} ${totals.total}`,
+      rule: totals.total ? Math.min(1, stats.total / totals.total) : 0,
+    },
+    {
+      label: t("plan.accuracy"),
+      value: fresh ? 0 : Math.round(stats.accuracy * 100),
+      suffix: fresh ? "" : "%",
+      hint: fresh ? t("plan.noAttempts") : `${stats.correct} / ${stats.total}`,
+      rule: fresh ? null : stats.accuracy,
+    },
+    {
+      label: t("plan.queue"),
+      value: queue.length,
+      suffix: "",
+      hint: queue.length === 0 ? t("plan.queueClear") : undefined,
+      rule: null,
+      action: queue.length > 0 ? { href: "/review", label: t("an.openQueue") } : undefined,
+    },
+    {
+      label: t("plan.streak"),
+      value: days,
+      suffix: "",
+      hint: days === 0 ? t("plan.streakStart") : pluralize(days, NOUNS.day),
+      rule: null,
+    },
+  ];
 
   return (
     <div className="space-y-10">
       {/* ---------------- question bank ---------------- */}
       <section>
         <div className="flex items-center gap-2.5">
-          <span className="text-muted">
+          <span style={{ color: "var(--brand)" }}>
             <IconRule size={22} />
           </span>
           <h1 className="text-[26px] sm:text-[30px] font-semibold tracking-[-0.03em]">
@@ -73,19 +109,13 @@ export function Dashboard({ account }: { account: Account }) {
         </div>
 
         <div className="mt-5 grid sm:grid-cols-2 gap-4">
-          {headline.map((subject, i) => {
-            const total = bank.filter((q) => q.subjectId === subject.id).length;
+          {subjectsFor(exam).map((subject, i) => {
+            const total = statsFor(totals, subject.id).total;
             const solved = solvedBySubject.get(subject.id) ?? 0;
             const share = total ? solved / total : 0;
-            const Art = CARD_ART[i % CARD_ART.length];
             return (
               <Reveal key={subject.id} delay={i * 70}>
                 <Link href="/practice" className="bank-card" style={bankTone(subject)}>
-                  {/* The 2D glyph is the fallback and the first paint; the WebGL
-                      scene fades over it once its chunk has loaded. */}
-                  <span className="bank-card-art">
-                    <Art size={136} className="text-white" />
-                  </span>
                   <SubjectScene kind={subject.id === "sat-math" ? "math" : "verbal"} />
 
                   <span className="relative block">
@@ -119,69 +149,46 @@ export function Dashboard({ account }: { account: Account }) {
         </div>
       </section>
 
-      {/* ---------------- analytics ---------------- */}
+      {/* ---------------- progress ---------------- */}
       <section>
         <div className="flex items-center gap-2.5">
-          <span className="text-muted">
+          <span style={{ color: "var(--brand)" }}>
             <IconTrend size={22} />
           </span>
           <h2 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.03em]">
-            {t("an.title")}
+            {t("plan.overview")}
           </h2>
           <Link href="/progress" className="btn btn-sm ml-auto shrink-0">
             {t("an.viewAll")} <span aria-hidden>›</span>
           </Link>
         </div>
 
-        <div className="tile-grid mt-5 grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              label: t("an.attempted"),
-              value: stats.total,
-              suffix: "",
-              color: "var(--s-indigo)",
-            },
-            {
-              label: t("an.accuracy"),
-              value: Math.round(stats.accuracy * 100),
-              suffix: "%",
-              color: "var(--s-green)",
-            },
-            {
-              label: t("an.queue"),
-              value: queue.length,
-              suffix: "",
-              color: "var(--s-rose)",
-              action: queue.length > 0 ? { href: "/review", label: t("an.openQueue") } : undefined,
-            },
-            {
-              label: t("an.streak"),
-              value: streak(data.attempts),
-              suffix: "",
-              color: "var(--s-orange)",
-            },
-          ].map((tile, i) => (
-            <div
-              key={tile.label}
-              className={`tile ${i % 2 === 1 ? "border-l" : ""} ${
-                i > 0 ? "lg:border-l" : ""
-              } ${i > 1 ? "border-t lg:border-t-0" : ""}`}
-            >
-              <p className="text-[13px] text-muted">{tile.label}</p>
-              <p className="num text-[30px] font-semibold mt-1.5" style={{ color: tile.color }}>
-                <CountUp value={tile.value} suffix={tile.suffix} />
-              </p>
-              {tile.action && (
-                <Link href={tile.action.href} className="btn btn-sm mt-2.5">
-                  {tile.action.label}
-                </Link>
-              )}
+        {fresh && <p className="mt-3 text-[14px] text-muted max-w-lg">{t("plan.startHere")}</p>}
+
+        <dl className="pl-metrics mt-5">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="pl-metric">
+              <dt className="pl-metric-label">{metric.label}</dt>
+              <dd>
+                <p className="pl-metric-value" data-zero={metric.value === 0}>
+                  <CountUp value={metric.value} suffix={metric.suffix} />
+                </p>
+                {metric.rule !== null && metric.rule !== undefined && (
+                  <ProgressBar value={metric.rule} tone="accent" className="pl-metric-rule" />
+                )}
+                {metric.hint && <p className="pl-metric-hint">{metric.hint}</p>}
+                {metric.action && (
+                  <Link href={metric.action.href} className="btn btn-sm mt-2.5">
+                    {metric.action.label}
+                  </Link>
+                )}
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
       </section>
 
-      {/* ---------------- activity + goal ---------------- */}
+      {/* ---------------- activity, goal, next exam ---------------- */}
       <section className="grid lg:grid-cols-[1.4fr_1fr] gap-4">
         <div className="panel p-5">
           <div className="flex items-baseline gap-2">
@@ -189,7 +196,7 @@ export function Dashboard({ account }: { account: Account }) {
             <span className="text-[12px] text-faint ml-auto">{t("an.last14")}</span>
           </div>
 
-          {stats.total === 0 ? (
+          {fresh ? (
             <p className="text-[13.5px] text-muted mt-6 mb-2">{t("an.noActivity")}</p>
           ) : (
             <div className="mt-5 flex items-end gap-1.5 h-28">
@@ -200,7 +207,7 @@ export function Dashboard({ account }: { account: Account }) {
                       className="w-full rounded-t-[3px] transition-[height] duration-500"
                       style={{
                         height: `${Math.max(day.count ? 8 : 3, (day.count / peak) * 100)}%`,
-                        background: day.count ? "var(--accent)" : "var(--line)",
+                        background: day.count ? "var(--brand)" : "var(--line)",
                       }}
                       title={`${day.day}: ${day.count}`}
                     />
@@ -212,23 +219,29 @@ export function Dashboard({ account }: { account: Account }) {
           )}
         </div>
 
-        <div className="panel p-5 flex flex-col">
-          <h3 className="text-[17px] font-semibold tracking-[-0.02em]">{t("home.targetScore")}</h3>
-          <p className="num text-[34px] font-semibold mt-2">
-            {lastMock?.score ?? 0}
-            <span className="text-faint text-[17px]"> / {account.targetScore}</span>
-          </p>
-          <ProgressBar
-            value={lastMock ? Math.min(1, lastMock.score / account.targetScore) : 0}
-            tone="accent"
-            className="mt-3"
-          />
-          <p className="text-[12.5px] text-muted mt-3">
-            {tx(blueprint.name)} · {t("common.total")} {maxScore(exam)}
-          </p>
-          <Link href="/mock" className="btn btn-primary btn-sm mt-auto self-start">
-            {t("home.startMock")}
-          </Link>
+        <div className="space-y-4">
+          <ExamCountdown />
+
+          <div className="panel p-5 flex flex-col">
+            <h3 className="text-[17px] font-semibold tracking-[-0.02em]">
+              {t("home.targetScore")}
+            </h3>
+            <p className="num text-[34px] font-semibold mt-2">
+              {lastMock?.score ?? 0}
+              <span className="text-faint text-[17px]"> / {account.targetScore}</span>
+            </p>
+            <ProgressBar
+              value={lastMock ? Math.min(1, lastMock.score / account.targetScore) : 0}
+              tone="accent"
+              className="mt-3"
+            />
+            <p className="text-[12.5px] text-muted mt-3">
+              {tx(SAT.name)} · {t("common.total")} {maxScore(exam)}
+            </p>
+            <Link href="/mock" className="btn btn-primary btn-sm mt-4 self-start">
+              {t("home.startMock")}
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -237,37 +250,22 @@ export function Dashboard({ account }: { account: Account }) {
         <section>
           <h3 className="text-[17px] font-semibold tracking-[-0.02em]">{t("home.weakest")}</h3>
           <ul className="mt-4 grid sm:grid-cols-3 gap-3">
-            {weak.map((bucket, i) => {
-              const subjectId = examAttempts.find((a) => a.topic === bucket.key)?.subjectId;
-              return (
-                <Reveal as="li" key={bucket.key} delay={i * 60}>
-                  <Link
-                    href="/practice"
-                    className="card-tone p-4 block h-full"
-                    style={
-                      subjectId
-                        ? {
-                            ["--tone" as string]: subjectColor(subjectId),
-                            ["--tone-soft" as string]: subjectColorSoft(subjectId),
-                          }
-                        : undefined
-                    }
-                  >
-                    <p className="text-[14px] truncate">{bucket.key}</p>
-                    <p className="num text-[20px] font-semibold mt-1">{pct(bucket.accuracy)}</p>
-                    <ProgressBar
-                      value={bucket.accuracy}
-                      tone={bucket.accuracy < 0.5 ? "danger" : "accent"}
-                      className="mt-2.5"
-                    />
-                  </Link>
-                </Reveal>
-              );
-            })}
+            {weak.map((bucket, i) => (
+              <Reveal as="li" key={bucket.key} delay={i * 60}>
+                <Link href="/practice" className="card-tone p-4 block h-full">
+                  <p className="text-[14px] truncate">{bucket.key}</p>
+                  <p className="num text-[20px] font-semibold mt-1">{pct(bucket.accuracy)}</p>
+                  <ProgressBar
+                    value={bucket.accuracy}
+                    tone={bucket.accuracy < 0.5 ? "danger" : "accent"}
+                    className="mt-2.5"
+                  />
+                </Link>
+              </Reveal>
+            ))}
           </ul>
         </section>
       )}
     </div>
   );
 }
-

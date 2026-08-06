@@ -1,1 +1,227 @@
-/* plan area component styles. Tokens live in globals.css. */
+/* Dashboard, mock setup and countdown styles. Tokens live in globals.css. */
+
+@layer components {
+  /* ================= dashboard metrics =================
+     One card, four cells, hairline dividers — the row reads as a single
+     instrument panel instead of four competing tiles. Every value is the same
+     colour on purpose: the metrics differ in what they measure, not in kind,
+     and four hues would only make the eye look for a meaning that isn't there.
+     Hierarchy comes from size and weight. */
+  .pl-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  @media (min-width: 48rem) {
+    .pl-metrics {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .pl-metric {
+    padding: 1.125rem 1.25rem 1.25rem;
+    min-width: 0;
+  }
+  .pl-metric + .pl-metric {
+    border-left: 1px solid var(--line);
+  }
+  /* The third cell opens a new row at two columns, so its left rule has to go
+     and a top rule has to appear — and both revert at four columns. */
+  .pl-metric:nth-child(odd) {
+    border-left: none;
+  }
+  .pl-metric:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 48rem) {
+    .pl-metric:nth-child(odd) {
+      border-left: 1px solid var(--line);
+    }
+    .pl-metric:first-child {
+      border-left: none;
+    }
+    .pl-metric:nth-child(n + 3) {
+      border-top: none;
+    }
+  }
+
+  .pl-metric-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .pl-metric-value {
+    margin-top: 0.375rem;
+    font-size: 1.875rem;
+    font-weight: 650;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--foreground);
+  }
+  /* A zero is not a failure state, but it should not shout either. */
+  .pl-metric-value[data-zero="true"] {
+    color: var(--faint);
+  }
+  .pl-metric-hint {
+    margin-top: 0.3125rem;
+    font-size: 0.6875rem;
+    color: var(--faint);
+  }
+  .pl-metric-rule {
+    margin-top: 0.75rem;
+  }
+
+  /* ================= exam countdown =================
+     Brand-filled, because it is the one thing on the dashboard that is about
+     the world outside the app. Deliberately calm: no pulse, no ticking second. */
+  .pl-countdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: 1.25rem;
+    border-radius: var(--radius);
+    color: var(--brand-contrast);
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  }
+  .pl-countdown-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.82;
+  }
+  .pl-countdown-row {
+    display: flex;
+    align-items: baseline;
+    gap: 1.125rem;
+  }
+  .pl-countdown-part {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+  .pl-countdown-n {
+    font-size: 1.75rem;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .pl-countdown-u {
+    font-size: 0.75rem;
+    opacity: 0.78;
+  }
+  .pl-countdown-date {
+    font-size: 0.75rem;
+    opacity: 0.85;
+  }
+  /* Nothing configured: the same block, without the brand fill, so the layout
+     does not shift the day a date lands. */
+  .pl-countdown-empty {
+    background: var(--surface);
+    border: 1px dashed var(--line-strong);
+    color: var(--muted);
+  }
+
+  /* ================= mock setup ================= */
+  .pl-spec {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .pl-spec-cell {
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  .pl-spec-label {
+    font-size: 0.6875rem;
+    color: var(--faint);
+  }
+  .pl-spec-value {
+    margin-top: 0.25rem;
+    font-size: 1.0625rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A module row. The subject's hue is a 3px spine on the left rather than a
+     tint over the whole row, so four rows stay scannable as one list. */
+  .pl-module {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--tone, var(--brand));
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  .pl-module-name {
+    font-size: 0.9375rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pl-module-meta {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The bank-is-short panel. Framed as a capability, not an apology: brand
+     hairline and brand tint, never the warning colour. */
+  .pl-notice {
+    padding: 1.125rem 1.25rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--line));
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--brand) 5%, var(--surface));
+  }
+  .pl-notice-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  .pl-notice-body {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .pl-notice-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.875rem;
+  }
+
+  /* Provenance mark on a generated question. Small, factual, always paired with
+     a title so it is never a mystery two letters. */
+  .pl-ai-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.0625rem 0.375rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
+    background: var(--brand-soft);
+    color: var(--accent);
+    font-size: 0.625rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 30rem) {
+    .pl-spec {
+      grid-template-columns: 1fr;
+    }
+  }
+}

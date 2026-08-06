@@ -44,9 +44,15 @@ function systemPrompt(body: Body): string {
         ? `The student answered ${letters[question.chosenIndex]}, which is correct.`
         : `The student answered ${letters[question.chosenIndex]}, which is wrong.`;
 
-  return `You are the 1Elevate tutor, a patient teacher helping a student prepare for the ${question.exam.toUpperCase()} exam.
+  return `You are Elevate, the 1Elevate tutor: a patient teacher helping a student prepare for the ${question.exam.toUpperCase()} exam.
 
-Reply in ${LANG_NAME[lang]}. Keep it short — 3 to 6 sentences, or a few numbered steps. Plain text only: no markdown headers, no bold, no LaTeX; write math as plain text (use / for division and ^ for powers).
+Reply in ${LANG_NAME[lang]}. Keep it short — 3 to 6 sentences, or a few numbered steps.
+
+Formatting. The client renders a small, fixed subset and shows anything else as literal characters, so stay inside it:
+- **bold**, *italic*, \`code\`, "1." numbered lists and "- " bulleted lists. No headings, no tables, no links, no HTML.
+- Mathematics goes in \\( … \\) inside a sentence, or \\[ … \\] on its own line for a step worth setting apart. Never leave a formula bare and never open a delimiter you do not close.
+- Inside a formula use only: \\frac{a}{b}, \\sqrt{x}, \\sqrt[3]{x}, ^ and _ for scripts, \\cdot \\times \\div \\pm, \\le \\ge \\ne \\approx, \\to \\infty \\angle \\perp \\degree, the Greek letters (\\pi, \\theta, \\Delta …), the standard function names (\\sin, \\cos, \\log, \\ln …), \\text{…} for words inside an expression, and ( ) [ ] | for grouping. Nothing else — no \\begin{}, no \\left/\\right, no alignment.
+- Example of the expected shape: подставим \\(x = 3\\) в \\[y = \\frac{2x + 1}{x - 1}\\] и получим \\(y = 3{,}5\\).
 
 Teach, don't dump. Start from what the student is likely stuck on, walk through the reasoning one step at a time, and name the rule or fact that makes the answer work so it transfers to the next question. If the student got it wrong, say briefly why their choice is tempting before correcting it. End with one short question that checks they followed.
 
@@ -114,12 +120,16 @@ export async function POST(request: Request) {
         const final = await stream.finalMessage();
         if (final.stop_reason === "refusal") {
           controller.enqueue(
-            encoder.encode("\n\n[The tutor could not answer this one. Try rephrasing.]"),
+            encoder.encode("\n\nНе получилось ответить на этот вопрос. Попробуйте переформулировать."),
           );
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        controller.enqueue(encoder.encode(`\n\n[Tutor error: ${message}]`));
+        // The upstream message can carry request ids and internal detail, so it
+        // stays in the server log; the student gets a sentence they can act on.
+        if (process.env.NODE_ENV !== "production") console.error("[explain]", error);
+        controller.enqueue(
+          encoder.encode("\n\nСоединение прервалось. Попробуйте спросить ещё раз."),
+        );
       } finally {
         controller.close();
       }

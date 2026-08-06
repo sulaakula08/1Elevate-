@@ -8,7 +8,7 @@ import { SplitChars } from "../SplitChars";
 
 /**
  * The one thing a visitor sees first: a single headline, one dominant action,
- * and a live score chart that shows what the product is for.
+ * and a score chart that shows what the product is for.
  *
  * GSAP drives this section (see useLandingMotion), so the animated elements
  * carry `data-motion` hooks and no CSS animation classes — two animation
@@ -17,39 +17,57 @@ import { SplitChars } from "../SplitChars";
 export function Hero() {
   const { t } = useI18n();
 
+  // The last word carries the accent colour. Splitting the sentence here rather
+  // than storing it twice keeps one source string for the h1's aria-label, in
+  // any language. The headline's only other space is non-breaking, so this also
+  // marks the single place the line is allowed to wrap.
+  const title = t("hero.title");
+  const cut = title.lastIndexOf(" ");
+  const lead = cut < 0 ? "" : title.slice(0, cut);
+  const accent = cut < 0 ? title : title.slice(cut + 1);
+
   return (
-    <section className="relative pt-10 sm:pt-16 pb-14" data-motion="hero">
+    <section className="relative pt-10 sm:pt-14 lg:pt-20 pb-14 sm:pb-20" data-motion="hero">
       <div className="glow" aria-hidden />
-      <div className="relative grid lg:grid-cols-[1fr_0.85fr] gap-12 lg:gap-16 items-center">
-        <div>
+      <div className="relative grid lg:grid-cols-[1fr_0.85fr] gap-10 sm:gap-12 lg:gap-16 items-center">
+        <div className="min-w-0">
           {/* aria-label holds the real sentence; the per-character spans in
               SplitChars are aria-hidden. */}
           <h1
-            className="display split text-[2.5rem] sm:text-[3.25rem] lg:text-[3.75rem]"
+            className="display split text-[clamp(2.125rem,8.5vw,2.75rem)] sm:text-[3.25rem] lg:text-[3.75rem]"
             data-motion="headline"
-            aria-label={t("hero.title")}
+            aria-label={title}
           >
-            <SplitChars text={t("hero.title")} />
+            {lead ? (
+              <>
+                <SplitChars text={lead} />{" "}
+              </>
+            ) : null}
+            <span className="hero-title-accent">
+              <SplitChars text={accent} />
+            </span>
           </h1>
 
-          <p className="lede mt-5 max-w-lg" data-motion="lede">
+          <p className="lede mt-5 max-w-[34rem]" data-motion="lede">
             {t("landing.sub")}
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          {/* One dominant action. The second link is deliberately quieter: same
+              height, no fill, no border, so it never competes for the click. */}
+          <div className="mt-7 sm:mt-8 flex flex-wrap items-center gap-x-3 gap-y-2.5">
             <Link href="/signup" className="btn btn-primary btn-lg" data-motion="action">
               {t("landing.start")}
             </Link>
-            <Link href="/login" className="btn btn-lg" data-motion="action">
-              {t("landing.haveAccount")}
+            <Link href="/login" className="btn btn-lg btn-ghost" data-motion="action">
+              {t("auth.signIn")}
             </Link>
           </div>
 
-          <p className="mt-4 text-[13px] text-faint" data-motion="fine-print">
+          <p className="mt-3.5 text-[13px] text-faint" data-motion="fine-print">
             {t("landing.noCard")}
           </p>
 
-          <div className="fade-in mt-9 pt-7 border-t" style={{ animationDelay: "380ms" }}>
+          <div className="fade-in mt-10 pt-7 border-t" style={{ animationDelay: "380ms" }}>
             <LogoAnimation size="clamp(2rem, 5.5vw, 2.75rem)" />
             <p className="text-[12px] text-faint mt-2">{t("landing.markCaption")}</p>
           </div>
@@ -61,7 +79,9 @@ export function Hero() {
             transform and the browser composes them. */}
         <div data-motion="hero-card" style={{ willChange: "transform" }}>
           <div data-motion="hero-card-in">
-            <HeroScoreChart className="w-full h-auto" />
+            {/* Capped and centred until the two-column grid takes over, so the
+                card never blows up to full width on a tablet. */}
+            <HeroScoreChart className="mx-auto w-full max-w-[27rem] lg:max-w-none" />
           </div>
         </div>
       </div>

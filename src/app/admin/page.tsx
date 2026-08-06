@@ -201,7 +201,7 @@ function AdminInner() {
                 className="px-2.5 py-1 rounded-md text-xs transition-colors"
                 style={
                   formLang === lang.id
-                    ? { background: "var(--ink)", color: "var(--ink-contrast)" }
+                    ? { background: "var(--brand)", color: "var(--brand-contrast)" }
                     : { color: "var(--muted)" }
                 }
               >
