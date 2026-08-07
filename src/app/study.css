@@ -376,41 +376,57 @@
     flex-shrink: 0;
   }
 
-  /* A subject card in the bank: monochrome surface with the subject's hue only
-     as a wash from the top-right corner and a rule down the left edge. No
-     artwork — the card carries five numbers and a button, and anything
-     decorative behind them was noise. */
+  /* A subject card in the bank is the same lit gradient card the home page uses
+     — `.bank-card` supplies the whole background — with only the extra padding
+     this denser content needs. No artwork: the card carries five numbers, a
+     level breakdown and a button, and anything decorative behind them was
+     noise. */
   .qb-subject-card {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background:
-      radial-gradient(
-        110% 80% at 100% 0%,
-        color-mix(in srgb, var(--tone) 12%, transparent) 0%,
-        transparent 60%
-      ),
-      linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+    padding: 1.25rem;
+  }
+
+  /* The subject monogram, restated for a saturated ground: the default glyph
+     paints itself in the subject's own hue on a pale tint of the same hue, which
+     on a card of that colour is invisible. */
+  .qb-glyph {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  /* The card's one action, in the same white-on-colour language as the home
+     card's "Open" chip rather than the brand fill, which would be a purple
+     button on a purple card. */
+  .qb-start {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.9375rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.94);
+    color: color-mix(in srgb, var(--tone-2) 82%, #000);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
     transition:
-      border-color 200ms ease,
-      box-shadow 200ms ease,
-      transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+      background 160ms ease,
+      opacity 160ms ease;
   }
-  .qb-subject-card::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--tone);
-    opacity: 0.75;
+  .qb-start:hover:not(:disabled) {
+    background: #fff;
   }
-  .qb-subject-card:hover {
-    border-color: color-mix(in srgb, var(--tone) 45%, var(--line));
-    box-shadow: var(--lift-brand);
-    transform: translateY(-2px);
+  .qb-start:disabled {
+    background: rgba(255, 255, 255, 0.4);
+    cursor: not-allowed;
   }
 
   /* ---------------- view switch ---------------- */
@@ -988,4 +1004,30 @@ body[data-exam] .test-foot {
     line-height: 1.6;
     color: var(--muted);
   }
+}
+
+/* ---------------- bank cards on a saturated ground ----------------
+   Deliberately unlayered. Tailwind's colour utilities live in `@layer
+   utilities`, and an unlayered rule beats any layered one regardless of
+   specificity — so `text-muted` inside a coloured card resolves to white here
+   without every element needing a card-specific class. Scoped to the card, so
+   nothing else in the app is affected. */
+.qb-subject-card .text-muted {
+  color: rgba(255, 255, 255, 0.86);
+}
+.qb-subject-card .text-faint {
+  color: rgba(255, 255, 255, 0.62);
+}
+/* The difficulty mix keeps each level's own hue for the segments — that is the
+   whole point of the bar — but the empty track has to read against colour. */
+.qb-subject-card .qb-mix {
+  background: rgba(255, 255, 255, 0.28);
+}
+/* Level pills go translucent white and keep only their dot coloured: a pale
+   green pill on a violet card is a colour clash, while a white pill with a green
+   dot still says "easy" at a glance. */
+.qb-subject-card .qb-level {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #fff;
 }

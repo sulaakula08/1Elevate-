@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { SAT, subjectColor, subjectsFor } from "@/data/exams";
-import type { Subject } from "@/data/types";
+import { SAT, subjectGradient, subjectsFor } from "@/data/exams";
 import type { Account } from "@/lib/storage";
 import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
@@ -17,18 +16,12 @@ import {
   streak,
   weakTopics,
 } from "@/lib/stats";
+import { SubjectScene } from "./three/SubjectScene";
 import { CountUp, ProgressBar, Reveal } from "./motion";
 import { ExamCountdown } from "./dashboard/ExamCountdown";
 import { IconRule, IconTrend } from "./illustrations";
 
 /** Slightly darker second stop, so each card is a gradient of its own hue. */
-function bankTone(subject: Subject): React.CSSProperties {
-  return {
-    ["--tone" as string]: subjectColor(subject.id),
-    ["--tone-2" as string]: `color-mix(in srgb, ${subjectColor(subject.id)} 62%, #1b1033)`,
-  };
-}
-
 export function Dashboard({ account }: { account: Account }) {
   const { t, tx } = useI18n();
   const { data, bank } = useApp();
@@ -114,7 +107,16 @@ export function Dashboard({ account }: { account: Account }) {
             const share = total ? solved / total : 0;
             return (
               <Reveal key={subject.id} delay={i * 70}>
-                <Link href="/practice" className="bank-card" style={bankTone(subject)}>
+                <Link
+                  href="/practice"
+                  className="bank-card"
+                  style={subjectGradient(subject.id) as React.CSSProperties}
+                >
+                  {/* The subject's own lit scene. Behind the text, no pointer
+                      events, and it only fades in once WebGL has actually
+                      drawn — so the card is never waiting on it. */}
+                  <SubjectScene kind={subject.id === "sat-math" ? "math" : "verbal"} />
+
                   <span className="relative block">
                     <span className="block text-[19px] font-semibold tracking-[-0.02em]">
                       {tx(subject.name)}

@@ -74,3 +74,20 @@ export function subjectColorSoft(subjectId: string): string {
   const subject = getSubject(subjectId);
   return `var(--s-${subject?.color ?? "indigo"}-soft)`;
 }
+
+/**
+ * The two custom properties a `.bank-card` gradient is built from.
+ *
+ * Lives here rather than in a component because two different pages render that
+ * card now, and a second copy of the mix ratio is a second place for the two
+ * surfaces to drift apart.
+ */
+export function subjectGradient(subjectId: string): Record<string, string> {
+  const tone = subjectColor(subjectId);
+  return {
+    "--tone": tone,
+    // Towards a deep violet-black rather than pure black: mixing to #000 drains
+    // the hue and the far corner of the card goes grey.
+    "--tone-2": `color-mix(in srgb, ${tone} 62%, #1b1033)`,
+  };
+}
