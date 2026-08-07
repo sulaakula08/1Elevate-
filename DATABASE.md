@@ -1,157 +1,105 @@
-# Adding a database on Vercel
+# Connecting the database (Supabase)
 
-Right now 1Elevate stores everything in the browser (`src/lib/storage.ts`, `localStorage`
-under the `elevate.*` prefix). That is why the footer says "Local build — everything is
-stored in this browser": clear the browser and the profile is gone, and a student cannot
-open their progress on a second device.
+Right now 1Elevate keeps everything in the browser (`src/lib/storage.ts`, under
+the `elevate.*` prefix in `localStorage`). That is why the footer says the data
+lives in this browser: clear the browser and the profile is gone, and a student
+cannot open their progress on a second device.
 
-This is the shortest path from that to a real database, using Postgres on Vercel. Every
-step is something you do once.
+This is how it moves to a real database. Supabase is Postgres with a login
+system attached, which matters here because the app has a second problem to
+solve — the PIN is not real authentication — and one service covers both.
+
+Everything below is already written into the repo. What is left is creating the
+project and doing the switch-over table by table.
 
 ---
 
-## Step 1 — Create the database (2 minutes, no card)
+## What is in the repo already
 
-1. Push this repo to GitHub and import it at [vercel.com/new](https://vercel.com/new), if
-   it is not deployed already.
-2. Open the project → **Storage** tab → **Create Database**.
-3. Pick **Neon — Serverless Postgres** (this is what "Vercel Postgres" is today). The free
-   plan is enough for a school-sized user base.
-4. Region: choose the one closest to your users (`eu-central` for Kazakhstan/Europe).
-5. Click **Connect** and tick the environments (Production, Preview, Development).
+| File | What it does |
+| --- | --- |
+| `supabase/schema.sql` | Tables, indexes and every access rule. Re-runnable. |
+| `src/lib/supabase/server.ts` | Server-side clients. Never import from a client component. |
+| `src/lib/supabase/client.ts` | Browser client: sign in, sign out, `apiFetch`. |
+| `src/app/api/attempts/route.ts` | Save and read the attempt log. |
+| `src/app/api/profile/route.ts` | Read and update the signed-in profile. |
+| `.env.example` | The variables to fill in. |
 
-Vercel now injects the connection variables into the project automatically — you never
-paste a connection string by hand. The one you will use is `DATABASE_URL`.
+Until the environment variables exist, every one of those routes answers `503`
+with a clear message and the app keeps working exactly as it does today.
 
-## Step 2 — Get the same variables locally
+## Step 1 — Create the project
 
-```bash
-npx vercel link
-```
+1. Sign up at [supabase.com](https://supabase.com) and create a project.
+2. Region: the closest one to your students (Frankfurt for Kazakhstan/Europe).
+3. Save the database password it gives you — it is shown once. The app does not
+   use it, but the dashboard does.
 
-```bash
-npx vercel env pull .env.local
-```
+## Step 2 — Create the tables
 
-`.env.local` is already git-ignored by the Next.js default `.gitignore`. Keep it that way —
-that file is a live credential.
+Open **SQL Editor** in the Supabase dashboard, paste the whole of
+[`supabase/schema.sql`](supabase/schema.sql), and run it.
 
-## Step 3 — Install the driver
+It creates four tables — `profiles`, `attempts`, `mocks`, `custom_questions` —
+and turns on row-level security for all of them. Running it twice is safe.
 
-```bash
-npm install @neondatabase/serverless
-```
+## Step 3 — Fill in the environment
 
-That is enough on its own. Add an ORM only if you want one; `drizzle-orm` is the lightest
-fit for this project if you do.
+**Project Settings → API** has the values. Copy `.env.example` to `.env.local`
+and paste in:
 
-## Step 4 — Create the tables
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-In Vercel: **Storage → your database → Query** (Neon calls it the SQL Editor). Paste this
-and run it. The columns mirror the types in `src/lib/storage.ts`, so the app's existing
-shapes carry over unchanged.
+The anon key is meant to be public — it grants nothing by itself, because the
+policies still apply to whoever the access token says you are. The **service
+role** key is the dangerous one: it bypasses every policy. Leave it blank;
+nothing in the app needs it today.
+
+Then add the same two variables in Vercel under **Settings → Environment
+Variables**, for all three environments, and redeploy.
+
+## Step 4 — Turn on the login methods
+
+**Authentication → Providers**:
+
+- **Email** is on by default. For a school, turn *off* "Confirm email" while
+  testing and back on before real students use it.
+- **Google** is worth adding — students have an account already and there is no
+  password to forget.
+
+Then **Authentication → URL Configuration**: add your Vercel URL and
+`http://localhost:3000` to the redirect list, or the sign-in link will bounce.
+
+## Step 5 — Make yourself the admin
+
+There is no button for this on purpose — a student who could set their own role
+could make themselves an admin. Sign up through the app normally, then run this
+once in the SQL Editor:
 
 ```sql
-create table accounts (
-  id            text primary key,
-  name          text not null unique,
-  email         text not null,
-  grade         text not null default '',
-  pin_hash      text not null,
-  role          text not null default 'student',
-  target_score  int  not null default 1400,
-  created_at    timestamptz not null default now()
-);
-
-create table attempts (
-  id           bigserial primary key,
-  account_id   text not null references accounts(id) on delete cascade,
-  question_id  text not null,
-  subject_id   text not null,
-  exam         text not null,
-  topic        text not null,
-  difficulty   int,
-  chosen       int  not null,
-  correct      boolean not null,
-  mode         text not null,          -- practice | mock | review
-  ms           int  not null default 0,
-  at           timestamptz not null default now()
-);
-
--- Every analytics query in src/lib/stats.ts filters by account, newest first.
-create index attempts_by_account on attempts (account_id, at desc);
-
-create table mocks (
-  id          text primary key,
-  account_id  text not null references accounts(id) on delete cascade,
-  exam        text not null,
-  score       int  not null,
-  correct     int  not null,
-  total       int  not null,
-  sections    jsonb not null,          -- MockSectionResult[]
-  wrong       jsonb not null,          -- question ids, for the review queue
-  at          timestamptz not null default now()
-);
-
-create table custom_questions (
-  id          text primary key,
-  exam        text not null,
-  subject_id  text not null,
-  topic       text not null,
-  domain      text,
-  difficulty  int  not null,
-  payload     jsonb not null,          -- passage / prompt / choices / explanation
-  answer      int  not null,
-  created_at  timestamptz not null default now()
-);
+update public.profiles set role = 'admin' where email = 'you@example.com';
 ```
 
-## Step 5 — Talk to it from the app
+From then on `is_admin()` is true for you, which is what opens the whole
+question bank for writing and every student's rows for reading.
 
-One module, imported only by server code:
+## Step 6 — Switch the app over, one table at a time
 
-```ts
-// src/lib/db.ts
-import { neon } from "@neondatabase/serverless";
+`src/lib/app-state.tsx` is the only place the app reads and writes storage. That
+is the seam. Do this in order, smallest risk first:
 
-/** Server-only. Importing this from a "use client" file will (correctly) fail. */
-export const sql = neon(process.env.DATABASE_URL!);
-```
+1. **`attempts`** — append-only. `recordAttempts` also POSTs to `/api/attempts`.
+   Nothing can be lost; the worst case is a missing row.
+2. **`mocks`** — same shape, written once at the end of a test.
+3. **`custom_questions`** — the admin editor writes to the database instead of
+   `localStorage`, so every student sees the same bank.
+4. **`profiles` and sign-in** — last, because it is the only one that changes
+   how a student gets into the app at all.
 
-Then a route handler per operation, next to the existing `src/app/api/explain/route.ts`:
-
-```ts
-// src/app/api/attempts/route.ts
-import { NextResponse } from "next/server";
-import { sql } from "@/lib/db";
-
-export async function POST(request: Request) {
-  const { accountId, attempts } = await request.json();
-  for (const a of attempts) {
-    await sql`
-      insert into attempts
-        (account_id, question_id, subject_id, exam, topic, difficulty, chosen, correct, mode, ms)
-      values
-        (${accountId}, ${a.questionId}, ${a.subjectId}, ${a.exam}, ${a.topic},
-         ${a.difficulty ?? null}, ${a.chosen}, ${a.correct}, ${a.mode}, ${a.ms})
-    `;
-  }
-  return NextResponse.json({ ok: true });
-}
-```
-
-Tagged-template values are sent as bound parameters, so this is not string concatenation
-and is not open to SQL injection.
-
-## Step 6 — Point the app at it
-
-`src/lib/app-state.tsx` is the only place the app reads and writes storage — that is the
-single seam you change. `recordAttempts` currently writes to `localStorage`; make it POST
-to `/api/attempts` and keep the local write as an offline cache if you want the app to
-survive a dropped connection.
-
-Do it one table at a time. Attempts first (it is append-only and the least risky), then
-mock results, then custom questions, and accounts last.
+Keeping the `localStorage` write alongside the network call is a reasonable
+intermediate step: the app then still works with no connection, and the database
+becomes the copy that survives.
 
 ## Step 7 — Deploy
 
@@ -159,19 +107,43 @@ mock results, then custom questions, and accounts last.
 git push
 ```
 
-Vercel builds on push, and the database variables are already in the environment. Nothing
-else to configure.
-
 ---
 
-## One thing to decide before accounts move
+## How the access rules work
 
-The current PIN is deliberately not real authentication — `hashPin` says so in the code,
-and any user of the browser can open any local profile. That is fine while the data is
-local. The moment profiles live in a shared database, a stolen or guessed PIN reaches
-another student's data from anywhere.
+This is the part worth understanding, because it is what stands between one
+student and everybody else's results.
 
-So when you get to the accounts table, use a real auth provider rather than moving the PIN
-check to the server. [Auth.js](https://authjs.dev) with a Google or email provider drops
-into Next.js and removes the need to store any password yourself. Keep `accounts` as the
-profile table (target score, grade, role) and let the provider own identity.
+Every table has **row-level security** switched on. That is not a filter the app
+applies — it is a rule Postgres enforces on every query, including one sent from
+a browser with the anon key. The rules are:
+
+- **`profiles`** — you can read and update your own row. An admin can read all
+  of them. Nobody can change their own `role`; there is no policy that allows
+  it, so only the SQL editor can.
+- **`attempts` / `mocks`** — you can read your own rows and insert rows under
+  your own id. An admin can read everyone's. Nobody can insert under someone
+  else's id, because the check is on the row being written, not on the request.
+- **`custom_questions`** — any signed-in student can read; only an admin can
+  write.
+
+Two details in `schema.sql` that look odd and are deliberate:
+
+`is_admin()` is `SECURITY DEFINER`. A policy on `profiles` that asked "is this
+user an admin?" by selecting from `profiles` would re-enter its own policy and
+recurse forever. A definer function runs as its owner, skips RLS, and breaks the
+cycle. Its `search_path` is pinned for the same reason such functions usually
+are: one that resolves names through the caller's path can be hijacked.
+
+The `handle_new_user` trigger creates a profile row on signup. Without it a
+student authenticates successfully and then has nowhere to keep a target score.
+
+## Two rules that keep this safe
+
+**The service role key never reaches the browser.** No `NEXT_PUBLIC_` prefix, no
+import from a `"use client"` file. It bypasses every rule above.
+
+**Read through the app's own API routes, not straight from the browser.** The
+handlers in `src/app/api/*` run as the student — `userClient(token)` — so the
+policies still apply even if a handler has a bug. This gives one place to get
+authorisation right instead of one per query.
