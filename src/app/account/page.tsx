@@ -26,7 +26,7 @@ function Profile() {
 
   return (
     <div className="max-w-lg mx-auto pt-12 pb-20">
-      <p className="label-xs fade-in">{account!.role === "admin" ? "admin" : "student"}</p>
+      <p className="label-xs fade-in">{account!.role}</p>
       <h1 className="display fade-up mt-3 text-[2rem]">{account!.name}</h1>
       <p className="fade-in mt-2 text-[15px] text-muted">{account!.email || "—"}</p>
 

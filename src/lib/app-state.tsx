@@ -160,9 +160,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setReady(true);
 
       const result = await mergeHistory(profile.id, cached);
-      if (!live || result.offline) return;
-      setData(result.data);
-      saveUserData(profile.id, result.data);
+      if (live && !result.offline) {
+        setData(result.data);
+        saveUserData(profile.id, result.data);
+      }
+
+      // The shared question bank. The database is the record here, not a merge
+      // target: an admin deleting a question must remove it for everyone, so a
+      // successful fetch replaces the local cache outright.
+      try {
+        const response = await apiFetch("/api/questions");
+        if (!live || !response.ok) return;
+        const body = (await response.json()) as { questions: Question[] };
+        setCustom(body.questions);
+        saveCustomQuestions(body.questions);
+      } catch {
+        // Offline: the cached bank stays in use.
+      }
     }
 
     client.auth.getSession().then(({ data: s }) => void adopt(Boolean(s.session)));
@@ -291,6 +305,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [accountId, persistData],
   );
 
+  /**
+   * The bank is shared, so localStorage is only a cache here — the database is
+   * the record. Writes go to both: the editor stays instant, and every other
+   * student sees the question.
+   */
   const persistCustom = useCallback((next: Question[]) => {
     setCustom(next);
     saveCustomQuestions(next);
@@ -303,13 +322,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       persistCustom(
         exists ? custom.map((q) => (q.id === marked.id ? marked : q)) : [...custom, marked],
       );
+      void apiFetch("/api/questions", {
+        method: "POST",
+        body: JSON.stringify({ questions: [marked] }),
+      });
     },
     [custom, persistCustom],
   );
 
   const deleteQuestion = useCallback<Ctx["deleteQuestion"]>(
-    (id) => persistCustom(custom.filter((q) => q.id !== id)),
+    (id) => {
+      persistCustom(custom.filter((q) => q.id !== id));
+      void apiFetch(`/api/questions?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    },
     [custom, persistCustom],
+  );
+
+  /**
+   * Bulk import from the editor's JSON paste. Uploads the whole set, since that
+   * is the operation the admin actually performed.
+   */
+  const replaceCustom = useCallback<Ctx["replaceCustomQuestions"]>(
+    (questions) => {
+      const marked = questions.map((q) => ({ ...q, custom: true }));
+      persistCustom(marked);
+      if (marked.length > 0) {
+        void apiFetch("/api/questions", {
+          method: "POST",
+          body: JSON.stringify({ questions: marked }),
+        });
+      }
+    },
+    [persistCustom],
   );
 
   const toggleTheme = useCallback(() => {
@@ -347,7 +391,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     recordMock,
     saveQuestion,
     deleteQuestion,
-    replaceCustomQuestions: persistCustom,
+    replaceCustomQuestions: replaceCustom,
     resetAll,
   };
 

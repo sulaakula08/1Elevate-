@@ -2,7 +2,12 @@ import type { Difficulty, ExamId, Question } from "@/data/types";
 
 export const SCHEMA_VERSION = 1;
 
-export type Role = "student" | "admin";
+/**
+ * student — practises.
+ * admin   — also writes the shared question bank.
+ * owner   — also appoints and removes admins.
+ */
+export type Role = "student" | "admin" | "owner";
 
 export type Account = {
   id: string;

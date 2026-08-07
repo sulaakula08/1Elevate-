@@ -119,7 +119,7 @@ export function MobileTabs() {
                 { href: "/progress", key: "nav.progress", Icon: NavProgress },
                 { href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial },
                 { href: "/account", key: "nav.profile", Icon: NavHome },
-                ...(account?.role === "admin"
+                ...(account && account.role !== "student"
                   ? [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }]
                   : []),
               ].map(({ href, key, Icon }) => (

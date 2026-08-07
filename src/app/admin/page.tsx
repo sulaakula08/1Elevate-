@@ -7,6 +7,7 @@ import type { Difficulty, ExamId, LocalizedText, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { newId } from "@/lib/storage";
+import { PeopleManager } from "@/components/PeopleManager";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 
 type Draft = {
@@ -70,7 +71,7 @@ function AdminInner() {
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  if (account!.role !== "admin") {
+  if (account!.role === "student") {
     return (
       <div>
         <PageTitle>{t("admin.title")}</PageTitle>
@@ -392,6 +393,10 @@ function AdminInner() {
           </ul>
         )}
       </section>
+
+      {/* Role management. Visible to admins as a read-only roster; only the
+          owner sees the buttons, and only the database can actually grant. */}
+      <PeopleManager />
     </div>
   );
 }

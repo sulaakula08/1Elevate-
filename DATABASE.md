@@ -71,18 +71,45 @@ Variables**, for all three environments, and redeploy.
 Then **Authentication → URL Configuration**: add your Vercel URL and
 `http://localhost:3000` to the redirect list, or the sign-in link will bounce.
 
-## Step 5 — Make yourself the admin
+## Step 5 — Make yourself the owner
 
-There is no button for this on purpose — a student who could set their own role
-could make themselves an admin. Sign up through the app normally, then run this
-once in the SQL Editor:
+There are three roles:
+
+| Role | Can do |
+| --- | --- |
+| `student` | Practise. Read the shared question bank. Read and write only their own rows. |
+| `admin` | Everything a student can, plus write and delete questions in the shared bank. |
+| `owner` | Everything an admin can, plus appoint and remove admins. |
+
+Exactly one step is manual, and deliberately so: the first owner is what every
+other permission is derived from, so there is no way to become one through the
+app. Sign up normally, then run this once in the SQL Editor:
 
 ```sql
-update public.profiles set role = 'admin' where email = 'you@example.com';
+update public.profiles set role = 'owner' where email = 'you@example.com';
 ```
 
-From then on `is_admin()` is true for you, which is what opens the whole
-question bank for writing and every student's rows for reading.
+Everything else happens in the app, under **Admin → People**: appoint admins,
+who can then paste questions that every student sees, and demote them again.
+
+Roles change through one function, `set_role()`, and nothing else can write the
+column — see the `profiles` note under [Who can read what](#who-can-read-what).
+It is `SECURITY DEFINER`, so it runs as its owner and is not bound by the column
+grant that blocks everyone else. Its guards are the real rules:
+
+- only an owner may call it;
+- only `student` and `admin` can be assigned, so the UI cannot mint an owner;
+- you cannot change your own role, so the last owner cannot demote themselves
+  and lock the project out of its own admin controls;
+- an existing owner cannot be demoted through it, so two owners cannot strip
+  each other in a race.
+
+A second owner is therefore also a SQL Editor job. Worth doing for one trusted
+person: if the only owner loses their account, nobody can appoint anyone.
+
+```sql
+select email, role from public.profiles where role <> 'student';
+```
 
 ## Step 6 — Switch the app over, one table at a time
 

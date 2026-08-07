@@ -76,7 +76,7 @@ export function Sidebar({ account }: { account: Account }) {
         {renderGroup(t("side.practice"), PRACTICE)}
         {renderGroup(t("side.progress"), PROGRESS)}
         {renderGroup(t("side.learn"), LEARN)}
-        {account.role === "admin" &&
+        {account.role !== "student" &&
           renderGroup(t("side.manage"), [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }])}
       </nav>
 

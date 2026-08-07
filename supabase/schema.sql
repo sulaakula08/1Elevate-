@@ -37,10 +37,22 @@ create table if not exists public.profiles (
   name         text not null default '',
   email        text not null default '',
   grade        text not null default '',
-  role         text not null default 'student' check (role in ('student', 'admin')),
+  -- student — practises.
+  -- admin   — everything a student can do, plus writes the shared question bank.
+  -- owner   — everything an admin can do, plus appoints and removes admins.
+  role         text not null default 'student' check (role in ('student', 'admin', 'owner')),
   target_score int  not null default 1400 check (target_score between 400 and 1600),
   created_at   timestamptz not null default now()
 );
+
+-- `create table if not exists` does nothing at all on a table that already
+-- exists, including to its constraints. A database created before the owner
+-- role still carries check (role in ('student','admin')), and would reject
+-- 'owner' with a constraint violation. Replacing it explicitly is what makes
+-- this file work on an existing project as well as a fresh one.
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles
+  add constraint profiles_role_check check (role in ('student', 'admin', 'owner'));
 
 -- ------------------------------------------------------------------ helper --
 -- Defined here, before the first policy that calls it.
@@ -53,6 +65,10 @@ create table if not exists public.profiles (
 -- `search_path` is pinned because a definer function that resolves names
 -- through the caller's path can be pointed at tables the caller controls.
 
+-- True for admins AND owners. An owner is an admin with extra powers, so every
+-- content policy below is written once against this and never has to remember
+-- to mention 'owner' as well — forgetting that in one policy is exactly how an
+-- owner ends up unable to edit the bank they administer.
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -62,9 +78,69 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and role = 'admin'
+    where id = auth.uid() and role in ('admin', 'owner')
   );
 $$;
+
+-- The narrower check: appointing and removing admins.
+create or replace function public.is_owner()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'owner'
+  );
+$$;
+
+-- The only way `role` can change from a browser.
+--
+-- The column grant further down deliberately leaves `role` unwritable, so no
+-- UPDATE from a signed-in user can touch it. This function is SECURITY DEFINER,
+-- meaning it runs as its owner and is not bound by that grant — which is the
+-- point. It is a single, audited doorway rather than a permission.
+--
+-- The guards, in order, and why each exists:
+--   * only an owner may call it at all;
+--   * only 'student' and 'admin' can be assigned, so nobody can mint an owner
+--     through the UI;
+--   * you cannot change your own role, so the last owner cannot accidentally
+--     demote themselves and lock the project out of its own admin controls;
+--   * an existing owner cannot be demoted here, so two owners cannot strip each
+--     other in a race. Owners are made and unmade in the SQL editor only.
+create or replace function public.set_role(target_id uuid, new_role text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_owner() then
+    raise exception 'Only the owner can change roles' using errcode = '42501';
+  end if;
+
+  if new_role not in ('student', 'admin') then
+    raise exception 'Role must be student or admin' using errcode = '22023';
+  end if;
+
+  if target_id = auth.uid() then
+    raise exception 'You cannot change your own role' using errcode = '42501';
+  end if;
+
+  if exists (select 1 from public.profiles where id = target_id and role = 'owner') then
+    raise exception 'An owner can only be changed in the SQL editor' using errcode = '42501';
+  end if;
+
+  update public.profiles set role = new_role where id = target_id;
+end;
+$$;
+
+-- Signed-in callers only. anon has no business reaching this at all.
+revoke execute on function public.set_role(uuid, text) from anon, public;
+grant execute on function public.set_role(uuid, text) to authenticated;
 
 -- --------------------------------------------------------- profile access --
 
@@ -261,15 +337,22 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ------------------------------------------------------------ making admins --
--- There is no UI for this on purpose, and after the column grant above there
--- cannot be one: `role` is not writable by any signed-in user, only through the
--- SQL editor or the service key. Sign up normally, then run this once with your
--- own address:
+-- ------------------------------------------------------- making the owner --
+-- Exactly one step is manual, and deliberately so: there is no way to become
+-- the owner through the app, because the first owner is the thing every other
+-- permission is derived from.
 --
---   update public.profiles set role = 'admin' where email = 'you@example.com';
+-- Sign up through the app normally, then run this once with your own address:
 --
--- To check nobody has escalated already, on a database that ran an earlier
--- version of this file:
+--   update public.profiles set role = 'owner' where email = 'you@example.com';
 --
---   select email, role from public.profiles where role = 'admin';
+-- From then on everything else is done in the app: Admin → People lets you
+-- appoint admins, who can write the shared question bank, and demote them
+-- again. set_role() refuses to mint another owner, so a second owner is also a
+-- SQL-editor job — worth doing for one trusted person, so a lost account does
+-- not leave the project with nobody able to appoint anyone.
+--
+-- To audit who holds what, especially on a database that ran the version of
+-- this file where a student could grant themselves admin:
+--
+--   select email, role from public.profiles where role <> 'student';
