@@ -691,3 +691,133 @@
 ::highlight(sat-highlight) {
   background-color: color-mix(in srgb, var(--s-amber) 45%, transparent);
 }
+
+/* ---------------- exam focus mode ----------------
+   Set by useExamMode() for the duration of a timed test. Everything that offers
+   a way out of the section goes: the sidebar, the phone tab bar and header, the
+   footer. What is left is the test, edge to edge. */
+body[data-exam] .sidebar,
+body[data-exam] .tabbar,
+body[data-exam] .mobile-header,
+body[data-exam] .app-footer {
+  display: none !important;
+}
+body[data-exam] main {
+  max-width: none;
+  padding-block: 0;
+}
+/* The footer no longer parks above a phone tab bar that isn't there. */
+body[data-exam] .test-foot {
+  bottom: 0;
+}
+
+@layer components {
+  /* ---------------- pre-test loading ----------------
+     Three or four seconds of deliberate ceremony. It covers the work of dealing
+     four modules out of the bank, and it draws a line between browsing the app
+     and sitting a test. */
+  .mk-load {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background: var(--background);
+  }
+  .mk-load-inner {
+    width: min(24rem, 100%);
+    text-align: center;
+  }
+  .mk-ring {
+    margin-inline: auto;
+    transform: rotate(-90deg);
+  }
+  .mk-ring circle {
+    transition: stroke-dashoffset 300ms linear;
+  }
+  .mk-steps {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    text-align: left;
+  }
+  .mk-step {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 13.5px;
+    color: var(--faint);
+    transition:
+      color 260ms ease,
+      opacity 260ms ease;
+  }
+  .mk-step-on {
+    color: var(--muted);
+  }
+  .mk-step-done {
+    color: var(--foreground);
+  }
+  .mk-step-dot {
+    flex-shrink: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 99px;
+    border: 1.5px solid currentColor;
+    transition:
+      background 260ms ease,
+      transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .mk-step-done .mk-step-dot {
+    background: currentColor;
+  }
+  .mk-step-on .mk-step-dot {
+    animation: pulse-soft 1.4s ease-in-out infinite;
+  }
+
+  /* ---------------- the break ----------------
+     Ten minutes between the Reading and Writing section and Math, exactly as
+     the real test gives them. Big, calm, and skippable. */
+  .mk-break {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 3.5rem);
+    text-align: center;
+    padding: 2rem 1.25rem;
+  }
+  .mk-break-clock {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    font-size: clamp(4.5rem, 18vw, 9rem);
+    background: linear-gradient(180deg, var(--foreground), var(--muted));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .mk-break-dial {
+    width: min(18rem, 72vw);
+    transform: rotate(-90deg);
+  }
+  .mk-break-dial circle {
+    transition: stroke-dashoffset 1s linear;
+  }
+  .mk-break-tips {
+    margin-top: 2.5rem;
+    display: grid;
+    gap: 0.5rem;
+    text-align: left;
+    max-width: 22rem;
+  }
+  .mk-break-tip {
+    display: flex;
+    gap: 0.625rem;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+}

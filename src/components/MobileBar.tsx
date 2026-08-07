@@ -32,7 +32,7 @@ export function MobileHeader() {
 
   return (
     <header
-      className="md:hidden sticky top-0 z-30 border-b"
+      className="mobile-header md:hidden sticky top-0 z-30 border-b"
       style={{ background: "var(--background)" }}
     >
       <div className="px-4 h-14 flex items-center gap-2">

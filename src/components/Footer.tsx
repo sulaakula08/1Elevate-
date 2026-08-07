@@ -18,7 +18,7 @@ export function Footer() {
           attribution paragraph gone, a flex row left the two link stacks
           huddled against the brand block with a gulf to their right. The brand
           column takes the slack, so the links stay ruled to the right edge. */}
-      <footer className="mt-20 border-t">
+      <footer className="app-footer mt-20 border-t">
         <div className="max-w-5xl mx-auto px-5 py-12 grid gap-x-10 gap-y-9 text-[13px] sm:grid-cols-[minmax(0,1fr)_auto_auto]">
           <div className="max-w-[22rem]">
             <Logo />

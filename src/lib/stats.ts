@@ -158,6 +158,79 @@ export function pct(n: number): string {
   return `${Math.round(n * 100)}%`;
 }
 
+/**
+ * Median seconds per question, from attempts that actually recorded a duration.
+ *
+ * Median rather than mean: one question left open while a student made tea would
+ * drag an average into nonsense, and pace is only useful if it describes the
+ * ordinary case. Mock attempts carry a per-question average rather than a real
+ * measurement, so they are as honest as the section clock allows.
+ */
+export function medianSeconds(attempts: Attempt[]): number | null {
+  const times = attempts
+    .map((a) => a.ms)
+    .filter((ms): ms is number => typeof ms === "number" && ms > 500 && ms < 15 * 60_000)
+    .sort((x, y) => x - y);
+  if (times.length === 0) return null;
+  const middle = Math.floor(times.length / 2);
+  const ms =
+    times.length % 2 === 1 ? times[middle] : (times[middle - 1] + times[middle]) / 2;
+  return Math.round(ms / 1000);
+}
+
+/** Accuracy split by how the question was answered — practice, review, mock. */
+export function byMode(attempts: Attempt[]): Bucket[] {
+  return bucketize(attempts, (a) => a.mode);
+}
+
+/**
+ * This week against the week before it, for the two things a student can act on:
+ * how much they answered and how much of it they got right.
+ */
+export function weekOverWeek(attempts: Attempt[], now = Date.now()) {
+  const WEEK = 7 * 86_400_000;
+  const measure = (from: number, to: number) => {
+    const slice = attempts.filter((a) => a.at >= from && a.at < to);
+    return { ...overall(slice) };
+  };
+  const current = measure(now - WEEK, now + 1);
+  const previous = measure(now - 2 * WEEK, now - WEEK);
+  return {
+    current,
+    previous,
+    answeredDelta: current.total - previous.total,
+    // Null rather than zero when there is nothing to compare against: "no
+    // change" and "no baseline" must not render the same.
+    accuracyDelta:
+      previous.total > 0 && current.total > 0
+        ? current.accuracy - previous.accuracy
+        : null,
+  };
+}
+
+/**
+ * How far the latest mock is from the target, and how much it moved. Returns
+ * null when no mock has been taken — there is nothing honest to say yet.
+ */
+export function scoreStanding(
+  mocks: { score: number; exam: ExamId; at: number }[],
+  targetScore: number,
+) {
+  if (mocks.length === 0) return null;
+  const ordered = [...mocks].sort((a, b) => a.at - b.at);
+  const latest = ordered[ordered.length - 1];
+  const first = ordered[0];
+  const best = ordered.reduce((top, m) => (m.score > top.score ? m : top), ordered[0]);
+  return {
+    latest: latest.score,
+    best: best.score,
+    max: maxScore(latest.exam),
+    toTarget: targetScore - latest.score,
+    // Only meaningful once there is a second data point.
+    change: ordered.length > 1 ? latest.score - first.score : null,
+  };
+}
+
 /** Fisher–Yates, non-mutating. */
 export function shuffle<T>(items: T[]): T[] {
   const out = [...items];

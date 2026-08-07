@@ -12,6 +12,7 @@ import { NOUNS, pluralize } from "@/lib/plural";
 import type { Attempt, MockResult, MockSectionResult } from "@/lib/storage";
 import { maxScore, pct, scaleScore, shuffle } from "@/lib/stats";
 import { MockRunner, type MockAnswers, type MockSection } from "@/components/MockRunner";
+import { MockLoader } from "@/components/test/MockLoader";
 import { QuestionView } from "@/components/QuestionView";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { CountUp, ProgressBar, Reveal } from "@/components/motion";
@@ -35,6 +36,12 @@ function MockInner() {
   const { t, tx } = useI18n();
   const { account, bank, data, recordAttempts, recordMock, saveQuestion } = useApp();
   const [sections, setSections] = useState<MockSection[] | null>(null);
+  /**
+   * Modules dealt and waiting behind the loading screen. Built at the click, not
+   * when the loader finishes, so the test a student is shown is the one that was
+   * dealt from the bank they were looking at.
+   */
+  const [starting, setStarting] = useState<MockSection[] | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [filling, setFilling] = useState(false);
   const [made, setMade] = useState(0);
@@ -191,6 +198,17 @@ function MockInner() {
         sections={sections}
         onFinish={(answers, msSpent) => finish(sections, answers, msSpent)}
         onExit={() => setSections(null)}
+      />
+    );
+  }
+
+  if (starting) {
+    return (
+      <MockLoader
+        onReady={() => {
+          setSections(starting);
+          setStarting(null);
+        }}
       />
     );
   }
@@ -382,7 +400,7 @@ function MockInner() {
                   <button
                     className="btn btn-sm"
                     disabled={filling}
-                    onClick={() => setSections(buildSections())}
+                    onClick={() => setStarting(buildSections())}
                   >
                     {t("plan.mockShortenedOk")}
                   </button>
@@ -396,7 +414,7 @@ function MockInner() {
           <button
             className="btn btn-primary btn-lg mt-8"
             disabled={filling}
-            onClick={() => setSections(buildSections())}
+            onClick={() => setStarting(buildSections())}
           >
             {t("mock.begin")}
           </button>
