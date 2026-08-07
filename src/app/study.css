@@ -14,10 +14,15 @@
     font-variant-ligatures: none;
     white-space: nowrap;
   }
+  /* Inline formulas flow as text, NOT as flex.
+     `inline-flex` here was the reason a fraction inside a sentence sat wrong:
+     vertical-align is ignored on a flex item, so `.mth-frac` could not place
+     itself, and `align-items: center` made the container take its baseline from
+     the numerator — which put the numerator on the text baseline and hung the
+     denominator below the line. Plain inline flow gives every part its
+     vertical-align back. */
   .mth-inline {
-    display: inline-flex;
-    align-items: center;
-    vertical-align: -0.15em;
+    display: inline;
   }
   .mth-block {
     display: flex;
@@ -39,9 +44,11 @@
     font-size: 0.9375em;
   }
 
+  /* Same reason as `.mth-inline`: a row is the wrapper around almost every
+     expression, so as a flex container it stripped vertical-align from whatever
+     it held. */
   .mth-row {
-    display: inline-flex;
-    align-items: center;
+    display: inline;
   }
   .mth-num,
   .mth-name {
@@ -70,25 +77,38 @@
   }
 
   /* A real stacked fraction — the rule is a border, so it scales with the
-     surrounding type instead of being drawn at a fixed pixel height. */
+     surrounding type instead of being drawn at a fixed pixel height.
+
+     Two numbers matter. The type is set at 0.78em with line-height 1, so the
+     whole stack is about 1.56em tall and fits inside a 1.65 line without forcing
+     the paragraph's lines apart. And the box is dropped 0.48em, which puts the
+     bar a little under a third of an em above the surrounding baseline — where
+     a reader expects a fraction bar to sit, level with a minus sign rather than
+     resting on the line. */
   .mth-frac {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    vertical-align: -0.55em;
-    margin: 0 0.16em;
-    font-size: 0.92em;
-    line-height: 1.12;
+    vertical-align: -0.48em;
+    margin: 0 0.18em;
+    font-size: 0.78em;
+    line-height: 1;
+    text-align: center;
   }
   .mth-frac-n {
     display: block;
-    padding: 0 0.28em 0.1em;
+    padding: 0 0.3em 0.14em;
   }
   .mth-frac-d {
     display: block;
-    padding: 0.1em 0.28em 0;
+    padding: 0.14em 0.3em 0;
     border-top: 1px solid currentColor;
+  }
+  /* A display formula has a line to itself, so it can be full size. */
+  .mth-block .mth-frac {
+    font-size: 0.95em;
+    vertical-align: -0.6em;
   }
 
   .mth-scripted {
