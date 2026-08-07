@@ -27,4 +27,7 @@ export const NOUNS = {
   topic: ["topic", "topics"] as Forms,
   format: ["format", "formats"] as Forms,
   test: ["test", "tests"] as Forms,
+  comment: ["comment", "comments"] as Forms,
+  explanation: ["explanation", "explanations"] as Forms,
+  point: ["point", "points"] as Forms,
 };

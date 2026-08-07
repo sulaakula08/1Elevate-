@@ -20,6 +20,7 @@ import { SubjectScene } from "./three/SubjectScene";
 import { CountUp, ProgressBar, Reveal } from "./motion";
 import { ExamCountdown } from "./dashboard/ExamCountdown";
 import { IconRule, IconTrend } from "./illustrations";
+import { CommunityPreview } from "./community/CommunityPreview";
 
 /** Slightly darker second stop, so each card is a gradient of its own hue. */
 export function Dashboard({ account }: { account: Account }) {
@@ -265,6 +266,9 @@ export function Dashboard({ account }: { account: Account }) {
           </ul>
         </section>
       )}
+
+      {/* ---------------- community preview ---------------- */}
+      <CommunityPreview />
     </div>
   );
 }
