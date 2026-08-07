@@ -106,6 +106,15 @@ const D: Dict = {
   "account.accuracy": { en: "Accuracy" },
   "account.keepGoing": { en: "Keep going" },
   "account.none": { en: "—" },
+  "progress.heatTitle": { en: "questions answered in the last year" },
+  "progress.heatActiveDays": { en: "days practised" },
+  "progress.heatCaption": {
+    en: "Questions answered each day over the last year, one square per day, arranged as calendar weeks.",
+  },
+  "progress.heatOne": { en: "question" },
+  "progress.heatMany": { en: "questions" },
+  "progress.heatLess": { en: "Less" },
+  "progress.heatMore": { en: "More" },
   "account.cloudNotice": {
     en: "Your account is stored securely in the cloud, so you can sign in from any device. Practice history is still cached in this browser and will move across next.",
   },

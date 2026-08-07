@@ -510,6 +510,72 @@ p {
     --tone: var(--s-green, #16a34a);
   }
 
+  /* ---------------- activity heatmap ---------------- */
+
+  .heat {
+    border-collapse: separate;
+    /* The gap between squares is the border-spacing, so the cells themselves
+       stay exactly square and the grid never drifts out of alignment. */
+    border-spacing: 3px;
+    table-layout: fixed;
+  }
+  .heat-month {
+    height: 1.25rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: left;
+    /* Labels sit above a 10px column but need room for three characters, so
+       they are allowed to overhang to the right without widening the column. */
+    overflow: visible;
+    white-space: nowrap;
+  }
+  .heat-daylabel {
+    width: 1.75rem;
+    padding-right: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 400;
+    color: var(--muted);
+    text-align: right;
+    vertical-align: middle;
+  }
+  .heat-cell-wrap,
+  .heat-pad {
+    width: 10px;
+    height: 10px;
+    padding: 0;
+  }
+  .heat-cell {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--line);
+    /* A hairline keeps pale squares legible against the panel in dark mode,
+       where the lowest level is otherwise almost the background colour. */
+    outline: 1px solid color-mix(in srgb, var(--foreground) 5%, transparent);
+    outline-offset: -1px;
+    transition: transform 120ms ease;
+  }
+  .heat-cell[data-level="1"] {
+    background: color-mix(in srgb, var(--accent) 26%, var(--surface));
+  }
+  .heat-cell[data-level="2"] {
+    background: color-mix(in srgb, var(--accent) 50%, var(--surface));
+  }
+  .heat-cell[data-level="3"] {
+    background: color-mix(in srgb, var(--accent) 74%, var(--surface));
+  }
+  .heat-cell[data-level="4"] {
+    background: var(--accent);
+  }
+  .heat-cell-wrap:hover .heat-cell {
+    transform: scale(1.35);
+  }
+  .heat-key {
+    display: inline-block;
+  }
+
   /* Password strength: a single bar that fills and shifts hue by level. */
   .strength-track {
     flex: 1;

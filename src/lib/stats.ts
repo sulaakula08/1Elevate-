@@ -110,6 +110,81 @@ export function recentActivity(attempts: Attempt[], days = 14, now = Date.now())
  * Questions that still need review: at least one wrong answer, and not yet
  * answered correctly twice in a row. Hardest (most net-wrong) first.
  */
+export type HeatCell = {
+  /** YYYY-MM-DD, local. */
+  day: string;
+  ms: number;
+  count: number;
+  /** 0–4. 0 means nothing answered that day. */
+  level: number;
+  /**
+   * Always false — the range stops at today. Kept so the grid has one obvious
+   * place to mark a cell unrenderable if the range is ever extended forward.
+   */
+  future: boolean;
+};
+
+export type HeatWeek = { days: HeatCell[] };
+
+/**
+ * A year of daily activity, laid out as calendar weeks.
+ *
+ * Columns are weeks and rows are weekdays, so the grid reads the way a wall
+ * calendar does. The range starts on the Sunday on or before a year ago, which
+ * is what keeps every column a clean Sunday-to-Saturday week rather than a
+ * ragged offset that shifts the weekday rows.
+ *
+ * Levels are relative to the student's own busiest day, not an absolute number.
+ * Someone answering five questions a day should see a full-looking year; fixed
+ * thresholds would show them a year of near-empty squares and read as failure.
+ */
+export function contributionYear(attempts: Attempt[], now = Date.now()) {
+  const DAY = 86_400_000;
+
+  const counts = new Map<string, number>();
+  for (const a of attempts) counts.set(dayKey(a.at), (counts.get(dayKey(a.at)) ?? 0) + 1);
+
+  // Local midnight today, so a cell flips over at the student's midnight.
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  const start = new Date(today.getTime() - 364 * DAY);
+  start.setDate(start.getDate() - start.getDay()); // back to Sunday
+
+  let total = 0;
+  let peak = 0;
+  const cells: HeatCell[] = [];
+
+  // Stop at today rather than filling out the final week. Generating the days
+  // after today would add a column of nothing whenever today lands on a
+  // Saturday; the grid pads short columns instead.
+  //
+  // Stepping with setDate rather than adding 86_400_000 is what keeps this
+  // correct across a daylight-saving change, where a local day is 23 or 25
+  // hours long and a fixed-millisecond step drifts onto the wrong date.
+  const cursor = new Date(start);
+  while (cursor.getTime() <= today.getTime()) {
+    const key = dayKey(cursor.getTime());
+    const count = counts.get(key) ?? 0;
+    total += count;
+    if (count > peak) peak = count;
+    cells.push({ day: key, ms: cursor.getTime(), count, level: 0, future: false });
+    cursor.setDate(cursor.getDate() + 1);
+    cursor.setHours(0, 0, 0, 0);
+  }
+
+  for (const cell of cells) {
+    if (cell.count === 0) continue;
+    const share = cell.count / Math.max(1, peak);
+    cell.level = share >= 0.75 ? 4 : share >= 0.5 ? 3 : share >= 0.25 ? 2 : 1;
+  }
+
+  const weeks: HeatWeek[] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push({ days: cells.slice(i, i + 7) });
+
+  return { weeks, total, peak, activeDays: cells.filter((c) => c.count > 0).length };
+}
+
 export function reviewQueue(data: UserData, bank: Question[]): Question[] {
   const byQuestion = new Map<string, Attempt[]>();
   for (const a of data.attempts) {

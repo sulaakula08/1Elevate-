@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getSubject } from "@/data/exams";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
+import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 import {
   byDifficulty,
   byMode,
@@ -15,7 +16,6 @@ import {
   medianSeconds,
   overall,
   pct,
-  recentActivity,
   scoreStanding,
   streak,
   weakTopics,
@@ -220,12 +220,10 @@ function ProgressInner() {
         </section>
       )}
 
-      {/* ---------------- activity heatmap ---------------- */}
-      <section className="py-12 border-t">
-        <p className="label-xs">{t("progress.heatmap")}</p>
-        <p className="mt-2 text-[13px] text-muted">{t("progress.heatmapHint")}</p>
-        <Heatmap days={recentActivity(data.attempts, 56)} />
-      </section>
+      {/* activity — a year at a glance, replacing the 14-day bars. Two weeks
+          was too short a window to show a habit forming, which is the whole
+          point of putting practice history in front of a student. */}
+      <ActivityHeatmap attempts={data.attempts} />
 
       {/* ---------------- score trend ---------------- */}
       <section className="py-12 border-t">
@@ -469,50 +467,6 @@ function ScoreDial({ score, target, max }: { score: number; target: number; max:
   );
 }
 
-/**
- * Eight weeks of activity as a calendar grid — a week per column, a day per row.
- * The daily bar chart it replaces could only ever show a fortnight, which is too
- * short a window to see a habit form or lapse.
- */
-function Heatmap({ days }: { days: { day: string; count: number }[] }) {
-  const peak = Math.max(1, ...days.map((d) => d.count));
-  const weeks: { day: string; count: number }[][] = [];
-  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-  const total = days.reduce((sum, d) => sum + d.count, 0);
-  const active = days.filter((d) => d.count > 0).length;
-
-  return (
-    <div className="mt-5">
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {weeks.map((week, w) => (
-          <div key={w} className="flex flex-col gap-1">
-            {week.map((day) => {
-              // Four visible steps: absent, light, medium, full. A continuous
-              // opacity ramp reads as noise at this size.
-              const step = day.count === 0 ? 0 : Math.ceil((day.count / peak) * 3);
-              return (
-                <div
-                  key={day.day}
-                  title={`${day.day}: ${day.count}`}
-                  className="w-3.5 h-3.5 rounded-[3px]"
-                  style={{
-                    background:
-                      step === 0
-                        ? "var(--line)"
-                        : `color-mix(in srgb, var(--brand) ${step * 33}%, var(--surface-2))`,
-                  }}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-      <p className="num text-[11.5px] text-faint mt-3">
-        {total} · {active}/{days.length}
-      </p>
-    </div>
-  );
-}
 
 /** Inline line chart on the 400–1600 SAT scale, with the target ruled across. */
 function ScoreTrend({
