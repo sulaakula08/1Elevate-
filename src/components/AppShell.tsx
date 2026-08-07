@@ -1,6 +1,8 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/lib/app-state";
+import { loadSidebarCollapsed, saveSidebarCollapsed } from "@/lib/storage";
 import { Sidebar } from "./Sidebar";
 import { MobileHeader, MobileTabs } from "./MobileBar";
 import { TopBar } from "./TopBar";
@@ -12,6 +14,25 @@ import { Footer } from "./Footer";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { account, ready } = useApp();
+  /**
+   * Collapsed rail state. Starts expanded and reads the stored preference after
+   * mount rather than during render: localStorage is not available on the
+   * server, and guessing would hydrate the wrong width.
+   */
+  const [collapsed, setCollapsed] = useState(false);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setCollapsed(loadSidebarCollapsed());
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const toggleSidebar = useCallback(() => {
+    setCollapsed((previous) => {
+      saveSidebarCollapsed(!previous);
+      return !previous;
+    });
+  }, []);
 
   if (!ready) {
     return (
@@ -46,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh">
-      <Sidebar account={account} />
+      <Sidebar account={account} collapsed={collapsed} onToggle={toggleSidebar} />
       <div className="flex-1 min-w-0 flex flex-col">
         <MobileHeader />
         <main className="flex-1 w-full max-w-5xl px-4 sm:px-8 py-6 sm:py-8">{children}</main>

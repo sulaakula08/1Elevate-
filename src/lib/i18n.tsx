@@ -36,6 +36,8 @@ const D: Dict = {
   "side.progress": { en: "Progress" },
   "side.learn": { en: "Learn" },
   "side.manage": { en: "Manage" },
+  "side.collapse": { en: "Collapse sidebar" },
+  "side.expand": { en: "Expand sidebar" },
 
   /* ---------------- dashboard: bank + analytics ---------------- */
   "bank.title": { en: "Question Bank" },

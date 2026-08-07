@@ -83,6 +83,7 @@ const K = {
   custom: `${NS}.customQuestions`,
   theme: `${NS}.theme`,
   tour: `${NS}.tourDone`,
+  sidebar: `${NS}.sidebarCollapsed`,
   /** Set once the pre-Supabase local profiles have been cleared. */
   legacyPurged: `${NS}.legacyPurged`,
   user: (id: string) => `${NS}.user.${id}`,
@@ -246,6 +247,16 @@ export function loadTheme(): "light" | "dark" | null {
 
 export function saveTheme(theme: "light" | "dark") {
   write(K.theme, theme);
+}
+
+/* ---------------- sidebar ---------------- */
+
+export function loadSidebarCollapsed(): boolean {
+  return read<boolean>(K.sidebar, false);
+}
+
+export function saveSidebarCollapsed(collapsed: boolean) {
+  write(K.sidebar, collapsed);
 }
 
 /* ---------------- product tour ---------------- */

@@ -5,7 +5,7 @@ import type { CopyDict } from "./index";
 export const STUDY_COPY: CopyDict = {
   /* ---------------- question bank ---------------- */
   "study.bankTitle": { en: "Question bank" },
-  "study.bankSub": { en: "Pick a section and a level — a session is 10 questions, starting with the ones you got wrong." },
+  "study.bankSub": { en: "Browse by section, or by the domains and topics the exam is actually built from. A session is 10 questions, starting with the ones you got wrong." },
   "study.filterSection": { en: "Section" },
   "study.filterStatus": { en: "Status" },
   "study.allSections": { en: "All sections" },
@@ -20,6 +20,13 @@ export const STUDY_COPY: CopyDict = {
   "study.resumeSession": { en: "Resume" },
   "study.noMatch": { en: "No questions match these filters. Clear one of them." },
   "study.inReview": { en: "in review" },
+  "study.topicsLabel": { en: "topics" },
+  "study.clearFilters": { en: "Clear filters" },
+  "study.viewLabel": { en: "How to browse the bank" },
+  "study.viewSections": { en: "Sections" },
+  "study.viewTopics": { en: "Domains & topics" },
+  "study.searchTopics": { en: "Search topics" },
+  "study.practiseTopic": { en: "Practise" },
 
   /* ---------------- question player ---------------- */
   "study.passage": { en: "Passage" },

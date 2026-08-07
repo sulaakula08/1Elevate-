@@ -1,103 +1,124 @@
 import * as THREE from "three";
+import { createStudioEnvironment } from "./environment";
 import type { Pointer, Quality, SceneContext } from "./stage";
 
 /**
  * SAT Reading & Writing — "The Page".
  *
- * Three large page planes, gently fanning, with a handful of bold lines writing
- * themselves onto the front one and a highlight settling under the line being
- * read. Few, large shapes rather than many small ones.
+ * A stack of real sheets — thin slabs with edges that catch the light — fanning
+ * slowly, with bold lines writing themselves onto the front one and a highlight
+ * settling under the line being read. The writing gesture tells the section's
+ * story: reading closely, then revising until the sentence is clear.
  *
- * This replaces an earlier version with 27 thin bars that scattered and settled:
- * at card size that read as a barcode falling over. Big planes with clear edges
- * hold their shape, and the writing gesture tells the section's story — reading
- * closely, then revising until the sentence is clear.
+ * This replaces a version built from unlit transparent planes. Flat planes have
+ * no edge and no thickness, so a stack of them reads as three decals at
+ * different opacities rather than as paper. Extruding each sheet and lighting it
+ * against a studio environment costs almost nothing at this size and gives the
+ * two cues that sell paper: a bright edge where the sheet ends, and a soft sheen
+ * across its face that shifts as it turns.
  */
 
-const PAGE_W = 1.78;
-const PAGE_H = 2.34;
+const PAGE_W = 1.76;
+const PAGE_H = 2.32;
+const PAGE_D = 0.035;
 const LINES = 7;
-const LINE_H = 0.075;
+const LINE_H = 0.072;
 const LINE_GAP = 0.245;
 
 /** Fraction of page width per line, giving a paragraph rhythm. */
 const WIDTHS = [0.94, 0.88, 0.97, 0.52, 0.91, 0.84, 0.46];
 
-export function createScene(quality: Quality): SceneContext {
+export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): SceneContext {
   const scene = new THREE.Scene();
+  const environment = createStudioEnvironment(renderer);
+  scene.environment = environment.texture;
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 40);
-  camera.position.set(0, 0, 5.1);
+  camera.position.set(0, 0, 5.05);
   camera.lookAt(0, 0, 0);
 
   const world = new THREE.Group();
-  // Fixed three-quarter view: the pages read as physical sheets with no motion
-  // required at all.
+  // Three-quarter view: the sheets read as physical objects with no motion at all.
   world.rotation.y = -0.4;
   world.rotation.x = 0.07;
   scene.add(world);
 
-  /* ---------------- the pages ---------------- */
+  /* ---------------- lighting ----------------
+     Paper is diffuse with a faint sheen, so it needs a defined key to model the
+     surface and a rim to light the cut edges of the stack. */
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+
+  const key = new THREE.DirectionalLight(0xffffff, 2.3);
+  key.position.set(-1.8, 2.6, 3.2);
+  scene.add(key);
+
+  const fill = new THREE.DirectionalLight(0xcbd8ff, 0.55);
+  fill.position.set(2.6, -0.8, 1.2);
+  scene.add(fill);
+
+  const edgeLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  edgeLight.position.set(2.2, 1.4, -2.4);
+  scene.add(edgeLight);
+
+  /* ---------------- the sheets ---------------- */
 
   const pageCount = quality.density < 0.8 ? 2 : 3;
-  const pageGeo = new THREE.PlaneGeometry(PAGE_W, PAGE_H);
+  const pageGeo = new THREE.BoxGeometry(PAGE_W, PAGE_H, PAGE_D);
 
-  // One material per depth so each sheet sits back a little further. Three
-  // materials is nothing, and it avoids per-instance alpha gymnastics.
   const pages: THREE.Mesh[] = [];
   for (let p = 0; p < pageCount; p++) {
-    const mat = new THREE.MeshBasicMaterial({
+    const mat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
+      // Paper scatters; a low sheen and high roughness keep it from looking
+      // ceramic, while the clearcoat gives the top sheet a printed finish.
+      roughness: 0.62 + p * 0.08,
+      metalness: 0,
+      sheen: 0.5,
+      sheenRoughness: 0.8,
+      sheenColor: new THREE.Color(0xdfe7ff),
+      clearcoat: p === 0 ? 0.35 : 0,
+      clearcoatRoughness: 0.5,
+      envMapIntensity: 0.85,
       transparent: true,
-      opacity: 0.14 - p * 0.035,
-      depthWrite: false,
-      side: THREE.DoubleSide,
+      // The card gradient should still read through the stack, so the sheets are
+      // translucent — just far less so than the flat planes they replace.
+      opacity: 0.9 - p * 0.16,
     });
     const page = new THREE.Mesh(pageGeo, mat);
-    page.position.set(p * 0.12, -p * 0.07, -p * 0.34);
+    page.position.set(p * 0.13, -p * 0.075, -p * 0.36);
     pages.push(page);
     world.add(page);
   }
 
-  // A crisp outline on the front sheet. The fill alone has soft edges against a
-  // gradient; the border is what makes it read as a page.
-  const edgeGeo = new THREE.EdgesGeometry(pageGeo);
-  const edgeMat = new THREE.LineBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.5,
-    depthWrite: false,
-  });
-  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
-  edges.position.z = 0.001;
-  world.add(edges);
+  /* ---------------- the text ----------------
+     Slabs rather than planes: a raised line catches the key light along its top
+     face, which is what makes it look printed onto the sheet. */
 
-  /* ---------------- the text ---------------- */
-
-  const lineGeo = new THREE.PlaneGeometry(1, LINE_H);
-  const lineMat = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.9,
-    depthWrite: false,
+  const lineGeo = new THREE.BoxGeometry(1, LINE_H, 0.012);
+  const lineMat = new THREE.MeshStandardMaterial({
+    color: 0xf4f7ff,
+    roughness: 0.32,
+    metalness: 0.05,
+    envMapIntensity: 1.1,
   });
   const lines = new THREE.InstancedMesh(lineGeo, lineMat, LINES);
   lines.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   lines.frustumCulled = false;
-  lines.position.z = 0.02;
+  lines.position.z = PAGE_D / 2 + 0.006;
   world.add(lines);
 
   /* ---------------- the highlight ---------------- */
 
-  const markGeo = new THREE.PlaneGeometry(PAGE_W * 0.98, LINE_GAP * 0.86);
+  const markGeo = new THREE.PlaneGeometry(PAGE_W * 0.96, LINE_GAP * 0.86);
   const markMat = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
+    color: 0xffe9a8,
     transparent: true,
-    opacity: 0.16,
+    opacity: 0.34,
     depthWrite: false,
   });
   const mark = new THREE.Mesh(markGeo, markMat);
-  mark.position.z = 0.01;
+  mark.position.z = PAGE_D / 2 + 0.002;
   world.add(mark);
 
   const dummy = new THREE.Object3D();
@@ -122,7 +143,7 @@ export function createScene(quality: Quality): SceneContext {
       const full = WIDTHS[i] * PAGE_W;
       const w = Math.max(0.0001, full * grow);
 
-      // Anchor left: the plane is centred, so shift by half the drawn width.
+      // Anchor left: the box is centred, so shift by half the drawn width.
       dummy.position.set(leftX + w / 2, topY - i * LINE_GAP, 0);
       dummy.scale.set(w, 1, 1);
       dummy.updateMatrix();
@@ -135,19 +156,17 @@ export function createScene(quality: Quality): SceneContext {
     const writingIndex = Math.min(LINES - 1, Math.floor(t / PER_LINE));
     const targetMarkY = topY - writingIndex * LINE_GAP;
     mark.position.y += (targetMarkY - mark.position.y) * Math.min(1, delta * 7);
-    markMat.opacity = 0.16;
 
-    // Pages breathe: a very slow fan, so the stack never looks like flat decals.
+    // Sheets breathe: a very slow fan, so the stack never looks welded together.
     for (let p = 0; p < pages.length; p++) {
-      pages[p].rotation.z = Math.sin(elapsed * 0.22 + p * 0.9) * 0.016 * (p + 1);
+      pages[p].rotation.z = Math.sin(elapsed * 0.22 + p * 0.9) * 0.018 * (p + 1);
     }
-    edges.rotation.z = pages[0].rotation.z;
 
-    const targetY = -0.4 + pointer.x * 0.18;
-    const targetX = 0.07 - pointer.y * 0.09;
+    const targetY = -0.4 + pointer.x * 0.2;
+    const targetX = 0.07 - pointer.y * 0.1;
     world.rotation.y += (targetY - world.rotation.y) * Math.min(1, delta * 3.5);
     world.rotation.x += (targetX - world.rotation.x) * Math.min(1, delta * 3.5);
   }
 
-  return { scene, camera, update };
+  return { scene, camera, update, dispose: environment.dispose };
 }

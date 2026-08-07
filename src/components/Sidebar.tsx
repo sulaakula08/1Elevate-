@@ -31,8 +31,22 @@ const PRACTICE: Item[] = [
 const PROGRESS: Item[] = [{ href: "/progress", key: "nav.progress", Icon: NavProgress }];
 const LEARN: Item[] = [{ href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial }];
 
-/** Desktop navigation rail: brand, exam switcher, grouped links, account row. */
-export function Sidebar({ account }: { account: Account }) {
+/**
+ * Desktop navigation rail: brand, exam switcher, grouped links, account row.
+ *
+ * Collapsing keeps every destination reachable rather than hiding them behind a
+ * menu — the icons stay, the labels go, and each link keeps a title so the rail
+ * is still legible at 4rem wide.
+ */
+export function Sidebar({
+  account,
+  collapsed = false,
+  onToggle,
+}: {
+  account: Account;
+  collapsed?: boolean;
+  onToggle?: () => void;
+}) {
   const { t, tx } = useI18n();
   const { data } = useApp();
   const pathname = usePathname();
@@ -43,33 +57,79 @@ export function Sidebar({ account }: { account: Account }) {
 
   const renderGroup = (label: string | null, items: Item[]) => (
     <>
-      {label && <p className="side-group">{label}</p>}
+      {label && !collapsed && <p className="side-group">{label}</p>}
       {items.map(({ href, key, Icon }) => (
         <Link
           key={href}
           href={href}
           className={`side-link ${isActive(href) ? "side-link-on" : ""}`}
+          title={collapsed ? t(key) : undefined}
         >
           <Icon size={18} />
-          <span className="truncate">{t(key)}</span>
+          {!collapsed && <span className="truncate">{t(key)}</span>}
         </Link>
       ))}
     </>
   );
 
   return (
-    <aside className="sidebar hidden md:flex">
-      <Link href="/" className="px-1.5 py-1 mb-3" aria-label="1Elevate">
-        <Logo />
-      </Link>
+    <aside className={`sidebar hidden md:flex ${collapsed ? "sidebar-tight" : ""}`}>
+      <div className="side-head">
+        {!collapsed && (
+          <Link href="/" className="min-w-0" aria-label="1Elevate">
+            <Logo />
+          </Link>
+        )}
+        {onToggle && (
+          <button
+            type="button"
+            className="bar-btn side-toggle"
+            onClick={onToggle}
+            aria-pressed={collapsed}
+            aria-label={collapsed ? t("side.expand") : t("side.collapse")}
+            title={collapsed ? t("side.expand") : t("side.collapse")}
+          >
+            {/* A panel with a chevron: the icon says "rail", the chevron says
+                which way it will move. */}
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
+              <rect
+                x="3.2"
+                y="4.2"
+                width="17.6"
+                height="15.6"
+                rx="3"
+                stroke="currentColor"
+                strokeWidth="1.6"
+              />
+              <path d="M9.4 4.2v15.6" stroke="currentColor" strokeWidth="1.6" />
+              <path
+                d={collapsed ? "M13.6 9.6l2.8 2.4-2.8 2.4" : "M16.8 9.6L14 12l2.8 2.4"}
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
 
       {/* the one exam, and where the student stands on its scale */}
-      <div className="px-1.5 pb-3 mb-1 border-b">
-        <p className="text-[13px] font-medium">{tx(SAT.name)}</p>
-        <p className="num text-[11px] text-faint mt-0.5">
-          {t("home.targetScore")} {account.targetScore} / {SAT.maxScore}
-        </p>
-      </div>
+      {collapsed ? (
+        <div
+          className="side-exam-tight"
+          title={`${tx(SAT.name)} · ${account.targetScore} / ${SAT.maxScore}`}
+        >
+          <span className="num">{account.targetScore}</span>
+        </div>
+      ) : (
+        <div className="px-1.5 pb-3 mb-1 border-b">
+          <p className="text-[13px] font-medium">{tx(SAT.name)}</p>
+          <p className="num text-[11px] text-faint mt-0.5">
+            {t("home.targetScore")} {account.targetScore} / {SAT.maxScore}
+          </p>
+        </div>
+      )}
 
       <nav className="flex flex-col gap-0.5">
         {renderGroup(null, TOP)}
@@ -81,10 +141,17 @@ export function Sidebar({ account }: { account: Account }) {
       </nav>
 
       {/* account row */}
-      <div className="mt-auto pt-3 border-t flex items-center gap-2.5">
+      <div
+        className={`mt-auto pt-3 border-t flex items-center gap-2.5 ${
+          collapsed ? "justify-center" : ""
+        }`}
+      >
         <Link
           href="/account"
-          className="flex items-center gap-2.5 min-w-0 flex-1 px-1 py-1.5 rounded-lg hover:bg-surface-2 transition-colors"
+          className={`flex items-center gap-2.5 min-w-0 rounded-lg hover:bg-surface-2 transition-colors ${
+            collapsed ? "p-1" : "flex-1 px-1 py-1.5"
+          }`}
+          title={collapsed ? account.name : undefined}
         >
           <span
             className="grid place-items-center w-8 h-8 rounded-full text-[11px] font-semibold shrink-0"
@@ -92,29 +159,33 @@ export function Sidebar({ account }: { account: Account }) {
           >
             {account.name.slice(0, 2).toUpperCase()}
           </span>
-          <span className="min-w-0">
-            <span className="block text-[13px] font-medium truncate">{account.name}</span>
-            <span className="block text-[11px] text-faint">
-              {days > 0 ? `🔥 ${days}` : (account.email || "SAT")}
+          {!collapsed && (
+            <span className="min-w-0">
+              <span className="block text-[13px] font-medium truncate">{account.name}</span>
+              <span className="block text-[11px] text-faint">
+                {days > 0 ? `🔥 ${days}` : (account.email || "SAT")}
+              </span>
             </span>
-          </span>
+          )}
         </Link>
-        <Link
-          href="/account"
-          className="bar-btn shrink-0"
-          aria-label={t("nav.settings")}
-          title={t("nav.settings")}
-        >
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
-            <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
-            <path
-              d="M12 3.5v2M12 18.5v2M4.9 7.8l1.7 1M17.4 15.2l1.7 1M4.9 16.2l1.7-1M17.4 8.8l1.7-1"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-          </svg>
-        </Link>
+        {!collapsed && (
+          <Link
+            href="/account"
+            className="bar-btn shrink-0"
+            aria-label={t("nav.settings")}
+            title={t("nav.settings")}
+          >
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
+              <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
+              <path
+                d="M12 3.5v2M12 18.5v2M4.9 7.8l1.7 1M17.4 15.2l1.7 1M4.9 16.2l1.7-1M17.4 8.8l1.7-1"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+          </Link>
+        )}
       </div>
     </aside>
   );

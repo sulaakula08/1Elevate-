@@ -21,6 +21,11 @@ export interface SceneContext {
   update(elapsed: number, delta: number, pointer: Pointer): void;
   /** Called on container resize, for scenes that depend on aspect. */
   layout?(aspect: number): void;
+  /**
+   * Anything the scene allocated that the graph walk in dispose() cannot reach —
+   * a pre-filtered environment render target, for instance.
+   */
+  dispose?(): void;
 }
 
 export interface Quality {
@@ -33,7 +38,12 @@ export interface Quality {
   antialias: boolean;
 }
 
-export type SceneFactory = (quality: Quality) => SceneContext;
+/**
+ * Scenes receive the renderer as well as the quality budget: a physical material
+ * needs a pre-filtered environment map, and PMREM filtering can only happen on
+ * the renderer that will draw it.
+ */
+export type SceneFactory = (quality: Quality, renderer: THREE.WebGLRenderer) => SceneContext;
 
 /** Phones get fewer objects, a lower ceiling on resolution and a slower cadence. */
 export function qualityFor(width: number): Quality {
@@ -74,8 +84,12 @@ export function createStage(
   });
   renderer.setClearAlpha(0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // Physically-lit geometry needs tone mapping or every highlight clips to a
+  // flat white blob. ACES is the filmic default and costs one shader pass.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
 
-  const ctx = factory(quality);
+  const ctx = factory(quality, renderer);
   const { scene, camera } = ctx;
 
   const pointer: Pointer = { x: 0, y: 0 };
@@ -163,6 +177,7 @@ export function createStage(
         }
       });
       scene.clear();
+      ctx.dispose?.();
 
       renderer.dispose();
       // Without this the context lingers until GC, and browsers cap live

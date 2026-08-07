@@ -1,14 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SAT, subjectColor, subjectColorSoft, subjectsFor } from "@/data/exams";
+import { SAT, getSubject, subjectColor, subjectColorSoft, subjectsFor } from "@/data/exams";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
 import { NOUNS, pluralize } from "@/lib/plural";
-import { difficultyColor, pct, reviewQueue, shuffle } from "@/lib/stats";
+import {
+  difficultyColor,
+  difficultyColorSoft,
+  pct,
+  reviewQueue,
+  shuffle,
+} from "@/lib/stats";
 import { PracticeRunner } from "@/components/PracticeRunner";
+import { SubjectScene } from "@/components/three/SubjectScene";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { ProgressBar, Reveal } from "@/components/motion";
 
@@ -17,6 +24,11 @@ const LEVELS: Difficulty[] = [1, 2, 3];
 
 /** Where a question stands for this student. Derived from attempts, never stored. */
 type Status = "all" | "new" | "wrong" | "done";
+
+/** Sections is the exam's own shape; topics is how studying actually works. */
+type View = "sections" | "topics";
+
+type Record_ = { tries: number; wrong: number; correct: number };
 
 export default function PracticePage() {
   return (
@@ -34,6 +46,10 @@ function BankInner() {
   const [section, setSection] = useState<string | null>(null);
   const [level, setLevel] = useState<Difficulty | null>(null);
   const [status, setStatus] = useState<Status>("all");
+  const [view, setView] = useState<View>("sections");
+  const [search, setSearch] = useState("");
+  /** Domains the student has folded open. Empty means "all closed but the first". */
+  const [openDomains, setOpenDomains] = useState<Set<string>>(new Set());
 
   const subjects = subjectsFor(SAT.exam);
   const stats = useMemo(() => bankStats(bank), [bank]);
@@ -43,7 +59,7 @@ function BankInner() {
    * small today, but this page filters on every keystroke of the controls.
    */
   const seen = useMemo(() => {
-    const map = new Map<string, { tries: number; wrong: number; correct: number }>();
+    const map = new Map<string, Record_>();
     for (const attempt of data.attempts) {
       const entry = map.get(attempt.questionId) ?? { tries: 0, wrong: 0, correct: 0 };
       entry.tries += 1;
@@ -73,33 +89,129 @@ function BankInner() {
 
   const pool = useMemo(() => bank.filter(matches), [bank, matches]);
 
-  function start(subjectId: string | null, title: string) {
-    const draw = pool.filter((q) => (subjectId ? q.subjectId === subjectId : true));
+  /** Solved = answered correctly at least once. The bank's own progress measure. */
+  const solvedIds = useMemo(
+    () =>
+      new Set(data.attempts.filter((a) => a.correct).map((a) => a.questionId)),
+    [data.attempts],
+  );
+
+  /**
+   * The pool arranged the way the College Board arranges its own content: four
+   * domains per section, each holding the skills it tests. This is the view a
+   * student actually needs — "I am weak at Advanced Math" is a sentence about a
+   * domain, not about a section.
+   */
+  const domains = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const groups = new Map<
+      string,
+      {
+        key: string;
+        subjectId: string;
+        total: number;
+        solved: number;
+        tries: number;
+        correct: number;
+        topics: Map<
+          string,
+          { key: string; total: number; solved: number; tries: number; correct: number }
+        >;
+      }
+    >();
+
+    for (const question of pool) {
+      if (term && !`${question.topic} ${question.domain ?? ""}`.toLowerCase().includes(term)) {
+        continue;
+      }
+      // A question without a domain still belongs somewhere: its topic is the
+      // finest label it has, so it groups under the section instead.
+      const domainKey = question.domain ?? tx(getSubject(question.subjectId)?.name) ?? "—";
+      const group =
+        groups.get(domainKey) ??
+        {
+          key: domainKey,
+          subjectId: question.subjectId,
+          total: 0,
+          solved: 0,
+          tries: 0,
+          correct: 0,
+          topics: new Map(),
+        };
+
+      const record = seen.get(question.id);
+      const isSolved = solvedIds.has(question.id);
+      group.total += 1;
+      if (isSolved) group.solved += 1;
+      group.tries += record?.tries ?? 0;
+      group.correct += record?.correct ?? 0;
+
+      const topic =
+        group.topics.get(question.topic) ??
+        { key: question.topic, total: 0, solved: 0, tries: 0, correct: 0 };
+      topic.total += 1;
+      if (isSolved) topic.solved += 1;
+      topic.tries += record?.tries ?? 0;
+      topic.correct += record?.correct ?? 0;
+      group.topics.set(question.topic, topic);
+
+      groups.set(domainKey, group);
+    }
+
+    return [...groups.values()]
+      .map((group) => ({
+        ...group,
+        topicList: [...group.topics.values()].sort((a, b) => b.total - a.total),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [pool, search, seen, solvedIds, tx]);
+
+  /**
+   * Draws a session from the pool.
+   *
+   * Weight the draw towards questions answered wrong or never seen, then ramp
+   * easy → hard when no single level was chosen. Both behaviours predate this
+   * redesign and are the reason a session feels targeted rather than random.
+   */
+  function start(pick: (question: Question) => boolean, title: string) {
+    const draw = pool.filter(pick);
     if (draw.length === 0) return;
 
-    // Weight the draw towards questions answered wrong or never seen, then ramp
-    // easy → hard when no single level was chosen. Both behaviours predate this
-    // redesign and are the reason a session feels targeted rather than random.
     const priority = draw.filter((q) => !seen.has(q.id) || (seen.get(q.id)?.wrong ?? 0) > 0);
-    const rest = draw.filter((q) => !priority.includes(q));
+    const priorityIds = new Set(priority.map((q) => q.id));
+    const rest = draw.filter((q) => !priorityIds.has(q.id));
     let questions = [...shuffle(priority), ...shuffle(rest)].slice(0, SESSION_SIZE);
     if (!level) questions = [...questions].sort((a, b) => a.difficulty - b.difficulty);
     setSession({ questions, title });
   }
 
   if (session) {
+    const first = session.questions[0];
     return (
       <PracticeRunner
         questions={session.questions}
         mode="practice"
         title={session.title}
         onExit={() => setSession(null)}
-        onRestart={() => start(session.questions[0]?.subjectId ?? null, session.title)}
+        onRestart={() =>
+          start(
+            (q) => q.subjectId === first?.subjectId && q.topic === first?.topic,
+            session.title,
+          )
+        }
       />
     );
   }
 
-  const filtersOn = section !== null || level !== null || status !== "all";
+  const filtersOn = section !== null || level !== null || status !== "all" || search !== "";
+  const poolSolved = pool.filter((q) => solvedIds.has(q.id)).length;
+  // Set membership, not a nested scan: this runs on every keystroke of the
+  // topic search, over the whole attempt log.
+  const poolIds = new Set(pool.map((q) => q.id));
+  const poolTries = data.attempts.filter((a) => poolIds.has(a.questionId));
+  const poolAccuracy = poolTries.length
+    ? poolTries.filter((a) => a.correct).length / poolTries.length
+    : null;
 
   return (
     <div className="max-w-3xl mx-auto pb-8">
@@ -124,6 +236,8 @@ function BankInner() {
           ))}
         </Filter>
 
+        {/* Difficulty chips carry the level's own colour as a dot, in both
+            states — a filter you have to select to identify is not a filter. */}
         <Filter label={t("quiz.difficulty")}>
           <Chip on={level === null} onClick={() => setLevel(null)}>
             {t("diff.all")}
@@ -134,6 +248,7 @@ function BankInner() {
               on={level === value}
               onClick={() => setLevel(value)}
               tone={difficultyColor(value)}
+              dot
             >
               {t(`diff.${value}`)}
               <span className="qb-count">{stats.byLevel[value]}</span>
@@ -157,16 +272,22 @@ function BankInner() {
         </Filter>
       </div>
 
-      {/* ---------------- result ---------------- */}
-      <div className="mt-6 flex items-baseline gap-3">
-        <p className="text-[14px]">
-          <span className="num font-semibold">{pluralize(pool.length, NOUNS.question)}</span>
-        </p>
-        {queued.size > 0 && (
-          <p className="text-[13px] text-muted">
-            <span className="num">{queued.size}</span> {t("study.inReview")}
-          </p>
-        )}
+      {/* ---------------- coverage ---------------- */}
+      <div className="qb-cover mt-7">
+        <CoverageRing solved={poolSolved} total={pool.length} />
+        <div className="flex flex-wrap items-baseline gap-x-8 gap-y-3">
+          <Stat
+            label={t("study.solvedOf")}
+            value={`${poolSolved}/${pool.length}`}
+          />
+          {poolAccuracy !== null && (
+            <Stat label={t("study.accuracy")} value={pct(poolAccuracy)} />
+          )}
+          {queued.size > 0 && (
+            <Stat label={t("study.inReview")} value={String(queued.size)} tone="var(--danger)" />
+          )}
+          <Stat label={t("study.topicsLabel")} value={String(stats.topics)} />
+        </div>
         {filtersOn && (
           <button
             className="btn btn-sm ml-auto"
@@ -174,16 +295,54 @@ function BankInner() {
               setSection(null);
               setLevel(null);
               setStatus("all");
+              setSearch("");
             }}
           >
-            {t("diff.all")}
+            {t("study.clearFilters")}
           </button>
         )}
       </div>
 
+      {/* ---------------- view switch ---------------- */}
+      <div className="mt-7 flex flex-wrap items-center gap-3">
+        <div className="qb-views" role="tablist" aria-label={t("study.viewLabel")}>
+          {(
+            [
+              ["sections", t("study.viewSections")],
+              ["topics", t("study.viewTopics")],
+            ] as [View, string][]
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              role="tab"
+              aria-selected={view === value}
+              className={`qb-view ${view === value ? "qb-view-on" : ""}`}
+              onClick={() => setView(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {view === "topics" && (
+          <input
+            className="field max-w-[16rem]"
+            placeholder={t("study.searchTopics")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        )}
+
+        <p className="text-[13px] text-muted ml-auto">
+          <span className="num font-semibold text-foreground">
+            {pluralize(pool.length, NOUNS.question)}
+          </span>
+        </p>
+      </div>
+
       {pool.length === 0 ? (
         <EmptyState>{t("study.noMatch")}</EmptyState>
-      ) : (
+      ) : view === "sections" ? (
         <ul className="grid sm:grid-cols-2 gap-3 mt-4">
           {subjects
             .filter((subject) => !section || subject.id === section)
@@ -210,13 +369,21 @@ function BankInner() {
               return (
                 <Reveal as="li" key={subject.id} delay={i * 55}>
                   <div
-                    className="card-tone p-5 h-full flex flex-col gap-4"
+                    className="card-tone relative overflow-hidden p-5 h-full flex flex-col gap-4"
                     style={{
                       ["--tone" as string]: subjectColor(subject.id),
                       ["--tone-soft" as string]: subjectColorSoft(subject.id),
                     }}
                   >
-                    <div className="flex items-start gap-3">
+                    {/* The subject's own scene, lit and turning. It sits behind
+                        the content and takes no pointer events, so every control
+                        on the card still works. */}
+                    <SubjectScene
+                      kind={subject.id === "sat-math" ? "math" : "verbal"}
+                      className="qb-card-scene"
+                    />
+
+                    <div className="relative flex items-start gap-3">
                       <span className="glyph" aria-hidden>
                         {subject.glyph}
                       </span>
@@ -233,7 +400,7 @@ function BankInner() {
 
                     {/* Progress, then the level mix — what is left to do, and how
                         hard it gets. */}
-                    <div className="space-y-2">
+                    <div className="relative space-y-2">
                       <div className="flex items-baseline gap-2 text-[12.5px] text-muted">
                         <span className="num">
                           {solved} / {subjectTotal}
@@ -251,7 +418,7 @@ function BankInner() {
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="relative space-y-2.5">
                       <div className="qb-mix" role="img" aria-label={t("study.mixTitle")}>
                         {mix.map(({ value, count }) => (
                           <span
@@ -264,23 +431,19 @@ function BankInner() {
                           />
                         ))}
                       </div>
-                      <p className="qb-legend">
+                      <div className="flex flex-wrap gap-1.5">
                         {mix.map(({ value, count }) => (
-                          <span key={value}>
-                            <span
-                              className="qb-legend-dot"
-                              style={{ background: difficultyColor(value) }}
-                            />
-                            {t(`diff.${value}`)} <span className="num">{count}</span>
-                          </span>
+                          <LevelPill key={value} level={value} label={t(`diff.${value}`)}>
+                            {count}
+                          </LevelPill>
                         ))}
-                      </p>
+                      </div>
                     </div>
 
                     <button
-                      className="btn btn-primary btn-sm mt-auto w-full"
+                      className="btn btn-primary btn-sm mt-auto w-full relative"
                       disabled={available.length === 0}
-                      onClick={() => start(subject.id, name)}
+                      onClick={() => start((q) => q.subjectId === subject.id, name)}
                     >
                       {attempted.length > 0 ? t("study.resumeSession") : t("study.startSession")}
                     </button>
@@ -288,6 +451,100 @@ function BankInner() {
                 </Reveal>
               );
             })}
+        </ul>
+      ) : domains.length === 0 ? (
+        <EmptyState>{t("study.noMatch")}</EmptyState>
+      ) : (
+        <ul className="space-y-2.5 mt-4">
+          {domains.map((domain, i) => {
+            // The first group opens by default: a screen of closed rows makes a
+            // student click before they learn anything.
+            const open = openDomains.size === 0 ? i === 0 : openDomains.has(domain.key);
+            const accuracy = domain.tries ? domain.correct / domain.tries : null;
+            return (
+              <Reveal as="li" key={domain.key} delay={i * 45}>
+                <div
+                  className="qb-domain"
+                  style={{ ["--tone" as string]: subjectColor(domain.subjectId) }}
+                >
+                  <button
+                    className="qb-domain-head"
+                    aria-expanded={open}
+                    onClick={() =>
+                      setOpenDomains((previous) => {
+                        // First interaction has to materialise the implicit
+                        // "first one open" state, or toggling row 1 does nothing.
+                        const next = new Set(
+                          previous.size === 0 ? [domains[0].key] : previous,
+                        );
+                        if (next.has(domain.key)) next.delete(domain.key);
+                        else next.add(domain.key);
+                        return next;
+                      })
+                    }
+                  >
+                    <span className="qb-domain-rule" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14.5px] font-semibold truncate">
+                        {domain.key}
+                      </span>
+                      <span className="block text-[12px] text-muted mt-0.5">
+                        {pluralize(domain.topicList.length, NOUNS.topic)} ·{" "}
+                        <span className="num">
+                          {domain.solved}/{domain.total}
+                        </span>{" "}
+                        {t("study.solvedOf")}
+                        {accuracy !== null && (
+                          <>
+                            {" · "}
+                            <span className="num">{pct(accuracy)}</span>
+                          </>
+                        )}
+                      </span>
+                    </span>
+                    <span className="w-20 shrink-0 hidden sm:block">
+                      <ProgressBar
+                        value={domain.total ? domain.solved / domain.total : 0}
+                        tone="accent"
+                      />
+                    </span>
+                    <span
+                      className="text-faint text-[12px] shrink-0 transition-transform"
+                      style={{ transform: open ? "rotate(90deg)" : "none" }}
+                      aria-hidden
+                    >
+                      ▸
+                    </span>
+                  </button>
+
+                  {open &&
+                    domain.topicList.map((topic) => {
+                      const topicAccuracy = topic.tries ? topic.correct / topic.tries : null;
+                      return (
+                        <div key={topic.key} className="qb-topic">
+                          <span className="min-w-0 flex-1 text-[13.5px] truncate">
+                            {topic.key}
+                          </span>
+                          <Pips solved={topic.solved} total={topic.total} />
+                          <span className="num text-[12px] text-muted w-14 text-right">
+                            {topic.solved}/{topic.total}
+                          </span>
+                          <span className="num text-[12px] text-faint w-10 text-right">
+                            {topicAccuracy === null ? "—" : pct(topicAccuracy)}
+                          </span>
+                          <button
+                            className="btn btn-sm shrink-0"
+                            onClick={() => start((q) => q.topic === topic.key, topic.key)}
+                          >
+                            {t("study.practiseTopic")}
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              </Reveal>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -308,12 +565,15 @@ function Chip({
   on,
   onClick,
   tone,
+  dot,
   children,
 }: {
   on: boolean;
   onClick: () => void;
-  /** Selected chips in the difficulty row take that level's colour. */
+  /** Chips in the difficulty row carry that level's colour. */
   tone?: string;
+  /** Show the tone as a leading dot, so an unselected chip still reads. */
+  dot?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -321,9 +581,100 @@ function Chip({
       className={`chip ${on && !tone ? "chip-on" : ""}`}
       aria-pressed={on}
       onClick={onClick}
-      style={on && tone ? { background: tone, borderColor: tone, color: "#fff" } : undefined}
+      style={
+        on && tone
+          ? { background: tone, borderColor: tone, color: "#fff" }
+          : tone
+            ? { borderColor: `color-mix(in srgb, ${tone} 40%, var(--line-strong))` }
+            : undefined
+      }
     >
+      {dot && tone && (
+        <span
+          className="qb-legend-dot"
+          style={{ background: on ? "#fff" : tone, marginRight: 0 }}
+          aria-hidden
+        />
+      )}
       {children}
     </button>
+  );
+}
+
+function LevelPill({
+  level,
+  label,
+  children,
+}: {
+  level: Difficulty;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className="qb-level"
+      style={{
+        ["--tone" as string]: difficultyColor(level),
+        ["--tone-soft" as string]: difficultyColorSoft(level),
+      }}
+    >
+      <span className="qb-level-dot" aria-hidden />
+      {label} <span className="num">{children}</span>
+    </span>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div>
+      <p className="num text-[18px] font-medium" style={tone ? { color: tone } : undefined}>
+        {value}
+      </p>
+      <p className="text-[11.5px] text-muted mt-0.5">{label}</p>
+    </div>
+  );
+}
+
+/** Four-state mastery ladder for a topic. See `.qb-pips` for why not a number. */
+function Pips({ solved, total }: { solved: number; total: number }) {
+  const ratio = total ? solved / total : 0;
+  const filled = solved === 0 ? 0 : ratio >= 0.999 ? 4 : ratio >= 0.6 ? 3 : ratio >= 0.25 ? 2 : 1;
+  const tone =
+    filled === 4 ? "var(--lvl-1)" : filled >= 2 ? "var(--lvl-2)" : "var(--line-strong)";
+  return (
+    <span className="qb-pips" style={{ ["--tone" as string]: tone }} aria-hidden>
+      {[0, 1, 2, 3].map((i) => (
+        <span key={i} className={`qb-pip ${i < filled ? "qb-pip-on" : ""}`} />
+      ))}
+    </span>
+  );
+}
+
+/** Solved-out-of-total as a ring. The one number the page is really about. */
+function CoverageRing({ solved, total }: { solved: number; total: number }) {
+  const ratio = total ? solved / total : 0;
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  return (
+    <div className="relative shrink-0" style={{ width: 64, height: 64 }}>
+      <svg width="64" height="64" viewBox="0 0 64 64" style={{ transform: "rotate(-90deg)" }}>
+        <circle cx="32" cy="32" r={radius} fill="none" stroke="var(--line)" strokeWidth="5" />
+        <circle
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+          stroke="var(--brand)"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - ratio)}
+          style={{ transition: "stroke-dashoffset 600ms cubic-bezier(0.22,0.61,0.36,1)" }}
+        />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center num text-[13px] font-semibold">
+        {Math.round(ratio * 100)}%
+      </span>
+    </div>
   );
 }
