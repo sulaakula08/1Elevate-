@@ -115,7 +115,12 @@ const D: Dict = {
   "auth.pwWeak": { en: "weak" },
   "auth.pwOk": { en: "good" },
   "auth.pwStrong": { en: "strong" },
-  "auth.err.invalidCredentials": { en: "That email and password don't match an account." },
+  // Supabase reports an unconfirmed account as "invalid credentials" on purpose,
+  // so this one message has to cover both a wrong password and an account that
+  // was never confirmed. It points at the way out instead of just saying no.
+  "auth.err.invalidCredentials": {
+    en: "That didn't work. Check the password, or create an account if you don't have one yet.",
+  },
   "auth.err.emailTaken": { en: "That email already has an account." },
   "auth.err.weakPassword": { en: "Use at least 6 characters." },
   "auth.err.invalidEmail": { en: "That doesn't look like a valid email address." },

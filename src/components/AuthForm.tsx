@@ -192,6 +192,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 {t("auth.signIn")}
               </Link>
             )}
+            {error === "invalidCredentials" && (
+              <Link href="/signup" className="underline ml-1">
+                {t("auth.signUp")}
+              </Link>
+            )}
           </p>
         )}
 

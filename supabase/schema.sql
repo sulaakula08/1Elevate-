@@ -102,6 +102,20 @@ create table if not exists public.attempts (
 -- Every analytics query filters by student, newest first.
 create index if not exists attempts_by_account on public.attempts (account_id, at desc);
 
+-- One row per answer. An attempt carries no client-side id, so this natural key
+-- is what makes the write idempotent: a retry after a dropped connection hits
+-- ON CONFLICT DO NOTHING instead of appending a second copy of the same answer.
+-- The same question genuinely cannot be answered twice in one millisecond in
+-- one mode, so this never rejects a real attempt.
+--
+-- Applying this to a database that already has duplicates will fail. Clear them
+-- first:
+--   delete from public.attempts a using public.attempts b
+--   where a.id > b.id and a.account_id = b.account_id
+--     and a.question_id = b.question_id and a.at = b.at and a.mode = b.mode;
+create unique index if not exists attempts_unique_answer
+  on public.attempts (account_id, question_id, at, mode);
+
 alter table public.attempts enable row level security;
 
 drop policy if exists "attempts: read own or admin" on public.attempts;

@@ -96,7 +96,29 @@ export async function POST(request: Request) {
   );
   if (bad) return NextResponse.json({ error: "Malformed attempt." }, { status: 400 });
 
-  const { error } = await client.from("attempts").insert(rows);
+  /*
+   * Idempotent insert.
+   *
+   * An attempt has no client-side id, so the natural key is the one the sync
+   * layer dedupes on: who, which question, when, in which mode. With the unique
+   * index in place (see supabase/schema.sql) ON CONFLICT DO NOTHING makes a
+   * retry after a dropped connection a no-op instead of a duplicate row.
+   *
+   * The fallback exists because the index has to be applied by hand to an
+   * already-deployed database. Postgres raises 42P10 when no constraint matches
+   * the conflict target; until the migration is run, a plain insert is still
+   * correct — the client dedupes on read — so the route degrades rather than
+   * failing outright.
+   */
+  const conflictTarget = "account_id,question_id,at,mode";
+  let { error } = await client
+    .from("attempts")
+    .upsert(rows, { onConflict: conflictTarget, ignoreDuplicates: true });
+
+  if (error?.code === "42P10") {
+    ({ error } = await client.from("attempts").insert(rows));
+  }
+
   if (error) {
     // The driver message can name columns and constraints, so it stays server-side.
     if (process.env.NODE_ENV !== "production") console.error("[attempts]", error);

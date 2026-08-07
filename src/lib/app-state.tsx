@@ -34,6 +34,7 @@ import {
   signUpWithPassword,
 } from "./auth";
 import { apiFetch, supabase, supabaseReady } from "./supabase/client";
+import { merge as mergeHistory, push as pushHistory } from "./sync";
 
 export type AuthResult = AuthOutcome;
 
@@ -143,9 +144,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async function adopt(hasSession: boolean) {
       const profile = hasSession ? await loadProfile() : null;
       if (!live) return;
+
       setAccount(profile);
-      setData(profile ? loadUserData(profile.id) : EMPTY_USER_DATA);
+      if (!profile) {
+        setData(EMPTY_USER_DATA);
+        setReady(true);
+        return;
+      }
+
+      // Render the cached history immediately, then reconcile with the server.
+      // Waiting for the network before first paint would make every sign-in
+      // feel slow for no benefit.
+      const cached = loadUserData(profile.id);
+      setData(cached);
       setReady(true);
+
+      const result = await mergeHistory(profile.id, cached);
+      if (!live || result.offline) return;
+      setData(result.data);
+      saveUserData(profile.id, result.data);
     }
 
     client.auth.getSession().then(({ data: s }) => void adopt(Boolean(s.session)));
@@ -169,7 +186,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+
   const accountId = account?.id ?? null;
+
+  // Drain whatever failed to send while the connection was down. Sending an
+  // empty push is what flushes the outbox.
+  useEffect(() => {
+    if (!accountId) return;
+    const flush = () => void pushHistory(accountId, {});
+    window.addEventListener("online", flush);
+    return () => window.removeEventListener("online", flush);
+  }, [accountId]);
 
   const bank = useMemo(() => [...SEED_QUESTIONS, ...custom], [custom]);
 
@@ -247,6 +274,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ...previous,
         attempts: [...previous.attempts, ...attempts],
       }));
+      // Write-through, not awaited: answering a question must never wait on the
+      // network. A failure is queued in the outbox and retried.
+      void pushHistory(accountId, { attempts });
     },
     [accountId, persistData],
   );
@@ -256,6 +286,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!accountId) return;
       const stored = { ...result, id: `mock-${crypto.randomUUID()}` };
       persistData((previous) => ({ ...previous, mocks: [...previous.mocks, stored] }));
+      void pushHistory(accountId, { mocks: [stored] });
     },
     [accountId, persistData],
   );
