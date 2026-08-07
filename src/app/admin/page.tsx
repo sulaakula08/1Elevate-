@@ -8,6 +8,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { newId } from "@/lib/storage";
 import { PeopleManager } from "@/components/PeopleManager";
+import { QuestionView } from "@/components/QuestionView";
 import { ConfirmDialog, EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 
 type Draft = {
@@ -95,6 +96,28 @@ function AdminInner() {
 
   const customQuestions = bank.filter((q) => q.custom);
   const subjectOptions = SUBJECTS.filter((s) => s.exam === draft.exam);
+
+  /**
+   * The draft as a `Question`, for the preview.
+   *
+   * Blank choices are dropped the same way `submit` drops them, so the preview
+   * shows the item that would actually be saved rather than a row of empties —
+   * and the answer index is clamped for the same reason it is on save.
+   */
+  const previewChoices = draft.choices.filter((c) => c.en.trim().length > 0);
+  const previewQuestion: Question = {
+    id: draft.id,
+    exam: draft.exam,
+    subjectId: draft.subjectId,
+    topic: draft.topic.trim() || tx(getSubject(draft.subjectId)?.name),
+    difficulty: draft.difficulty,
+    passage: draft.passage.en.trim() ? draft.passage : undefined,
+    prompt: draft.prompt,
+    choices: previewChoices.length > 0 ? previewChoices : [{ en: "—" }],
+    answer: Math.max(0, Math.min(draft.answer, previewChoices.length - 1)),
+    explanation: draft.explanation.en.trim() ? draft.explanation : { en: "—" },
+    custom: true,
+  };
 
   function setText(field: "passage" | "prompt" | "explanation", value: string) {
     setDraft((prev) => ({ ...prev, [field]: { en: value } }));
@@ -265,6 +288,10 @@ function AdminInner() {
             value={draft.prompt.en}
             onChange={(e) => setText("prompt", e.target.value)}
           />
+          {/* Where authors need it: beside the field they are pasting into. */}
+          <p className="text-[12.5px] leading-relaxed text-muted mt-2">
+            {t("admin.mathHint")}
+          </p>
         </div>
 
         {/*
@@ -321,6 +348,29 @@ function AdminInner() {
             onChange={(e) => setText("explanation", e.target.value)}
           />
         </div>
+
+        {/*
+          The draft as a student will actually see it, rendered by the very
+          component the player uses — not a lookalike, so a formula that renders
+          here renders there. This is the answer to "did my paste survive": an
+          author sees a fraction stacked or sees the raw notation, immediately,
+          without saving anything.
+        */}
+        {draft.prompt.en.trim() && (
+          <div className="pt-5 border-t">
+            <p className="label-xs">{t("admin.preview")}</p>
+            <div className="mt-4 rounded-[10px] border p-4">
+              <QuestionView
+                question={previewQuestion}
+                selected={previewQuestion.answer}
+                onSelect={() => {}}
+                revealed
+                disabled
+                keyboard={false}
+              />
+            </div>
+          </div>
+        )}
 
         {error && <p className="text-sm text-danger font-semibold">{error}</p>}
         {notice && <p className="text-sm text-success font-semibold">{notice}</p>}
