@@ -19,8 +19,8 @@ import { useI18n } from "@/lib/i18n";
  */
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-/** Sunday-first rows; only alternate weekdays are labelled, as in the original. */
-const WEEKDAYS = ["", "Mon", "", "Wed", "", "Fri", ""];
+/** Sunday-first rows, every day named so no row is ambiguous. */
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function ActivityHeatmap({ attempts }: { attempts: Attempt[] }) {
   const { t } = useI18n();
@@ -33,13 +33,21 @@ export function ActivityHeatmap({ attempts }: { attempts: Attempt[] }) {
   );
 
   /**
-   * A month is labelled on the first column that belongs to it. Skipping the
-   * very first column avoids a label that would sit half off the left edge when
-   * the year happens to start mid-month.
+   * A month is labelled on the first column that contains it.
+   *
+   * Two edges to respect. The first column is only labelled when most of it
+   * actually belongs to that month, otherwise a year starting on the 29th gets
+   * a label for a month it barely shows. And the last two columns are never
+   * labelled, because the text is wider than a column and would run off the
+   * right edge with nothing after it to sit over.
    */
   const labels = weeks.map((week, i) => {
-    if (i === 0) return null;
     const month = new Date(week.days[0].ms).getMonth();
+    if (i >= weeks.length - 2) return null;
+    if (i === 0) {
+      const daysOfMonth = week.days.filter((d) => new Date(d.ms).getMonth() === month).length;
+      return daysOfMonth >= 4 ? MONTHS[month] : null;
+    }
     const previous = new Date(weeks[i - 1].days[0].ms).getMonth();
     return month === previous ? null : MONTHS[month];
   });
@@ -66,7 +74,11 @@ export function ActivityHeatmap({ attempts }: { attempts: Attempt[] }) {
               <th className="heat-daylabel" />
               {labels.map((label, i) => (
                 <th key={i} className="heat-month" scope="col">
-                  {label}
+                  {/* Absolutely positioned so the text contributes nothing to
+                      the column's width. With table-layout: fixed the first row
+                      decides every column, so a label laid out normally widens
+                      its own column and shunts the grid out of alignment. */}
+                  {label && <span>{label}</span>}
                 </th>
               ))}
             </tr>
