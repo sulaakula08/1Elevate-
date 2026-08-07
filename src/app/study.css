@@ -386,8 +386,10 @@
     opacity: 0;
     mix-blend-mode: normal;
   }
+  /* Tuned against solid geometry: the earlier 0.5 was set when the scenes were
+     translucent white and needed all the help they could get. */
   .qb-card-scene[data-ready="true"] {
-    opacity: 0.5;
+    opacity: 0.68;
   }
 
   /* ---------------- view switch ---------------- */

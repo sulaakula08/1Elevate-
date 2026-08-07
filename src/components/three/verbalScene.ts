@@ -3,167 +3,243 @@ import { createStudioEnvironment } from "./environment";
 import type { Pointer, Quality, SceneContext } from "./stage";
 
 /**
- * SAT Reading & Writing — "The Page".
+ * SAT Reading & Writing — "The Book".
  *
- * A stack of real sheets — thin slabs with edges that catch the light — fanning
- * slowly, with bold lines writing themselves onto the front one and a highlight
- * settling under the line being read. The writing gesture tells the section's
- * story: reading closely, then revising until the sentence is clear.
+ * An open hardback seen three-quarter on: two covers, a block of pages either
+ * side of the spine, and single leaves lifting off the right-hand block, curling
+ * over and settling onto the left. It loops, so the book reads continuously.
  *
- * This replaces a version built from unlit transparent planes. Flat planes have
- * no edge and no thickness, so a stack of them reads as three decals at
- * different opacities rather than as paper. Extruding each sheet and lighting it
- * against a studio environment costs almost nothing at this size and gives the
- * two cues that sell paper: a bright edge where the sheet ends, and a soft sheen
- * across its face that shifts as it turns.
+ * This replaces a stack of flat sheets. A stack has no story and, rendered
+ * translucent, no substance either — it read as a smudge. A book turning its own
+ * pages is legible at a glance and is the section's subject rather than a
+ * material sample of it.
+ *
+ * The curl is the part that sells it: a page held rigid while it rotates looks
+ * like a swinging door. Each leaf is a plane with segments across its width, bent
+ * out of plane most at mid-flip and flat at both ends.
  */
 
-const PAGE_W = 1.76;
-const PAGE_H = 2.32;
-const PAGE_D = 0.035;
-const LINES = 7;
-const LINE_H = 0.072;
-const LINE_GAP = 0.245;
+/** Half-width of one page, and the page height. */
+const PAGE_W = 1.12;
+const PAGE_H = 1.5;
+const COVER_BLEED = 0.055;
+const BLOCK_D = 0.115;
 
-/** Fraction of page width per line, giving a paragraph rhythm. */
-const WIDTHS = [0.94, 0.88, 0.97, 0.52, 0.91, 0.84, 0.46];
+/** Leaves in flight at once, and seconds for one leaf to cross. */
+const LEAVES = 3;
+const FLIP_SECONDS = 2.3;
+const STAGGER = 1.15;
 
 export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): SceneContext {
   const scene = new THREE.Scene();
   const environment = createStudioEnvironment(renderer);
   scene.environment = environment.texture;
 
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 40);
-  camera.position.set(0, 0, 5.05);
-  camera.lookAt(0, 0, 0);
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 40);
+  camera.position.set(0, 0.6, 4.4);
+  camera.lookAt(0, -0.05, 0);
 
   const world = new THREE.Group();
-  // Three-quarter view: the sheets read as physical objects with no motion at all.
-  world.rotation.y = -0.4;
-  world.rotation.x = 0.07;
+  // Looking down at a book lying open on a desk, turned slightly away.
+  world.rotation.set(0.62, -0.34, 0);
   scene.add(world);
 
   /* ---------------- lighting ----------------
-     Paper is diffuse with a faint sheen, so it needs a defined key to model the
-     surface and a rim to light the cut edges of the stack. */
+     Paper is diffuse with a faint sheen. The key models the faces, and the rim
+     picks out the cut edges of the page block — the detail that says "many
+     sheets" rather than "one white box". */
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-  const key = new THREE.DirectionalLight(0xffffff, 2.3);
-  key.position.set(-1.8, 2.6, 3.2);
+  const key = new THREE.DirectionalLight(0xffffff, 2.5);
+  key.position.set(-1.6, 3.4, 2.2);
   scene.add(key);
 
-  const fill = new THREE.DirectionalLight(0xcbd8ff, 0.55);
-  fill.position.set(2.6, -0.8, 1.2);
+  const fill = new THREE.DirectionalLight(0xcfdcff, 0.6);
+  fill.position.set(2.8, 0.4, 1.4);
   scene.add(fill);
 
-  const edgeLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  edgeLight.position.set(2.2, 1.4, -2.4);
+  const edgeLight = new THREE.DirectionalLight(0xffffff, 1.35);
+  edgeLight.position.set(1.8, 1.2, -2.6);
   scene.add(edgeLight);
 
-  /* ---------------- the sheets ---------------- */
+  /* ---------------- materials ---------------- */
 
-  const pageCount = quality.density < 0.8 ? 2 : 3;
-  const pageGeo = new THREE.BoxGeometry(PAGE_W, PAGE_H, PAGE_D);
-
-  const pages: THREE.Mesh[] = [];
-  for (let p = 0; p < pageCount; p++) {
-    const mat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      // Paper scatters; a low sheen and high roughness keep it from looking
-      // ceramic, while the clearcoat gives the top sheet a printed finish.
-      roughness: 0.62 + p * 0.08,
-      metalness: 0,
-      sheen: 0.5,
-      sheenRoughness: 0.8,
-      sheenColor: new THREE.Color(0xdfe7ff),
-      clearcoat: p === 0 ? 0.35 : 0,
-      clearcoatRoughness: 0.5,
-      envMapIntensity: 0.85,
-      transparent: true,
-      // The card gradient should still read through the stack, so the sheets are
-      // translucent — just far less so than the flat planes they replace.
-      opacity: 0.9 - p * 0.16,
-    });
-    const page = new THREE.Mesh(pageGeo, mat);
-    page.position.set(p * 0.13, -p * 0.075, -p * 0.36);
-    pages.push(page);
-    world.add(page);
-  }
-
-  /* ---------------- the text ----------------
-     Slabs rather than planes: a raised line catches the key light along its top
-     face, which is what makes it look printed onto the sheet. */
-
-  const lineGeo = new THREE.BoxGeometry(1, LINE_H, 0.012);
-  const lineMat = new THREE.MeshStandardMaterial({
-    color: 0xf4f7ff,
-    roughness: 0.32,
-    metalness: 0.05,
-    envMapIntensity: 1.1,
+  const coverMat = new THREE.MeshPhysicalMaterial({
+    // A muted board rather than a saturated one: the card behind is already
+    // strongly coloured, and a dark cover would read as a hole in it.
+    color: 0xe3dcd0,
+    roughness: 0.72,
+    metalness: 0,
+    sheen: 0.6,
+    sheenRoughness: 0.7,
+    sheenColor: new THREE.Color(0xfff3dc),
+    clearcoat: 0.25,
+    clearcoatRoughness: 0.6,
+    envMapIntensity: 0.9,
   });
-  const lines = new THREE.InstancedMesh(lineGeo, lineMat, LINES);
-  lines.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  lines.frustumCulled = false;
-  lines.position.z = PAGE_D / 2 + 0.006;
-  world.add(lines);
 
-  /* ---------------- the highlight ---------------- */
+  const paperMat = new THREE.MeshPhysicalMaterial({
+    color: 0xfffdf6,
+    roughness: 0.85,
+    metalness: 0,
+    sheen: 0.35,
+    sheenRoughness: 0.9,
+    envMapIntensity: 0.7,
+  });
 
-  const markGeo = new THREE.PlaneGeometry(PAGE_W * 0.96, LINE_GAP * 0.86);
-  const markMat = new THREE.MeshBasicMaterial({
-    color: 0xffe9a8,
+  // Leaves are seen from both sides as they cross, and a printed line has to
+  // show through faintly — so: double-sided, and its own material so the flight
+  // opacity can be tuned without touching the blocks.
+  const leafMat = new THREE.MeshPhysicalMaterial({
+    color: 0xfffdf6,
+    roughness: 0.8,
+    metalness: 0,
+    sheen: 0.4,
+    sheenRoughness: 0.85,
+    envMapIntensity: 0.8,
+    side: THREE.DoubleSide,
+  });
+
+  /* ---------------- covers and page blocks ----------------
+     Each half tilts up towards the spine by a few degrees, which is what an open
+     book actually does and what stops the two halves reading as one flat slab. */
+
+  const TILT = 0.075;
+
+  /* ---------------- printed lines ----------------
+     Enough to say "text" and no more. Anything denser turns to moiré at card
+     size, and a page of legible type would have to be a texture. They are built
+     inside each half so the half's tilt carries them; positioning them in world
+     space would leave the type sliding off the page it belongs to. */
+
+  const LINES_PER_PAGE = 7;
+  const WIDTHS = [0.9, 0.82, 0.95, 0.5, 0.88, 0.78, 0.42];
+  const lineGeo = new THREE.PlaneGeometry(1, 0.038);
+  const lineMat = new THREE.MeshBasicMaterial({
+    color: 0x9a93a8,
     transparent: true,
-    opacity: 0.34,
+    opacity: 0.5,
     depthWrite: false,
   });
-  const mark = new THREE.Mesh(markGeo, markMat);
-  mark.position.z = PAGE_D / 2 + 0.002;
-  world.add(mark);
-
   const dummy = new THREE.Object3D();
-  const topY = ((LINES - 1) / 2) * LINE_GAP;
-  const leftX = -PAGE_W / 2 + 0.11;
 
-  /** Seconds to write one line, and to hold the finished paragraph. */
-  const PER_LINE = 0.55;
-  const HOLD = 3.2;
-  const CYCLE = LINES * PER_LINE + HOLD;
+  for (const side of [-1, 1] as const) {
+    const half = new THREE.Group();
+    half.rotation.z = -side * TILT;
+    world.add(half);
 
-  function update(elapsed: number, delta: number, pointer: Pointer) {
-    const t = elapsed % CYCLE;
+    const cover = new THREE.Mesh(
+      new THREE.BoxGeometry(PAGE_W + COVER_BLEED, PAGE_H + COVER_BLEED * 2, 0.04),
+      coverMat,
+    );
+    cover.position.set((side * (PAGE_W + COVER_BLEED)) / 2, 0, -BLOCK_D - 0.02);
+    half.add(cover);
 
-    for (let i = 0; i < LINES; i++) {
-      // Each line writes left to right in turn; once the paragraph is complete
-      // it stays complete for HOLD seconds before starting over.
-      const start = i * PER_LINE;
-      const raw = THREE.MathUtils.clamp((t - start) / PER_LINE, 0, 1);
-      const grow = THREE.MathUtils.smootherstep(raw, 0, 1);
+    const block = new THREE.Mesh(
+      new THREE.BoxGeometry(PAGE_W, PAGE_H, BLOCK_D),
+      paperMat,
+    );
+    block.position.set((side * PAGE_W) / 2, 0, -BLOCK_D / 2);
+    half.add(block);
 
-      const full = WIDTHS[i] * PAGE_W;
-      const w = Math.max(0.0001, full * grow);
-
-      // Anchor left: the box is centred, so shift by half the drawn width.
-      dummy.position.set(leftX + w / 2, topY - i * LINE_GAP, 0);
+    const text = new THREE.InstancedMesh(lineGeo, lineMat, LINES_PER_PAGE);
+    text.frustumCulled = false;
+    half.add(text);
+    for (let i = 0; i < LINES_PER_PAGE; i++) {
+      const w = WIDTHS[i] * PAGE_W * 0.86;
+      // Ragged right on the recto, ragged left on the verso: both pages set from
+      // the gutter outwards, which is what a spread actually looks like.
+      const x = side * (PAGE_W * 0.1 + w / 2);
+      dummy.position.set(x, PAGE_H * 0.34 - i * 0.135, 0.004);
+      dummy.rotation.set(0, 0, 0);
       dummy.scale.set(w, 1, 1);
       dummy.updateMatrix();
-      lines.setMatrixAt(i, dummy.matrix);
+      text.setMatrixAt(i, dummy.matrix);
     }
-    lines.instanceMatrix.needsUpdate = true;
+    text.instanceMatrix.needsUpdate = true;
+  }
 
-    // The highlight sits under whichever line is being written, then rests on the
-    // last one while the paragraph holds.
-    const writingIndex = Math.min(LINES - 1, Math.floor(t / PER_LINE));
-    const targetMarkY = topY - writingIndex * LINE_GAP;
-    mark.position.y += (targetMarkY - mark.position.y) * Math.min(1, delta * 7);
+  // The spine: a shallow slab bridging the two covers behind the gutter.
+  const spine = new THREE.Mesh(
+    new THREE.BoxGeometry(0.12, PAGE_H + COVER_BLEED * 2, 0.075),
+    coverMat,
+  );
+  spine.position.set(0, 0, -BLOCK_D - 0.035);
+  world.add(spine);
 
-    // Sheets breathe: a very slow fan, so the stack never looks welded together.
-    for (let p = 0; p < pages.length; p++) {
-      pages[p].rotation.z = Math.sin(elapsed * 0.22 + p * 0.9) * 0.018 * (p + 1);
+  /* ---------------- leaves in flight ----------------
+     Hinged at the gutter, so a leaf sweeps from the right block to the left one
+     by rotating about the book's vertical axis. */
+
+  const segments = quality.density < 0.8 ? 8 : 14;
+  const leaves: { mesh: THREE.Mesh; hinge: THREE.Group; base: Float32Array }[] = [];
+
+  for (let i = 0; i < LEAVES; i++) {
+    const hinge = new THREE.Group();
+    world.add(hinge);
+
+    const geo = new THREE.PlaneGeometry(PAGE_W, PAGE_H, segments, 1);
+    // Shift the plane so its left edge sits on the hinge rather than its centre.
+    geo.translate(PAGE_W / 2, 0, 0);
+    const position = geo.getAttribute("position") as THREE.BufferAttribute;
+    const base = new Float32Array(position.array);
+
+    const mesh = new THREE.Mesh(geo, leafMat);
+    hinge.add(mesh);
+    hinge.visible = false;
+    leaves.push({ mesh, hinge, base });
+  }
+
+  /**
+   * Bends one leaf around its hinge.
+   *
+   * `curl` is how far out of plane the free edge lifts; it peaks mid-flight. The
+   * bend is proportional to the square of the distance along the page, so the
+   * hinge edge stays put and the outer edge does the travelling — which is how
+   * paper behaves and why a linear bend looks like rubber.
+   */
+  function bend(leaf: (typeof leaves)[number], curl: number) {
+    const position = leaf.mesh.geometry.getAttribute("position") as THREE.BufferAttribute;
+    const { base } = leaf;
+    for (let v = 0; v < position.count; v++) {
+      const x = base[v * 3];
+      const u = x / PAGE_W;
+      position.setXYZ(v, x, base[v * 3 + 1], base[v * 3 + 2] + curl * u * u);
+    }
+    position.needsUpdate = true;
+    leaf.mesh.geometry.computeVertexNormals();
+  }
+
+  function update(elapsed: number, delta: number, pointer: Pointer) {
+    for (let i = 0; i < leaves.length; i++) {
+      const leaf = leaves[i];
+      // Each leaf runs the same flight, offset in time, so the turning never
+      // stops and never lands two leaves at the same angle.
+      const t = (elapsed + i * STAGGER) % (LEAVES * STAGGER);
+      if (t > FLIP_SECONDS) {
+        leaf.hinge.visible = false;
+        continue;
+      }
+      leaf.hinge.visible = true;
+
+      const progress = THREE.MathUtils.smootherstep(t / FLIP_SECONDS, 0, 1);
+      leaf.hinge.rotation.y = progress * Math.PI;
+      // Lift clear of the block at the start and settle onto it at the end, so
+      // the leaf never intersects the pages it is leaving or joining.
+      const arc = Math.sin(progress * Math.PI);
+      // The constant keeps the leaf off the block at both ends of the flight;
+      // exactly coplanar would z-fight for a frame as it lands.
+      leaf.hinge.position.z = 0.007 + arc * 0.14;
+      leaf.hinge.rotation.z = -TILT + arc * 0.12;
+      bend(leaf, arc * 0.3);
     }
 
-    const targetY = -0.4 + pointer.x * 0.2;
-    const targetX = 0.07 - pointer.y * 0.1;
+    // The whole book breathes very slightly, so a still frame never looks frozen.
+    world.position.y = Math.sin(elapsed * 0.5) * 0.022;
+
+    const targetY = -0.34 + pointer.x * 0.2;
+    const targetX = 0.62 - pointer.y * 0.12;
     world.rotation.y += (targetY - world.rotation.y) * Math.min(1, delta * 3.5);
     world.rotation.x += (targetX - world.rotation.x) * Math.min(1, delta * 3.5);
   }

@@ -3,184 +3,186 @@ import { createStudioEnvironment } from "./environment";
 import type { Pointer, Quality, SceneContext } from "./stage";
 
 /**
- * SAT Math — "Solid and Surface".
+ * SAT Math — "The Frame".
  *
- * A polished torus knot turning above a lit ridge surface, with a few small
- * spheres drifting around it. The knot is the object the eye lands on; the
- * surface underneath is still the graph of a function, which is the Math
- * section's core literacy.
+ * A hollow cube built from twelve square-section beams, turning slowly on a
+ * three-quarter axis. It is the one object that says "geometry" without saying
+ * anything else: parallel edges, right angles, and a visible inside.
  *
- * This replaces a version drawn entirely in unlit white LineSegments. Flat lines
- * read as a diagram, not as an object: with no shading there is no form, and the
- * only depth cue was perspective. Physical materials against a pre-filtered
- * studio environment give a real specular roll-off across a curve, which is what
- * actually makes a shape look solid at 300px. The surface keeps its lines —
- * crisp 1px strokes are the one thing WebGL renders sharply for free — but they
- * are now lit and coloured rather than uniformly white.
+ * This replaces a torus knot floating over a contour surface. Two lessons from
+ * that version: a knot has no flat faces, so at card size the shading averaged
+ * into a pale blob with no readable silhouette, and a second element behind it
+ * left the card busy with nothing to look at. Flat faces meeting at right angles
+ * give three distinct tones under one key light, which is what makes a form read
+ * as solid instantly — and the frame is alone on the card.
  */
 
-const ROWS = 15;
-const COLS = 46;
-const SPAN_X = 2.5;
-const SPAN_Z = 1.6;
+/** Half the cube's outer extent, and the square section of each beam. */
+const HALF = 0.86;
+const BEAM = 0.235;
 
 export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): SceneContext {
   const scene = new THREE.Scene();
   const environment = createStudioEnvironment(renderer);
   scene.environment = environment.texture;
 
-  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 40);
-  camera.position.set(0, 1.28, 4.05);
-  camera.lookAt(0, 0.02, 0);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 40);
+  camera.position.set(0, 0.35, 4.5);
+  camera.lookAt(0, 0, 0);
 
   const world = new THREE.Group();
+  // The classic isometric-ish three-quarter attitude: three faces visible, none
+  // of them straight on.
+  world.rotation.set(0.42, -0.62, 0.14);
   scene.add(world);
 
   /* ---------------- lighting ----------------
-     The environment does most of the work; these three shape it. A key from the
-     upper left, a cool fill from the right so the shadow side is not dead, and a
-     rim from behind to separate the silhouette from the card gradient. */
+     A hard key from the upper left does the work: each of the three visible
+     face directions takes a different amount of it, which is the whole depth
+     cue. The fill only stops the darkest face going black. */
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.42));
 
-  const key = new THREE.DirectionalLight(0xffffff, 2.1);
-  key.position.set(-2.4, 3.2, 2.6);
+  const key = new THREE.DirectionalLight(0xffffff, 2.6);
+  key.position.set(-2.2, 3.4, 2.4);
   scene.add(key);
 
-  const fill = new THREE.DirectionalLight(0xbcd0ff, 0.7);
-  fill.position.set(3, 0.6, 1.4);
+  const fill = new THREE.DirectionalLight(0xa8c4ff, 0.85);
+  fill.position.set(3.2, -0.6, 1.6);
   scene.add(fill);
 
-  const rim = new THREE.DirectionalLight(0xffffff, 1.5);
-  rim.position.set(0.4, 1.2, -3);
+  const rim = new THREE.DirectionalLight(0xffffff, 1.1);
+  rim.position.set(1.2, 0.4, -3);
   scene.add(rim);
 
-  /* ---------------- the solid ---------------- */
+  /* ---------------- the frame ----------------
+     Twelve beams rather than a wireframe: a line has no thickness and no
+     shading, so it can only ever look like a drawing of a cube. */
 
-  const detail = quality.density < 0.8 ? [96, 12] : [180, 20];
-  const knotGeo = new THREE.TorusKnotGeometry(0.62, 0.2, detail[0], detail[1], 2, 3);
-  const knotMat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff,
-    metalness: 0.28,
-    roughness: 0.12,
-    // Clearcoat is what reads as "moulded" rather than "painted" — a second,
-    // tighter highlight sitting on top of the body reflection.
-    clearcoat: 1,
-    clearcoatRoughness: 0.06,
-    envMapIntensity: 1.35,
+  const frame = new THREE.Group();
+  world.add(frame);
+
+  const material = new THREE.MeshPhysicalMaterial({
+    // A pale mint, close to the reference: cool enough to sit on a blue card,
+    // light enough to stay bright against it.
+    color: 0xbfe6e0,
+    metalness: 0.15,
+    roughness: 0.32,
+    clearcoat: 0.85,
+    clearcoatRoughness: 0.18,
+    envMapIntensity: 1.1,
+    // Opaque. The translucent version of this scene read as a smudge on the
+    // card rather than as an object sitting on it.
+    transparent: false,
   });
-  const knot = new THREE.Mesh(knotGeo, knotMat);
-  knot.position.set(0, 0.62, 0);
-  world.add(knot);
 
-  /* ---------------- the surface ---------------- */
+  const span = HALF * 2;
+  // A beam runs the full span minus the two corner blocks it meets, so corners
+  // are filled exactly once and no beam pokes out of the silhouette.
+  const long = span - BEAM;
+  const beamGeo = new THREE.BoxGeometry(long, BEAM, BEAM);
+  const cornerGeo = new THREE.BoxGeometry(BEAM, BEAM, BEAM);
 
-  const rows = Math.max(10, Math.round(ROWS * quality.density));
-  const cols = Math.max(28, Math.round(COLS * quality.density));
-  const segsPerRow = cols - 1;
+  const edge = HALF - BEAM / 2;
 
-  function buildRowGeometry(count: number) {
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute(
-      "position",
-      new THREE.BufferAttribute(new Float32Array(count * segsPerRow * 2 * 3), 3),
-    );
-    return geo;
+  // Four beams per axis, at the four combinations of the other two coordinates.
+  for (const [a, b] of [
+    [-edge, -edge],
+    [-edge, edge],
+    [edge, -edge],
+    [edge, edge],
+  ] as const) {
+    const alongX = new THREE.Mesh(beamGeo, material);
+    alongX.position.set(0, a, b);
+    frame.add(alongX);
+
+    const alongY = new THREE.Mesh(beamGeo, material);
+    alongY.position.set(a, 0, b);
+    alongY.rotation.z = Math.PI / 2;
+    frame.add(alongY);
+
+    const alongZ = new THREE.Mesh(beamGeo, material);
+    alongZ.position.set(a, b, 0);
+    alongZ.rotation.y = Math.PI / 2;
+    frame.add(alongZ);
   }
 
-  const surfaceGeo = buildRowGeometry(rows);
-  const surfaceMat = new THREE.LineBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    // Normal alpha, not additive: additive over a bright gradient clips to white
-    // and the shape disappears.
-    opacity: 0.34,
-    depthWrite: false,
-  });
-  const surface = new THREE.LineSegments(surfaceGeo, surfaceMat);
-  surface.frustumCulled = false;
-  surface.position.y = -0.42;
-  world.add(surface);
+  // The eight corners, filling the gaps the beams leave.
+  for (const x of [-edge, edge]) {
+    for (const y of [-edge, edge]) {
+      for (const z of [-edge, edge]) {
+        const corner = new THREE.Mesh(cornerGeo, material);
+        corner.position.set(x, y, z);
+        frame.add(corner);
+      }
+    }
+  }
 
-  /** One bright row travelling through the surface — the focal point. */
-  const accentGeo = buildRowGeometry(1);
-  const accentMat = new THREE.LineBasicMaterial({
-    color: 0xeaf1ff,
-    transparent: true,
-    opacity: 0.95,
-    depthWrite: false,
-  });
-  const accent = new THREE.LineSegments(accentGeo, accentMat);
-  accent.frustumCulled = false;
-  accent.position.y = surface.position.y;
-  world.add(accent);
+  /* ---------------- the aura ----------------
+     A soft disc behind the frame, facing the camera. It is what stops the cube
+     floating in nothing: a halo reads as light coming off the object, and it
+     gives the silhouette a ground to sit against on a saturated card. */
 
-  const surfacePos = surfaceGeo.getAttribute("position") as THREE.BufferAttribute;
-  const accentPos = accentGeo.getAttribute("position") as THREE.BufferAttribute;
+  const auraCanvas = document.createElement("canvas");
+  auraCanvas.width = 128;
+  auraCanvas.height = 128;
+  const auraCtx = auraCanvas.getContext("2d")!;
+  const halo = auraCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  halo.addColorStop(0, "rgba(255,255,255,0.5)");
+  halo.addColorStop(0.45, "rgba(190,235,228,0.22)");
+  halo.addColorStop(1, "rgba(190,235,228,0)");
+  auraCtx.fillStyle = halo;
+  auraCtx.fillRect(0, 0, 128, 128);
 
-  /* ---------------- drifting spheres ----------------
-     Small, glossy, and few. They exist to give the empty space above the surface
-     a sense of scale, and to put a moving highlight near the knot. */
+  const auraTex = new THREE.CanvasTexture(auraCanvas);
+  auraTex.colorSpace = THREE.SRGBColorSpace;
+  const aura = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: auraTex,
+      transparent: true,
+      depthWrite: false,
+      // Additive here is right: it is light, not a surface.
+      blending: THREE.AdditiveBlending,
+      opacity: 0.9,
+    }),
+  );
+  aura.scale.setScalar(3.6);
+  aura.position.z = -0.9;
+  scene.add(aura);
 
-  const beadCount = quality.density < 0.8 ? 3 : 6;
-  const beadGeo = new THREE.SphereGeometry(0.062, 18, 14);
+  /* ---------------- orbiting beads ---------------- */
+
+  const beadCount = quality.density < 0.8 ? 2 : 4;
+  const beadGeo = new THREE.SphereGeometry(0.052, 16, 12);
   const beadMat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
     metalness: 0.1,
-    roughness: 0.08,
-    envMapIntensity: 1.5,
+    roughness: 0.1,
+    envMapIntensity: 1.4,
   });
   const beads = new THREE.InstancedMesh(beadGeo, beadMat, beadCount);
   beads.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   beads.frustumCulled = false;
-  world.add(beads);
+  scene.add(beads);
   const dummy = new THREE.Object3D();
 
-  /** The function being graphed: two travelling waves plus a centre swell. */
-  function heightAt(x: number, z: number, t: number): number {
-    const a = Math.sin(x * 1.5 + t * 0.75) * 0.17;
-    const b = Math.sin(x * 0.75 - z * 1.05 + t * 0.5) * 0.2;
-    const swell = Math.exp(-(x * x + z * z) * 0.55) * 0.26;
-    return a + b + swell;
-  }
-
-  function writeRow(target: THREE.BufferAttribute, rowIndex: number, z: number, t: number) {
-    let ptr = rowIndex * segsPerRow * 2;
-    for (let c = 0; c < segsPerRow; c++) {
-      const x0 = THREE.MathUtils.mapLinear(c, 0, cols - 1, -SPAN_X, SPAN_X);
-      const x1 = THREE.MathUtils.mapLinear(c + 1, 0, cols - 1, -SPAN_X, SPAN_X);
-      target.setXYZ(ptr++, x0, heightAt(x0, z, t), z);
-      target.setXYZ(ptr++, x1, heightAt(x1, z, t), z);
-    }
-  }
-
-  const rowZ = (i: number) => THREE.MathUtils.mapLinear(i, 0, rows - 1, -SPAN_Z, SPAN_Z);
-
   function update(elapsed: number, delta: number, pointer: Pointer) {
-    for (let r = 0; r < rows; r++) writeRow(surfacePos, r, rowZ(r), elapsed);
-    surfacePos.needsUpdate = true;
+    // One slow turn about the vertical, with a gentle nod on top: the highlight
+    // has to travel across the faces for the material to read, and a single-axis
+    // spin at this speed leaves one face lit the whole time.
+    frame.rotation.y = elapsed * 0.3;
+    frame.rotation.x = Math.sin(elapsed * 0.24) * 0.16;
+    frame.position.y = Math.sin(elapsed * 0.55) * 0.05;
 
-    // The accent sweeps front to back on a slow loop, landing between rows so it
-    // never simply overlaps one and cancels out.
-    const sweep = (elapsed % 7) / 7;
-    writeRow(accentPos, 0, THREE.MathUtils.lerp(SPAN_Z, -SPAN_Z, sweep), elapsed);
-    accentPos.needsUpdate = true;
-    // Fade at the extremes so it appears and leaves rather than snapping back.
-    accentMat.opacity = 0.95 * THREE.MathUtils.smoothstep(Math.sin(sweep * Math.PI), 0, 0.35);
-
-    // Slow, off-axis tumble: the highlight has to travel across the form for the
-    // material to read, and a single-axis spin never moves it.
-    knot.rotation.y = elapsed * 0.34;
-    knot.rotation.x = Math.sin(elapsed * 0.22) * 0.32 + 0.24;
-    knot.position.y = 0.62 + Math.sin(elapsed * 0.5) * 0.045;
+    aura.material.opacity = 0.78 + Math.sin(elapsed * 0.9) * 0.12;
 
     for (let i = 0; i < beadCount; i++) {
       const phase = (i / beadCount) * Math.PI * 2;
-      const radius = 1.32 + Math.sin(elapsed * 0.4 + phase) * 0.16;
+      const radius = 1.5 + Math.sin(elapsed * 0.42 + phase) * 0.14;
       dummy.position.set(
-        Math.cos(elapsed * 0.28 + phase) * radius,
-        0.5 + Math.sin(elapsed * 0.6 + phase * 1.7) * 0.42,
-        Math.sin(elapsed * 0.28 + phase) * radius * 0.5,
+        Math.cos(elapsed * 0.26 + phase) * radius,
+        Math.sin(elapsed * 0.55 + phase * 1.6) * 0.62,
+        Math.sin(elapsed * 0.26 + phase) * radius * 0.42,
       );
       dummy.updateMatrix();
       beads.setMatrixAt(i, dummy.matrix);
@@ -188,8 +190,8 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
     beads.instanceMatrix.needsUpdate = true;
 
     // Restrained pointer parallax, eased rather than snapped.
-    const targetY = pointer.x * 0.24;
-    const targetX = -pointer.y * 0.11;
+    const targetY = -0.62 + pointer.x * 0.26;
+    const targetX = 0.42 - pointer.y * 0.14;
     world.rotation.y += (targetY - world.rotation.y) * Math.min(1, delta * 3.5);
     world.rotation.x += (targetX - world.rotation.x) * Math.min(1, delta * 3.5);
   }
