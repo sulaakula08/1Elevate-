@@ -12,12 +12,33 @@ type Props = {
   question: Question;
   /** What the student picked, if they have answered. */
   chosenIndex?: number | null;
+  /**
+   * Controlled mode. The test surface owns its own "Ask the tutor" button in the
+   * footer — a floating launcher would sit on top of the navigation there — so
+   * it passes the open state in and suppresses the launcher.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 /** Floating tutor that explains the current question, streaming its answer in. */
-export function AiTutor({ question, chosenIndex }: Props) {
-  const { t, tx, lang } = useI18n();
-  const [open, setOpen] = useState(false);
+export function AiTutor({
+  question,
+  chosenIndex,
+  open: openProp,
+  onOpenChange,
+}: Props) {
+  const { t, tx } = useI18n();
+  const controlled = openProp !== undefined;
+  const [openState, setOpenState] = useState(false);
+  const open = controlled ? openProp : openState;
+  const setOpen = useCallback(
+    (value: boolean) => {
+      if (controlled) onOpenChange?.(value);
+      else setOpenState(value);
+    },
+    [controlled, onOpenChange],
+  );
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -53,7 +74,6 @@ export function AiTutor({ question, chosenIndex }: Props) {
           signal: controller.signal,
           body: JSON.stringify({
             messages: history,
-            lang,
             question: {
               exam: question.exam,
               subject: subject ? tx(subject.name) : question.subjectId,
@@ -95,7 +115,7 @@ export function AiTutor({ question, chosenIndex }: Props) {
         setStreaming(false);
       }
     },
-    [chosenIndex, lang, question, streaming, t, turns, tx],
+    [chosenIndex, question, streaming, t, turns, tx],
   );
 
   const lastAssistant = turns[turns.length - 1];
@@ -115,6 +135,8 @@ export function AiTutor({ question, chosenIndex }: Props) {
   ];
 
   if (!open) {
+    // Controlled callers draw their own trigger.
+    if (controlled) return null;
     return (
       <button
         onClick={() => setOpen(true)}
@@ -129,7 +151,9 @@ export function AiTutor({ question, chosenIndex }: Props) {
 
   return (
     <div
-      className="scale-in fixed bottom-5 right-5 z-30 w-[min(23rem,calc(100vw-2.5rem))] panel flex flex-col overflow-hidden"
+      className={`scale-in fixed right-5 z-30 ${
+        controlled ? "bottom-20" : "bottom-5"
+      } w-[min(23rem,calc(100vw-2.5rem))] panel flex flex-col overflow-hidden`}
       style={{ boxShadow: "var(--overlay)" }}
     >
       <div className="flex items-center gap-2.5 px-4 py-3 border-b">

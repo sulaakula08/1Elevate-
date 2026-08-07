@@ -2,10 +2,11 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { SUBJECTS, subjectColor } from "@/data/exams";
+import { SAT, SUBJECTS, subjectColor } from "@/data/exams";
 import { SEED_QUESTIONS } from "@/data";
 import { useI18n } from "@/lib/i18n";
-import { HeroScoreCard, IconChat, IconClock, IconRule, IconTrend } from "./illustrations";
+import { IconChat, IconClock, IconRule, IconTrend } from "./illustrations";
+import { HeroScoreCard } from "./HeroScoreCard";
 import { CountUp, Reveal } from "./motion";
 import { LogoAnimation } from "./LogoAnimation";
 import { SplitChars } from "./SplitChars";
@@ -58,11 +59,18 @@ export function Landing({ customCount }: { customCount: number }) {
     { title: t("landing.s3Title"), text: t("landing.s3Text") },
   ];
 
+  // Every figure here is something the product can actually back up: the bank
+  // size, the two SAT sections, and the published shape of the exam itself.
   const stats = [
     { value: questionCount, suffix: "", label: t("landing.statQuestions"), color: "var(--s-indigo)" },
     { value: SUBJECTS.length, suffix: "", label: t("landing.statSubjects"), color: "var(--s-violet)" },
-    { value: 3, suffix: "", label: t("landing.statLangs"), color: "var(--s-teal)" },
-    { value: 0, suffix: "₸", label: t("landing.statPrice"), color: "var(--s-green)" },
+    { value: SAT.sections.length, suffix: "", label: t("landing.statModules"), color: "var(--s-teal)" },
+    {
+      value: SAT.sections.reduce((sum, s) => sum + s.minutes, 0),
+      suffix: "",
+      label: t("landing.statMinutes"),
+      color: "var(--s-green)",
+    },
   ];
 
   return (
@@ -97,8 +105,13 @@ export function Landing({ customCount }: { customCount: number }) {
             >
               <SplitChars text={t("landing.titleA")} />
               <br />
-              <span className="text-grad">
-                <SplitChars text={t("landing.titleB")} />
+              {/* The second line animates as one block rather than per character:
+                  background-clip: text paints in the parent's background layer,
+                  and a transformed child (which every .ch becomes under GSAP)
+                  gets its own layer above it — so a split gradient line renders
+                  as invisible glyphs. One transform on the span keeps it. */}
+              <span className="text-grad inline-block" data-motion="headline-b">
+                {t("landing.titleB")}
               </span>
             </h1>
 

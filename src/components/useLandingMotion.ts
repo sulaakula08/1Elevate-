@@ -70,6 +70,16 @@ export function useLandingMotion(scope: RefObject<HTMLElement | null>) {
 
       master
         .from(
+          q("[data-motion='headline-b']"),
+          {
+            autoAlpha: 0,
+            y: MOTION.headlineB.y,
+            duration: MOTION.headlineB.duration,
+            ease: MOTION.headlineB.ease,
+          },
+          MOTION.headlineB.overlap,
+        )
+        .from(
           q("[data-motion='lede']"),
           {
             opacity: 0,

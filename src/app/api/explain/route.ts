@@ -22,17 +22,10 @@ type Body = {
     /** What the student picked, if they answered. */
     chosenIndex?: number | null;
   };
-  lang: "en" | "ru" | "kk";
-};
-
-const LANG_NAME: Record<Body["lang"], string> = {
-  en: "English",
-  ru: "Russian",
-  kk: "Kazakh",
 };
 
 function systemPrompt(body: Body): string {
-  const { question, lang } = body;
+  const { question } = body;
   const letters = ["A", "B", "C", "D", "E", "F"];
   const choiceList = question.choices
     .map((choice, i) => `${letters[i]}. ${choice}`)
@@ -46,7 +39,7 @@ function systemPrompt(body: Body): string {
 
   return `You are the 1Elevate tutor, a patient teacher helping a student prepare for the ${question.exam.toUpperCase()} exam.
 
-Reply in ${LANG_NAME[lang]}. Keep it short — 3 to 6 sentences, or a few numbered steps. Plain text only: no markdown headers, no bold, no LaTeX; write math as plain text (use / for division and ^ for powers).
+Reply in English. Keep it short — 3 to 6 sentences, or a few numbered steps. Plain text only: no markdown headers, no bold, no LaTeX; write math as plain text (use / for division and ^ for powers).
 
 Teach, don't dump. Start from what the student is likely stuck on, walk through the reasoning one step at a time, and name the rule or fact that makes the answer work so it transfers to the next question. If the student got it wrong, say briefly why their choice is tempting before correcting it. End with one short question that checks they followed.
 

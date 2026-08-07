@@ -1,15 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import type { QuizMode } from "@/lib/storage";
 import { difficultyColor, difficultyColorSoft, pct } from "@/lib/stats";
-import { QuestionView } from "./QuestionView";
+import { QuestionView, NO_HIGHLIGHTS, type Highlights } from "./QuestionView";
 import { AiTutor } from "./AiTutor";
 import { ProgressBar, Toast } from "./motion";
 import { ProgressMark, SuccessTick } from "./illustrations";
+import { Calculator } from "./test/Calculator";
+import { ReferenceSheet } from "./test/ReferenceSheet";
+import { QuestionNavigator } from "./test/QuestionNavigator";
+import {
+  IconCalculator,
+  IconChevron,
+  IconCrossOut,
+  IconFlag,
+  IconHighlight,
+  IconPause,
+  IconPlay,
+  IconReference,
+} from "./test/TestIcons";
 
 type Props = {
   questions: Question[];
@@ -19,33 +32,92 @@ type Props = {
   onRestart?: () => void;
 };
 
-/** Question-by-question practice with instant feedback. Used by Practice and Review. */
+type Tool = "calculator" | "reference" | null;
+
+function clock(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+/**
+ * The practice surface, modelled on the real digital test app: the same tool
+ * rail, the same per-question controls (mark for review, cross out a choice)
+ * and the same section navigator — so nothing about test day is unfamiliar.
+ *
+ * What it deliberately keeps from practice rather than the exam: you may check
+ * an answer and read the explanation on the spot, and the tutor is one click
+ * away. Timing is measured but never enforced.
+ */
 export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Props) {
   const { t } = useI18n();
   const { recordAttempts } = useApp();
+  const count = questions.length;
+
   const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [answers, setAnswers] = useState<(number | null)[]>(() => Array(count).fill(null));
+  const [revealed, setRevealed] = useState<boolean[]>(() => Array(count).fill(false));
+  const [marked, setMarked] = useState<boolean[]>(() => Array(count).fill(false));
+  const [crossed, setCrossed] = useState<number[][]>(() => questions.map(() => []));
+  const [highlights, setHighlights] = useState<Highlights[]>(() =>
+    questions.map(() => NO_HIGHLIGHTS),
+  );
+
+  const [tool, setTool] = useState<Tool>(null);
+  const [highlightMode, setHighlightMode] = useState(false);
+  const [crossOutMode, setCrossOutMode] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [tutorOpen, setTutorOpen] = useState(false);
+
+  const [elapsed, setElapsed] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [timerHidden, setTimerHidden] = useState(false);
+
   const [streak, setStreak] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // Stamped after render (reading the clock during render isn't pure).
+  const question = questions[index];
+  const selected = answers[index] ?? null;
+  const isRevealed = revealed[index];
+  const correctCount = useMemo(
+    () => answers.filter((a, i) => revealed[i] && a === questions[i].answer).length,
+    [answers, revealed, questions],
+  );
+
+  /* ---------------- timing ---------------- */
+
+  useEffect(() => {
+    if (paused || done) return;
+    const id = window.setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [paused, done]);
+
+  // Per-question timing for the attempt record, stamped after render.
   const startedAt = useRef(0);
   useEffect(() => {
     startedAt.current = Date.now();
   }, [index]);
 
-  const question = questions[index];
-  const progress = questions.length ? index / questions.length : 0;
+  /* ---------------- answering ---------------- */
+
+  const setAt = <T,>(list: T[], i: number, value: T): T[] =>
+    list.map((item, j) => (j === i ? value : item));
+
+  const select = useCallback(
+    (choice: number) => {
+      if (revealed[index]) return;
+      setAnswers((list) => setAt(list, index, choice));
+    },
+    [index, revealed],
+  );
 
   const check = useCallback(() => {
-    if (selected === null || !question) return;
+    if (selected === null || isRevealed) return;
     const isCorrect = selected === question.answer;
-    setRevealed(true);
+    setRevealed((list) => setAt(list, index, true));
     if (isCorrect) {
-      setCorrectCount((c) => c + 1);
       setStreak((s) => {
         const next = s + 1;
         // One quiet acknowledgement at the point momentum is real.
@@ -69,20 +141,45 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
         ms: startedAt.current ? Date.now() - startedAt.current : 0,
       },
     ]);
-  }, [selected, question, recordAttempts, mode, t]);
+  }, [selected, isRevealed, question, index, recordAttempts, mode, t]);
+
+  const goTo = useCallback(
+    (next: number) => {
+      if (next < 0 || next >= count) return;
+      setIndex(next);
+    },
+    [count],
+  );
 
   const next = useCallback(() => {
-    if (index + 1 >= questions.length) {
-      setDone(true);
-      return;
-    }
-    setIndex((i) => i + 1);
-    setSelected(null);
-    setRevealed(false);
-  }, [index, questions.length]);
+    if (index + 1 >= count) setDone(true);
+    else goTo(index + 1);
+  }, [index, count, goTo]);
+
+  /* ---------------- keyboard ---------------- */
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
+      if (event.key === "ArrowRight") next();
+      else if (event.key === "ArrowLeft") goTo(index - 1);
+      else if (/^[1-9]$/.test(event.key)) {
+        const choice = Number(event.key) - 1;
+        if (choice < question.choices.length) select(choice);
+      } else if (event.key === "Enter" && !isRevealed && answers[index] !== null) check();
+      else return;
+      event.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [next, goTo, index, question, select, check, isRevealed, answers]);
+
+  /* ---------------- results ---------------- */
 
   if (done || !question) {
-    const accuracy = questions.length ? correctCount / questions.length : 0;
+    const attempted = revealed.filter(Boolean).length || count;
+    const accuracy = attempted ? correctCount / attempted : 0;
     const great = accuracy >= 0.8;
     return (
       <div className="max-w-sm mx-auto py-16 text-center fade-in">
@@ -90,10 +187,10 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
         <p className="label-xs mt-7">{t("quiz.result")}</p>
         <p className="num mt-3 text-5xl font-medium">
           {correctCount}
-          <span className="text-faint">/{questions.length}</span>
+          <span className="text-faint">/{attempted}</span>
         </p>
         <p className="mt-2 text-[14px] text-muted">
-          {pct(accuracy)} {t("practice.accuracy")}
+          {pct(accuracy)} {t("practice.accuracy")} · <span className="num">{clock(elapsed)}</span>
         </p>
         <div className="flex gap-2 justify-center mt-8">
           {onRestart && (
@@ -109,75 +206,280 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
     );
   }
 
+  const isMath = question.subjectId === "sat-math";
+
   return (
-    <div className="max-w-2xl mx-auto pt-6">
-      <div className="flex items-center gap-4">
+    <div className="test-shell">
+      {/* ---------------- tool rail ---------------- */}
+      <header className="test-bar">
         <button className="btn btn-ghost btn-sm -ml-2" onClick={onExit}>
-          ← {t("quiz.exit")}
+          ← {t("ptool.goBack")}
         </button>
-        <span className="text-[14px] text-muted truncate">{title}</span>
-        <span className="num ml-auto text-[13px] text-faint tabular-nums">
-          {index + 1}/{questions.length}
-        </span>
-      </div>
 
-      <ProgressBar value={progress} className="mt-4" />
-
-      <div className="mt-8 flex items-center gap-2.5 flex-wrap">
-        <span className="label-xs">{question.topic}</span>
-        <span
-          className="badge"
-          style={{
-            ["--tone" as string]: difficultyColor(question.difficulty),
-            ["--tone-soft" as string]: difficultyColorSoft(question.difficulty),
-          }}
-          title={t("quiz.difficulty")}
-        >
-          {t(`diff.${question.difficulty}`)}
-        </span>
-        {question.domain && <span className="text-[11px] text-faint">{question.domain}</span>}
-        {streak >= 3 && <span className="ml-auto num text-[12px] text-muted">↑ {streak}</span>}
-      </div>
-
-      <div className="mt-5">
-        <QuestionView
-          question={question}
-          selected={selected}
-          onSelect={setSelected}
-          revealed={revealed}
-          disabled={revealed}
-        />
-      </div>
-
-      <div className="mt-8 flex items-center gap-4 pb-10">
-        {revealed && (
-          <span
-            className="fade-in text-[14px]"
-            style={{
-              color: selected === question.answer ? "var(--success)" : "var(--danger)",
-            }}
+        <div className="relative">
+          <button
+            className="btn btn-ghost btn-sm"
+            aria-expanded={directionsOpen}
+            onClick={() => setDirectionsOpen((v) => !v)}
           >
-            {selected === question.answer ? t("quiz.correct") : t("quiz.incorrect")}
-          </span>
-        )}
-        <div className="ml-auto">
-          {!revealed ? (
-            <button className="btn btn-primary" disabled={selected === null} onClick={check}>
-              {t("quiz.check")}
+            {t("ptool.directions")}
+            <IconChevron />
+          </button>
+          {directionsOpen && (
+            <div
+              className="panel scale-in absolute top-full mt-2 left-0 z-30 w-[min(22rem,calc(100vw-2rem))] p-4"
+              style={{ boxShadow: "var(--overlay)" }}
+            >
+              <p className="text-[13.5px] leading-relaxed text-muted">
+                {t("ptool.directionsBody")}
+              </p>
+              <button
+                className="btn btn-sm mt-3 w-full"
+                onClick={() => setDirectionsOpen(false)}
+              >
+                {t("tour.done")}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* timer */}
+        <div className="test-timer">
+          {timerHidden ? (
+            <button className="btn btn-sm" onClick={() => setTimerHidden(false)}>
+              {t("ptool.show")}
             </button>
           ) : (
-            <button className="btn btn-primary" onClick={next}>
-              {index + 1 >= questions.length ? t("quiz.finish") : t("quiz.next")}
+            <>
+              <span className="num text-[22px] font-medium tabular-nums leading-none">
+                {clock(elapsed)}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <button
+                  className="bar-btn w-7 h-7"
+                  onClick={() => setPaused((v) => !v)}
+                  aria-label={paused ? t("ptool.resume") : t("ptool.pause")}
+                  title={paused ? t("ptool.resume") : t("ptool.pause")}
+                >
+                  {paused ? <IconPlay /> : <IconPause />}
+                </button>
+                <button className="btn btn-sm h-7" onClick={() => setTimerHidden(true)}>
+                  {t("ptool.hide")}
+                </button>
+              </span>
+            </>
+          )}
+        </div>
+
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            className={`tool-btn ${highlightMode ? "tool-btn-on" : ""}`}
+            aria-pressed={highlightMode}
+            onClick={() => setHighlightMode((v) => !v)}
+            title={t("ptool.highlightHint")}
+          >
+            <IconHighlight />
+            <span className="hidden sm:inline">{t("ptool.highlight")}</span>
+          </button>
+          {isMath && (
+            <button
+              className={`tool-btn ${tool === "calculator" ? "tool-btn-on" : ""}`}
+              aria-pressed={tool === "calculator"}
+              onClick={() => setTool((v) => (v === "calculator" ? null : "calculator"))}
+            >
+              <IconCalculator />
+              <span className="hidden sm:inline">{t("ptool.calculator")}</span>
+            </button>
+          )}
+          {isMath && (
+            <button
+              className={`tool-btn ${tool === "reference" ? "tool-btn-on" : ""}`}
+              aria-pressed={tool === "reference"}
+              onClick={() => setTool((v) => (v === "reference" ? null : "reference"))}
+            >
+              <IconReference />
+              <span className="hidden sm:inline">{t("ptool.reference")}</span>
             </button>
           )}
         </div>
+      </header>
+
+      <ProgressBar value={count ? index / count : 0} className="mt-0" />
+
+      {/* ---------------- work area ---------------- */}
+      <div className={`test-body ${tool ? "test-body-split" : ""}`}>
+        {tool && (
+          <aside className="test-pane fade-in">
+            <div className="flex items-center gap-2 px-3 h-11 border-b">
+              <p className="text-[13.5px] font-medium">
+                {tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
+              </p>
+              <button className="btn btn-ghost btn-sm ml-auto" onClick={() => setTool(null)}>
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              {tool === "calculator" ? <Calculator /> : <ReferenceSheet />}
+            </div>
+          </aside>
+        )}
+
+        <main className="test-question">
+          {/* question header */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="q-number num">{index + 1}</span>
+            <button
+              className={`btn btn-ghost btn-sm ${marked[index] ? "text-[var(--s-orange)]" : ""}`}
+              aria-pressed={marked[index]}
+              onClick={() => setMarked((list) => setAt(list, index, !list[index]))}
+            >
+              <IconFlag filled={marked[index]} />
+              {marked[index] ? t("ptool.marked") : t("ptool.mark")}
+            </button>
+
+            <span className="ml-auto flex items-center gap-2">
+              <span
+                className="badge"
+                style={{
+                  ["--tone" as string]: difficultyColor(question.difficulty),
+                  ["--tone-soft" as string]: difficultyColorSoft(question.difficulty),
+                }}
+                title={t("quiz.difficulty")}
+              >
+                {t(`diff.${question.difficulty}`)}
+              </span>
+              <button
+                className={`bar-btn w-8 h-8 ${crossOutMode ? "tool-btn-on" : ""}`}
+                aria-pressed={crossOutMode}
+                onClick={() => setCrossOutMode((v) => !v)}
+                title={t("ptool.crossOut")}
+                aria-label={t("ptool.crossOut")}
+              >
+                <IconCrossOut />
+              </button>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5 mt-2">
+            <span className="label-xs">{question.topic}</span>
+            {question.domain && <span className="text-[11px] text-faint">{question.domain}</span>}
+            {streak >= 3 && <span className="ml-auto num text-[12px] text-muted">↑ {streak}</span>}
+          </div>
+
+          {highlightMode && (
+            <p className="mt-3 text-[12px] text-faint fade-in">
+              {t("ptool.highlightHint")}{" "}
+              <button
+                className="underline"
+                onClick={() => setHighlights((list) => setAt(list, index, NO_HIGHLIGHTS))}
+              >
+                {t("ptool.clearHighlights")}
+              </button>
+            </p>
+          )}
+
+          <div className="mt-5">
+            <QuestionView
+              question={question}
+              selected={selected}
+              onSelect={select}
+              revealed={isRevealed}
+              disabled={isRevealed}
+              crossOutMode={crossOutMode}
+              crossedOut={crossed[index]}
+              onToggleCross={(choice) =>
+                setCrossed((list) =>
+                  setAt(
+                    list,
+                    index,
+                    list[index].includes(choice)
+                      ? list[index].filter((c) => c !== choice)
+                      : [...list[index], choice],
+                  ),
+                )
+              }
+              highlightMode={highlightMode}
+              highlights={highlights[index]}
+              onHighlights={(next) => setHighlights((list) => setAt(list, index, next))}
+            />
+          </div>
+
+          {isRevealed && (
+            <p
+              className="fade-in mt-6 text-[14px]"
+              style={{
+                color: selected === question.answer ? "var(--success)" : "var(--danger)",
+              }}
+            >
+              {selected === question.answer ? t("quiz.correct") : t("quiz.incorrect")}
+            </p>
+          )}
+        </main>
       </div>
+
+      {/* ---------------- footer ---------------- */}
+      <footer className="test-foot">
+        <span className="hidden sm:block text-[13px] text-muted truncate max-w-[12rem]">
+          {title}
+        </span>
+
+        <div className="relative mx-auto">
+          <button
+            className="btn btn-sm"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((v) => !v)}
+          >
+            <span className="num">
+              {index + 1} {t("quiz.of")} {count}
+            </span>
+            <IconChevron />
+          </button>
+          {navOpen && (
+            <QuestionNavigator
+              total={count}
+              current={index}
+              answered={answers.map((a) => a !== null)}
+              marked={marked}
+              onGo={goTo}
+              onClose={() => setNavOpen(false)}
+            />
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            className={`btn btn-sm ${tutorOpen ? "tool-btn-on" : ""}`}
+            aria-pressed={tutorOpen}
+            onClick={() => setTutorOpen((v) => !v)}
+          >
+            {t("ptool.askTutor")}
+          </button>
+          <button className="btn btn-sm" disabled={index === 0} onClick={() => goTo(index - 1)}>
+            {t("ptool.previous")}
+          </button>
+          {!isRevealed ? (
+            <button className="btn btn-primary btn-sm" disabled={selected === null} onClick={check}>
+              {t("ptool.checkAnswer")}
+            </button>
+          ) : (
+            <button className="btn btn-primary btn-sm" onClick={next}>
+              {index + 1 >= count ? t("quiz.finish") : t("ptool.next")}
+            </button>
+          )}
+        </div>
+      </footer>
 
       {/*
         The tutor only sees what the student has already committed to. Keying on
         the question id remounts it per question, so each one gets a fresh chat.
       */}
-      <AiTutor key={question.id} question={question} chosenIndex={revealed ? selected : null} />
+      <AiTutor
+        key={question.id}
+        question={question}
+        chosenIndex={isRevealed ? selected : null}
+        open={tutorOpen}
+        onOpenChange={setTutorOpen}
+      />
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
