@@ -17,38 +17,58 @@ import {
   type UserData,
   EMPTY_USER_DATA,
   ensureVersion,
-  hashPin,
-  loadAccounts,
   loadCustomQuestions,
-  loadSession,
   loadTheme,
   loadUserData,
   migrateKeys,
-  newId,
+  purgeLegacyAccounts,
   resetEverything,
-  saveAccounts,
   saveCustomQuestions,
-  saveSession,
   saveTheme,
   saveUserData,
 } from "./storage";
+import {
+  type AuthOutcome,
+  signInWithPassword,
+  signOutEverywhere,
+  signUpWithPassword,
+} from "./auth";
+import { apiFetch, supabase, supabaseReady } from "./supabase/client";
 
-type AuthResult = { ok: true } | { ok: false; error: "wrongPin" | "nameTaken" | "pinShort" };
+export type AuthResult = AuthOutcome;
 
-/** Everything the signup wizard collects. */
+/** Everything the signup form collects. */
 export type SignUpInput = {
   name: string;
   email: string;
+  password: string;
   grade: string;
-  pin: string;
   targetScore: number;
+};
+
+/** The profile row, shaped as the rest of the app already expects an Account. */
+type ProfileResponse = {
+  profile: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    grade: string | null;
+    role: "student" | "admin";
+    targetScore: number;
+  };
 };
 
 type Ctx = {
   /** False until localStorage has been read (avoids SSR/hydration mismatches). */
   ready: boolean;
   account: Account | null;
+  /**
+   * Empty now that profiles live in Supabase. Kept so the account switcher and
+   * anything else reading it renders an empty list rather than crashing.
+   */
   accounts: Account[];
+  /** False when NEXT_PUBLIC_SUPABASE_* is missing, so the UI can explain itself. */
+  authConfigured: boolean;
   data: UserData;
   /** Seed questions plus admin-created ones. */
   bank: Question[];
@@ -56,8 +76,7 @@ type Ctx = {
   toggleTheme: () => void;
 
   signUp: (input: SignUpInput) => Promise<AuthResult>;
-  /** `handle` matches either the account name or its email. */
-  signIn: (handle: string, pin: string) => Promise<AuthResult>;
+  signIn: (email: string, password: string) => Promise<AuthResult>;
   signOut: () => void;
   updateAccount: (patch: Partial<Omit<Account, "id" | "pinHash">>) => void;
 
@@ -75,49 +94,84 @@ const AppContext = createContext<Ctx | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [accountId, setAccountId] = useState<string | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
   const [data, setData] = useState<UserData>(EMPTY_USER_DATA);
   const [custom, setCustom] = useState<Question[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // The whole store lives in localStorage, which only exists on the client, so
-  // it is loaded after mount and `ready` gates anything that reads it. setState
-  // here is deliberate.
+  /**
+   * Loads the profile behind the current Supabase session. Returns null when
+   * nobody is signed in, so the caller can clear state either way.
+   */
+  const loadProfile = useCallback(async (): Promise<Account | null> => {
+    const response = await apiFetch("/api/profile");
+    if (!response.ok) return null;
+    const body = (await response.json()) as ProfileResponse;
+    const p = body.profile;
+    return {
+      id: p.id,
+      name: p.name?.trim() || (p.email ?? "").split("@")[0] || "Student",
+      email: p.email ?? "",
+      grade: p.grade ?? "",
+      role: p.role,
+      createdAt: Date.now(),
+      targetScore: p.targetScore,
+    };
+  }, []);
+
+  // Local caches only exist on the client, and the session has to be read from
+  // Supabase before anything can render as signed in. setState here is deliberate.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    let live = true;
+
     migrateKeys();
     ensureVersion();
-    const loadedAccounts = loadAccounts();
-    const session = loadSession();
-    setAccounts(loadedAccounts);
+    // The pre-Supabase browser profiles go here, once.
+    purgeLegacyAccounts();
     setCustom(loadCustomQuestions());
-    const valid = session && loadedAccounts.some((a) => a.id === session) ? session : null;
-    setAccountId(valid);
-    if (valid) setData(loadUserData(valid));
-    // The inline bootstrap in layout.tsx already put the right theme on <html>
-    // before paint; read it back rather than deciding again.
+
     const applied = document.documentElement.dataset.theme;
     setTheme(loadTheme() ?? (applied === "dark" ? "dark" : "light"));
-    setReady(true);
-  }, []);
+
+    const client = supabase();
+    if (!client) {
+      setReady(true);
+      return;
+    }
+
+    async function adopt(hasSession: boolean) {
+      const profile = hasSession ? await loadProfile() : null;
+      if (!live) return;
+      setAccount(profile);
+      setData(profile ? loadUserData(profile.id) : EMPTY_USER_DATA);
+      setReady(true);
+    }
+
+    client.auth.getSession().then(({ data: s }) => void adopt(Boolean(s.session)));
+
+    // Covers sign-in, sign-out, token refresh and the recovery link landing —
+    // including sign-out performed in another tab.
+    const { data: sub } = client.auth.onAuthStateChange((event, session) => {
+      if (!live) return;
+      if (event === "TOKEN_REFRESHED") return;
+      void adopt(Boolean(session));
+    });
+
+    return () => {
+      live = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [loadProfile]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  const account = useMemo(
-    () => accounts.find((a) => a.id === accountId) ?? null,
-    [accounts, accountId],
-  );
+  const accountId = account?.id ?? null;
 
   const bank = useMemo(() => [...SEED_QUESTIONS, ...custom], [custom]);
-
-  const persistAccounts = useCallback((next: Account[]) => {
-    setAccounts(next);
-    saveAccounts(next);
-  }, []);
 
   /**
    * Always derive the next value from the previous state. `recordAttempts` and
@@ -135,67 +189,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [accountId],
   );
 
-  const signUp = useCallback<Ctx["signUp"]>(
-    async (input) => {
-      const trimmed = input.name.trim();
-      const email = input.email.trim().toLowerCase();
-      if (input.pin.length < 4) return { ok: false, error: "pinShort" };
-      if (
-        accounts.some(
-          (a) => a.name.toLowerCase() === trimmed.toLowerCase() || a.email === email,
-        )
-      ) {
-        return { ok: false, error: "nameTaken" };
-      }
-      const created: Account = {
-        id: newId("acc"),
-        name: trimmed,
-        email,
-        grade: input.grade.trim(),
-        pinHash: await hashPin(input.pin),
-        // The first account on a fresh browser owns the content editor.
-        role: accounts.length === 0 ? "admin" : "student",
-        createdAt: Date.now(),
-        targetScore: input.targetScore,
-      };
-      persistAccounts([...accounts, created]);
-      setAccountId(created.id);
-      saveSession(created.id);
-      setData(loadUserData(created.id));
-      return { ok: true };
-    },
-    [accounts, persistAccounts],
-  );
+  const signUp = useCallback<Ctx["signUp"]>(async (input) => {
+    const outcome = await signUpWithPassword({
+      email: input.email,
+      password: input.password,
+      name: input.name,
+    });
+    if (!outcome.ok) return outcome;
+
+    // With confirmation required there is no session yet, so the grade and
+    // target cannot be written — they are collected again after the first
+    // sign-in rather than silently lost.
+    if (!outcome.needsConfirmation) {
+      await apiFetch("/api/profile", {
+        method: "PATCH",
+        body: JSON.stringify({ grade: input.grade, targetScore: input.targetScore }),
+      });
+      // onAuthStateChange refreshes the profile; this makes the new values
+      // visible without waiting for that round trip.
+    }
+    return outcome;
+  }, []);
 
   const signIn = useCallback<Ctx["signIn"]>(
-    async (handle, pin) => {
-      const key = handle.trim().toLowerCase();
-      const found = accounts.find(
-        (a) => a.name.toLowerCase() === key || a.email === key,
-      );
-      if (!found || found.pinHash !== (await hashPin(pin))) {
-        return { ok: false, error: "wrongPin" };
-      }
-      setAccountId(found.id);
-      saveSession(found.id);
-      setData(loadUserData(found.id));
-      return { ok: true };
-    },
-    [accounts],
+    async (email, password) => signInWithPassword(email, password),
+    [],
   );
 
   const signOut = useCallback(() => {
-    setAccountId(null);
-    saveSession(null);
+    // onAuthStateChange clears account and data; this keeps the UI honest even
+    // if the network call is slow.
+    setAccount(null);
     setData(EMPTY_USER_DATA);
+    void signOutEverywhere();
   }, []);
 
   const updateAccount = useCallback<Ctx["updateAccount"]>(
     (patch) => {
       if (!account) return;
-      persistAccounts(accounts.map((a) => (a.id === account.id ? { ...a, ...patch } : a)));
+      setAccount({ ...account, ...patch });
+      void apiFetch("/api/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: patch.name,
+          grade: patch.grade,
+          targetScore: patch.targetScore,
+        }),
+      });
     },
-    [account, accounts, persistAccounts],
+    [account],
   );
 
   const recordAttempts = useCallback<Ctx["recordAttempts"]>(
@@ -212,7 +254,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const recordMock = useCallback<Ctx["recordMock"]>(
     (result) => {
       if (!accountId) return;
-      const stored = { ...result, id: newId("mock") };
+      const stored = { ...result, id: `mock-${crypto.randomUUID()}` };
       persistData((previous) => ({ ...previous, mocks: [...previous.mocks, stored] }));
     },
     [accountId, persistData],
@@ -249,16 +291,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const resetAll = useCallback(() => {
     resetEverything();
-    setAccounts([]);
-    setAccountId(null);
     setData(EMPTY_USER_DATA);
     setCustom([]);
+    // Local caches are gone; the Supabase session has to go too, or the app
+    // would still be signed in with nothing behind it.
+    setAccount(null);
+    void signOutEverywhere();
   }, []);
 
   const value: Ctx = {
     ready,
     account,
-    accounts,
+    accounts: [],
+    authConfigured: supabaseReady(),
     data,
     bank,
     theme,

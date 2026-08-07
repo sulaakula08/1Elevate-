@@ -79,7 +79,7 @@ function Profile() {
         />
       </div>
 
-      <p className="mt-10 text-[13px] leading-relaxed text-faint">{t("signup.localNotice")}</p>
+      <p className="mt-10 text-[13px] leading-relaxed text-faint">{t("account.cloudNotice")}</p>
 
       <div className="mt-8 flex gap-2">
         <button className="btn" onClick={() => router.push("/")}>

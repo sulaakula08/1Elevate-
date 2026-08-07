@@ -440,6 +440,56 @@ p {
     border-color: var(--danger);
   }
 
+  /* Inline feedback under a form. One shape, three tones. */
+  .notice {
+    display: block;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--tone, var(--line-strong));
+    background: color-mix(in srgb, var(--tone, var(--line)) 9%, transparent);
+    color: var(--foreground);
+    padding: 0.5625rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+  .notice-error {
+    --tone: var(--danger);
+  }
+  .notice-warn {
+    --tone: var(--s-amber, #d97706);
+  }
+  .notice-ok {
+    --tone: var(--s-green, #16a34a);
+  }
+
+  /* Password strength: a single bar that fills and shifts hue by level. */
+  .strength-track {
+    flex: 1;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .strength-fill {
+    height: 100%;
+    border-radius: 99px;
+    width: 0;
+    transition:
+      width 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      background 260ms ease;
+  }
+  .strength-fill[data-level="1"] {
+    width: 34%;
+    background: var(--danger);
+  }
+  .strength-fill[data-level="2"] {
+    width: 67%;
+    background: var(--s-amber, #d97706);
+  }
+  .strength-fill[data-level="3"] {
+    width: 100%;
+    background: var(--s-green, #16a34a);
+  }
+
   .label {
     display: block;
     font-size: 0.8125rem;

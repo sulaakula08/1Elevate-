@@ -12,7 +12,11 @@ export type Account = {
   email: string;
   /** Free text: school grade, university year, "graduate", … */
   grade: string;
-  pinHash: string;
+  /**
+   * Legacy only. Accounts are Supabase users now and carry no local secret;
+   * this remains so old stored records still parse before they are purged.
+   */
+  pinHash?: string;
   role: Role;
   createdAt: number;
   /** Score the student is aiming for, on the 400–1600 scale. */
@@ -74,6 +78,8 @@ const K = {
   custom: `${NS}.customQuestions`,
   theme: `${NS}.theme`,
   tour: `${NS}.tourDone`,
+  /** Set once the pre-Supabase local profiles have been cleared. */
+  legacyPurged: `${NS}.legacyPurged`,
   user: (id: string) => `${NS}.user.${id}`,
 };
 
@@ -119,6 +125,42 @@ export function migrateKeys() {
     }
   } catch {
     // Storage unavailable — nothing to migrate, and the app still works.
+  }
+}
+
+/**
+ * Deletes the browser-only accounts from before Supabase auth.
+ *
+ * Those profiles were a local convenience: a SHA-256 PIN in localStorage, one
+ * set per browser, with ids like `acc-3f2a`. They cannot be carried over —
+ * there is no password to migrate and no way to prove who owned them — and
+ * leaving them behind would show a signed-out student a list of stale profiles
+ * they can no longer open.
+ *
+ * Real accounts are keyed by Supabase user UUID, so only the legacy `acc-`
+ * prefix is removed. Runs once, then records itself so a student who later
+ * builds up new local caches is never purged again.
+ */
+export function purgeLegacyAccounts(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    if (window.localStorage.getItem(K.legacyPurged) !== null) return 0;
+
+    const before = read<Account[]>(K.accounts, []).length;
+
+    window.localStorage.removeItem(K.accounts);
+    window.localStorage.removeItem(K.session);
+
+    // Per-account progress blobs. UUID-keyed data belongs to real accounts and
+    // is deliberately left alone.
+    for (const key of Object.keys(window.localStorage)) {
+      if (key.startsWith(`${NS}.user.acc-`)) window.localStorage.removeItem(key);
+    }
+
+    window.localStorage.setItem(K.legacyPurged, JSON.stringify(Date.now()));
+    return before;
+  } catch {
+    return 0;
   }
 }
 
