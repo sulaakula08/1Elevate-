@@ -9,6 +9,17 @@
 --
 -- Row-level security is what enforces that, and it is enabled on every table
 -- below. Without it, any key that reaches a browser can read the whole table.
+--
+-- ── On the order of this file ──────────────────────────────────────────────
+-- Postgres resolves what a statement names at the moment it runs, so the order
+-- here is load-bearing, not stylistic:
+--
+--   1. the profiles table       — is_admin() reads from it
+--   2. is_admin()               — every policy below calls it
+--   3. policies, other tables, and the signup trigger
+--
+-- Declaring the helper at the bottom, where it reads more naturally, fails with
+-- "function public.is_admin() does not exist" on the first policy.
 
 -- ---------------------------------------------------------------- profiles --
 -- One row per signed-in student. `id` is the same id Supabase Auth issues, so
@@ -25,14 +36,34 @@ create table if not exists public.profiles (
   created_at   timestamptz not null default now()
 );
 
+-- ------------------------------------------------------------------ helper --
+-- Defined here, before the first policy that calls it.
+--
+-- SECURITY DEFINER is a necessity, not a convenience: a policy on profiles that
+-- asked "is this user an admin?" by selecting from profiles would re-enter that
+-- same policy and recurse forever. A definer function runs as its owner, skips
+-- RLS, and breaks the cycle.
+--
+-- `search_path` is pinned because a definer function that resolves names
+-- through the caller's path can be pointed at tables the caller controls.
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
+
+-- --------------------------------------------------------- profile access --
+
 alter table public.profiles enable row level security;
 
--- Reading your own profile, and admins reading everyone's.
---
--- `is_admin()` is defined further down as SECURITY DEFINER. It has to be: a
--- policy on profiles that asked "is this user an admin?" by selecting from
--- profiles would re-enter the same policy and recurse forever. The function
--- runs as its owner and therefore skips RLS, which breaks the cycle.
 drop policy if exists "profiles: read own or admin" on public.profiles;
 create policy "profiles: read own or admin"
   on public.profiles for select
@@ -45,9 +76,9 @@ create policy "profiles: update own"
   with check (id = auth.uid());
 
 -- Deliberately no INSERT policy and no self-service role change: profiles are
--- created by the trigger below, and `role` is only ever changed by an admin
--- through the SQL editor or the service key. A student who could write their
--- own role could make themselves an admin.
+-- created by the trigger at the bottom, and `role` is only ever changed through
+-- the SQL editor or the service key. A student who could write their own role
+-- could make themselves an admin.
 
 -- ---------------------------------------------------------------- attempts --
 -- Append-only log of answered questions. Everything on the progress page is
@@ -144,27 +175,11 @@ create policy "questions: write admin"
   using (public.is_admin())
   with check (public.is_admin());
 
--- ----------------------------------------------------------------- helpers --
-
--- SECURITY DEFINER so it can read profiles without tripping that table's own
--- policy (see the note above). `search_path` is pinned because a definer
--- function that resolves names through the caller's path can be hijacked.
-create or replace function public.is_admin()
-returns boolean
-language sql
-security definer
-stable
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.profiles
-    where id = auth.uid() and role = 'admin'
-  );
-$$;
-
+-- --------------------------------------------------------- signup trigger --
 -- A profile for every new signup, filled from whatever the sign-up form passed
 -- as metadata. Without this a student authenticates successfully and then has
 -- nowhere to store a target score.
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
