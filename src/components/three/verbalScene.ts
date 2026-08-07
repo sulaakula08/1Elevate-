@@ -40,8 +40,21 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
   camera.lookAt(0, -0.05, 0);
 
   const world = new THREE.Group();
-  // Looking down at a book lying open on a desk, turned slightly away.
-  world.rotation.set(0.62, -0.34, 0);
+  /**
+   * Attitude and placement.
+   *
+   * Shallower than a book flat on a desk: the spread faces the reader, tilted
+   * just enough that the cover boards, the spine and the thickness of the page
+   * blocks all stay visible. Any less and it collapses into a flat graphic.
+   *
+   * Offset right of centre because the card sets its heading and progress bar
+   * hard left, and the book was landing on top of the title.
+   */
+  const HOME_X = 0.52;
+  const HOME_ROT_X = 0.4;
+  const HOME_ROT_Y = -0.24;
+  world.rotation.set(HOME_ROT_X, HOME_ROT_Y, 0);
+  world.position.x = HOME_X;
   scene.add(world);
 
   /* ---------------- lighting ----------------
@@ -224,7 +237,13 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
       leaf.hinge.visible = true;
 
       const progress = THREE.MathUtils.smootherstep(t / FLIP_SECONDS, 0, 1);
-      leaf.hinge.rotation.y = progress * Math.PI;
+      // Negative: rotating about +Y carries the page's outer edge towards −Z,
+      // which swept it straight back through the covers and the spine — the leaf
+      // spent mid-flight inside the book and emerged behind it. Turning the other
+      // way arcs it over the front, towards the reader, which is also what a hand
+      // turning a page actually does.
+      leaf.hinge.rotation.y = -progress * Math.PI;
+
       // Lift clear of the block at the start and settle onto it at the end, so
       // the leaf never intersects the pages it is leaving or joining.
       const arc = Math.sin(progress * Math.PI);
@@ -232,14 +251,19 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
       // exactly coplanar would z-fight for a frame as it lands.
       leaf.hinge.position.z = 0.007 + arc * 0.14;
       leaf.hinge.rotation.z = -TILT + arc * 0.12;
-      bend(leaf, arc * 0.3);
+      // The bulge has to stay on the reader's side of the leaf, and the leaf's
+      // own frame flips as it passes vertical — so the curl follows cosine,
+      // crossing zero exactly where the page stands edge-on and is flat anyway.
+      bend(leaf, arc * 0.34 * Math.cos(progress * Math.PI));
     }
 
     // The whole book breathes very slightly, so a still frame never looks frozen.
     world.position.y = Math.sin(elapsed * 0.5) * 0.022;
 
-    const targetY = -0.34 + pointer.x * 0.2;
-    const targetX = 0.62 - pointer.y * 0.12;
+    // Parallax rests at the home attitude, so an idle card sits where it was
+    // composed rather than drifting to wherever the pointer last was.
+    const targetY = HOME_ROT_Y + pointer.x * 0.18;
+    const targetX = HOME_ROT_X - pointer.y * 0.1;
     world.rotation.y += (targetY - world.rotation.y) * Math.min(1, delta * 3.5);
     world.rotation.x += (targetX - world.rotation.x) * Math.min(1, delta * 3.5);
   }
