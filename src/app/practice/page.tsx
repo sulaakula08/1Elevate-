@@ -15,7 +15,7 @@ import {
   shuffle,
 } from "@/lib/stats";
 import { PracticeRunner } from "@/components/PracticeRunner";
-import { SubjectScene } from "@/components/three/SubjectScene";
+import { SubjectArt } from "@/components/SubjectArt";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { ProgressBar, Reveal } from "@/components/motion";
 
@@ -375,12 +375,12 @@ function BankInner() {
                       ["--tone-soft" as string]: subjectColorSoft(subject.id),
                     }}
                   >
-                    {/* The subject's own scene, lit and turning. It sits behind
-                        the content and takes no pointer events, so every control
-                        on the card still works. */}
-                    <SubjectScene
+                    {/* The subject's own sprite, held to the top right. It sits
+                        behind the content and takes no pointer events, so every
+                        control on the card still works. */}
+                    <SubjectArt
                       kind={subject.id === "sat-math" ? "math" : "verbal"}
-                      className="qb-card-scene"
+                      className="qb-card-art"
                     />
 
                     <div className="relative flex items-start gap-3">

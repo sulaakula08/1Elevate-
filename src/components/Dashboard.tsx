@@ -20,7 +20,7 @@ import {
 import { CountUp, ProgressBar, Reveal } from "./motion";
 import { ExamCountdown } from "./dashboard/ExamCountdown";
 import { IconRule, IconTrend } from "./illustrations";
-import { SubjectScene } from "./three/SubjectScene";
+import { SubjectArt } from "./SubjectArt";
 
 /** Slightly darker second stop, so each card is a gradient of its own hue. */
 function bankTone(subject: Subject): React.CSSProperties {
@@ -116,7 +116,7 @@ export function Dashboard({ account }: { account: Account }) {
             return (
               <Reveal key={subject.id} delay={i * 70}>
                 <Link href="/practice" className="bank-card" style={bankTone(subject)}>
-                  <SubjectScene kind={subject.id === "sat-math" ? "math" : "verbal"} />
+                  <SubjectArt kind={subject.id === "sat-math" ? "math" : "verbal"} />
 
                   <span className="relative block">
                     <span className="block text-[19px] font-semibold tracking-[-0.02em]">
