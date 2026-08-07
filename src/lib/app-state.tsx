@@ -317,8 +317,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const saveQuestion = useCallback<Ctx["saveQuestion"]>(
     (question) => {
-      const marked = { ...question, custom: true };
-      const exists = custom.some((q) => q.id === marked.id);
+      const previous = custom.find((q) => q.id === question.id);
+      // Provenance is the database's to assign, but stamping it optimistically
+      // means a question the admin just saved shows an author and a time
+      // straight away instead of blanks until the next reload. An edit keeps
+      // whatever the original author and time were.
+      const marked = {
+        ...question,
+        custom: true,
+        authorEmail: previous?.authorEmail ?? question.authorEmail ?? account?.email,
+        createdAt: previous?.createdAt ?? question.createdAt ?? Date.now(),
+      };
+      const exists = previous !== undefined;
       persistCustom(
         exists ? custom.map((q) => (q.id === marked.id ? marked : q)) : [...custom, marked],
       );
@@ -327,7 +337,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ questions: [marked] }),
       });
     },
-    [custom, persistCustom],
+    [account?.email, custom, persistCustom],
   );
 
   const deleteQuestion = useCallback<Ctx["deleteQuestion"]>(

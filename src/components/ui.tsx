@@ -61,6 +61,83 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Confirmation for an action that is awkward to undo — granting a role,
+ * deleting a question. Rendered inline (not a portal) because the callers sit
+ * inside the page's own layout and nothing here needs to escape a stacking
+ * context. Escape and the backdrop both cancel, so the destructive button is
+ * never the only way out.
+ */
+export function ConfirmDialog({
+  title,
+  body,
+  confirmLabel,
+  cancelLabel = "Cancel",
+  danger,
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  body?: React.ReactNode;
+  confirmLabel: string;
+  cancelLabel?: string;
+  danger?: boolean;
+  busy?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const confirmRef = React.useRef<HTMLButtonElement>(null);
+
+  React.useEffect(() => {
+    confirmRef.current?.focus();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 fade-in"
+      style={{ background: "color-mix(in srgb, var(--foreground) 32%, transparent)" }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="panel scale-in w-full max-w-sm p-6"
+      >
+        <h2 className="text-[17px] font-semibold">{title}</h2>
+        {body && <div className="mt-2 text-[14px] leading-relaxed text-muted">{body}</div>}
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" className="btn" onClick={onCancel} disabled={busy}>
+            {cancelLabel}
+          </button>
+          <button
+            ref={confirmRef}
+            type="button"
+            className={danger ? "btn" : "btn btn-primary"}
+            style={
+              danger
+                ? { borderColor: "var(--danger)", color: "var(--danger)" }
+                : undefined
+            }
+            disabled={busy}
+            onClick={onConfirm}
+          >
+            {busy ? "…" : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Gate for pages that need an account, so progress has somewhere to go. */
 export function RequireAccount({ children }: { children: React.ReactNode }) {
   const { account, ready } = useApp();

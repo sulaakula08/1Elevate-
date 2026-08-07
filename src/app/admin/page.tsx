@@ -8,7 +8,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { newId } from "@/lib/storage";
 import { PeopleManager } from "@/components/PeopleManager";
-import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
+import { ConfirmDialog, EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 
 type Draft = {
   id: string;
@@ -24,6 +24,14 @@ type Draft = {
 };
 
 const EMPTY_TEXT: LocalizedText = { en: "" };
+
+/** Absolute, minute-precision — an admin comparing two edits needs the clock. */
+function formatWhen(at: number): string {
+  return new Date(at).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 function emptyDraft(): Draft {
   return {
@@ -69,6 +77,8 @@ function AdminInner() {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The question the admin has asked to delete but not yet confirmed.
+  const [toDelete, setToDelete] = useState<Question | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   if (account!.role === "student") {
@@ -367,6 +377,10 @@ function AdminInner() {
                       · {question.topic}
                     </p>
                     <p className="text-sm truncate">{tx(question.prompt)}</p>
+                    <p className="text-xs text-faint mt-1 truncate">
+                      {question.authorEmail ?? t("admin.unknownAuthor")}
+                      {question.createdAt ? ` · ${formatWhen(question.createdAt)}` : ""}
+                    </p>
                   </div>
                   <div className="ml-auto flex gap-1 shrink-0">
                     <button
@@ -382,7 +396,7 @@ function AdminInner() {
                     </button>
                     <button
                       className="btn btn-ghost text-xs text-danger"
-                      onClick={() => deleteQuestion(question.id)}
+                      onClick={() => setToDelete(question)}
                     >
                       {t("admin.delete")}
                     </button>
@@ -397,6 +411,34 @@ function AdminInner() {
       {/* Role management. Visible to admins as a read-only roster; only the
           owner sees the buttons, and only the database can actually grant. */}
       <PeopleManager />
+
+      {toDelete && (
+        <ConfirmDialog
+          title={t("admin.confirmDeleteTitle")}
+          body={
+            <>
+              <span className="block text-foreground">{tx(toDelete.prompt)}</span>
+              <span className="block mt-2">
+                {toDelete.authorEmail
+                  ? `${t("admin.writtenBy")} ${toDelete.authorEmail}`
+                  : t("admin.unknownAuthor")}
+                {toDelete.createdAt ? ` · ${formatWhen(toDelete.createdAt)}` : ""}
+              </span>
+              <span className="block mt-2">{t("admin.confirmDeleteBody")}</span>
+            </>
+          }
+          confirmLabel={t("admin.delete")}
+          cancelLabel={t("admin.cancel")}
+          danger
+          onConfirm={() => {
+            deleteQuestion(toDelete.id);
+            setToDelete(null);
+            setError(null);
+            setNotice(t("admin.deleted"));
+          }}
+          onCancel={() => setToDelete(null)}
+        />
+      )}
     </div>
   );
 }

@@ -31,6 +31,13 @@ export type Question = {
   explanation: LocalizedText;
   /** True for questions created in the admin editor (stored in the browser). */
   custom?: boolean;
+  /**
+   * Provenance for the admin dashboard: who wrote the item and when. Both come
+   * from the database and are absent on seed questions, so treat them as
+   * display-only — nothing schedules or scores on them.
+   */
+  authorEmail?: string;
+  createdAt?: number;
 };
 
 /** Named hue, resolved to `--s-<name>` CSS variables. */

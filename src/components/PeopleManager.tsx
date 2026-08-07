@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/lib/app-state";
 import { apiFetch } from "@/lib/supabase/client";
+import { ConfirmDialog } from "@/components/ui";
 
 /**
  * Who can do what, for the owner.
@@ -29,6 +30,10 @@ export function PeopleManager() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+  // The role change the owner has asked for but not yet confirmed.
+  const [pending, setPending] = useState<{ person: Person; role: "admin" | "student" } | null>(
+    null,
+  );
 
   // No synchronous setState here: `loading` starts true, so the effect can call
   // this without triggering a cascading render before the first paint.
@@ -62,6 +67,7 @@ export function PeopleManager() {
   async function setRole(person: Person, role: "admin" | "student") {
     setBusyId(person.id);
     setError(null);
+    setPending(null);
     const response = await apiFetch("/api/people", {
       method: "POST",
       body: JSON.stringify({ id: person.id, role }),
@@ -160,7 +166,10 @@ export function PeopleManager() {
                     className="btn btn-sm shrink-0"
                     disabled={busyId === person.id}
                     onClick={() =>
-                      void setRole(person, person.role === "admin" ? "student" : "admin")
+                      setPending({
+                        person,
+                        role: person.role === "admin" ? "student" : "admin",
+                      })
                     }
                   >
                     {busyId === person.id
@@ -181,6 +190,28 @@ export function PeopleManager() {
         practises from. Removing someone&apos;s admin role leaves their questions in place.
         Owners are set in the Supabase SQL editor only, so nobody can appoint themselves.
       </p>
+
+      {pending && (
+        <ConfirmDialog
+          title={pending.role === "admin" ? "Make this person an admin?" : "Remove admin access?"}
+          body={
+            <>
+              <span className="font-medium text-foreground">
+                {pending.person.name || pending.person.email}
+              </span>{" "}
+              ({pending.person.email}){" "}
+              {pending.role === "admin"
+                ? "will be able to write and delete questions in the shared bank every student practises from."
+                : "will go back to being a student and lose access to the question editor. Questions they already wrote stay in the bank."}
+            </>
+          }
+          confirmLabel={pending.role === "admin" ? "Make admin" : "Remove admin"}
+          danger={pending.role === "student"}
+          busy={busyId === pending.person.id}
+          onConfirm={() => void setRole(pending.person, pending.role)}
+          onCancel={() => setPending(null)}
+        />
+      )}
     </section>
   );
 }

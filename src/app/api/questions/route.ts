@@ -76,7 +76,20 @@ type Row = {
     choices: Question["choices"];
     explanation: Question["explanation"];
   };
+  created_at?: string | null;
+  /**
+   * Embedded author profile. Null for a student caller — the profiles read
+   * policy only shows them their own row — and null for an author whose account
+   * was deleted, so the UI must cope with an unknown author either way.
+   */
+  author?: { email: string | null } | { email: string | null }[] | null;
 };
+
+/** The embed is a to-one join, but PostgREST's typing widens it to an array. */
+function authorEmail(author: Row["author"]): string | undefined {
+  const one = Array.isArray(author) ? author[0] : author;
+  return one?.email ?? undefined;
+}
 
 function toQuestion(row: Row): Question {
   return {
@@ -92,6 +105,8 @@ function toQuestion(row: Row): Question {
     answer: row.answer,
     explanation: row.payload?.explanation,
     custom: true,
+    authorEmail: authorEmail(row.author),
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined,
   };
 }
 
@@ -121,7 +136,9 @@ export async function GET(request: Request) {
 
   const { data, error } = await found.client
     .from("custom_questions")
-    .select("id, exam, subject_id, topic, domain, difficulty, answer, payload")
+    .select(
+      "id, exam, subject_id, topic, domain, difficulty, answer, payload, created_at, author:profiles(email)",
+    )
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -158,7 +175,23 @@ export async function POST(request: Request) {
     if (problem) return NextResponse.json({ error: problem }, { status: 400 });
   }
 
-  const rows = questions.map((q) => toRow(q, found.user.id));
+  // An edit must not rewrite authorship: the upsert sends every column, so
+  // without this the last admin to touch a question would appear to have
+  // written it. Rows that do not exist yet fall back to the caller.
+  const { data: existing } = await found.client
+    .from("custom_questions")
+    .select("id, created_by")
+    .in(
+      "id",
+      questions.map((q) => String(q.id)),
+    );
+  const originalAuthor = new Map(
+    (existing ?? []).map((row) => [row.id as string, row.created_by as string | null]),
+  );
+
+  const rows = questions.map((q) =>
+    toRow(q, originalAuthor.get(String(q.id)) ?? found.user.id),
+  );
   const { error } = await found.client
     .from("custom_questions")
     .upsert(rows, { onConflict: "id" });
