@@ -20,6 +20,12 @@
 --
 -- Declaring the helper at the bottom, where it reads more naturally, fails with
 -- "function public.is_admin() does not exist" on the first policy.
+--
+-- ── RLS is not the whole story ─────────────────────────────────────────────
+-- A policy decides which ROWS a statement may touch. It cannot decide which
+-- COLUMNS. Anything that must not be self-assigned — `role`, above all — needs
+-- a column-level GRANT as well, and there is one further down. Policies alone
+-- let a student send one PATCH to the REST API and make themselves an admin.
 
 -- ---------------------------------------------------------------- profiles --
 -- One row per signed-in student. `id` is the same id Supabase Auth issues, so
@@ -75,10 +81,30 @@ create policy "profiles: update own"
   using (id = auth.uid())
   with check (id = auth.uid());
 
--- Deliberately no INSERT policy and no self-service role change: profiles are
--- created by the trigger at the bottom, and `role` is only ever changed through
--- the SQL editor or the service key. A student who could write their own role
--- could make themselves an admin.
+-- Deliberately no INSERT policy: profiles are created by the trigger at the
+-- bottom, and no DELETE policy, because closing an account is not self-service.
+
+-- The policy above says WHICH ROW a student may update — their own. It says
+-- nothing about which columns, and on its own that is a privilege escalation:
+--
+--   PATCH /rest/v1/profiles?id=eq.<self>  {"role":"admin"}
+--
+-- succeeds, because the row is theirs. The API route drops `role` from its
+-- payload, but the route is not the only way in — the publishable key ships in
+-- every browser and PostgREST is reachable directly.
+--
+-- Column-level privileges are the fix, and they are checked independently of
+-- RLS: revoke UPDATE wholesale, then grant it back only on the three columns a
+-- student is allowed to edit. `role` is not among them, so the PATCH above now
+-- fails with "permission denied for table profiles" no matter which row it
+-- targets. INSERT and DELETE go too; the trigger below is SECURITY DEFINER and
+-- is unaffected, as is anything using the service key.
+--
+-- SELECT is deliberately left alone — reading is already governed by the read
+-- policy above.
+
+revoke insert, update, delete on public.profiles from anon, authenticated;
+grant update (name, grade, target_score) on public.profiles to authenticated;
 
 -- ---------------------------------------------------------------- attempts --
 -- Append-only log of answered questions. Everything on the progress page is
@@ -102,17 +128,29 @@ create table if not exists public.attempts (
 -- Every analytics query filters by student, newest first.
 create index if not exists attempts_by_account on public.attempts (account_id, at desc);
 
--- One row per answer. An attempt carries no client-side id, so this natural key
--- is what makes the write idempotent: a retry after a dropped connection hits
--- ON CONFLICT DO NOTHING instead of appending a second copy of the same answer.
--- The same question genuinely cannot be answered twice in one millisecond in
--- one mode, so this never rejects a real attempt.
+-- An attempt carries no client-side id, so the sync layer identifies one by
+-- who answered, which question, when, and in which mode. The unique index below
+-- makes that identity real, which is what lets the API insert with ON CONFLICT
+-- DO NOTHING: a retry after a dropped connection becomes a no-op instead of a
+-- second copy of the same answer.
 --
--- Applying this to a database that already has duplicates will fail. Clear them
--- first:
---   delete from public.attempts a using public.attempts b
---   where a.id > b.id and a.account_id = b.account_id
---     and a.question_id = b.question_id and a.at = b.at and a.mode = b.mode;
+-- The delete runs first because CREATE UNIQUE INDEX fails outright if the table
+-- already holds duplicates — which it will, on any database that synced before
+-- this index existed. It keeps the lowest id of each group and removes the rest,
+-- so it only ever deletes rows that are byte-for-byte repeats of a row it keeps.
+-- On a clean table it matches nothing, which keeps this file re-runnable.
+--
+-- The same question cannot genuinely be answered twice in one millisecond in
+-- one mode, so this never rejects a real attempt.
+
+delete from public.attempts a
+using public.attempts b
+where a.id > b.id
+  and a.account_id  = b.account_id
+  and a.question_id = b.question_id
+  and a.at          = b.at
+  and a.mode        = b.mode;
+
 create unique index if not exists attempts_unique_answer
   on public.attempts (account_id, question_id, at, mode);
 
@@ -129,6 +167,9 @@ drop policy if exists "attempts: insert own" on public.attempts;
 create policy "attempts: insert own"
   on public.attempts for insert
   with check (account_id = auth.uid());
+
+-- No update or delete policy: the log is append-only, so a student cannot
+-- rewrite history to improve their own analytics.
 
 -- ------------------------------------------------------------------- mocks --
 
@@ -153,6 +194,9 @@ create policy "mocks: read own or admin"
   on public.mocks for select
   using (account_id = auth.uid() or public.is_admin());
 
+-- Insert only, and no update policy on purpose: a finished exam is a fact, not
+-- a draft. The API relies on this — it writes with ON CONFLICT DO NOTHING, so a
+-- re-sent mock is ignored rather than taking an UPDATE path that RLS refuses.
 drop policy if exists "mocks: insert own" on public.mocks;
 create policy "mocks: insert own"
   on public.mocks for insert
@@ -218,7 +262,14 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ------------------------------------------------------------ making admins --
--- There is no UI for this on purpose. Sign up normally, then run this once with
--- your own address:
+-- There is no UI for this on purpose, and after the column grant above there
+-- cannot be one: `role` is not writable by any signed-in user, only through the
+-- SQL editor or the service key. Sign up normally, then run this once with your
+-- own address:
 --
 --   update public.profiles set role = 'admin' where email = 'you@example.com';
+--
+-- To check nobody has escalated already, on a database that ran an earlier
+-- version of this file:
+--
+--   select email, role from public.profiles where role = 'admin';

@@ -118,9 +118,19 @@ Every table has **row-level security** switched on. That is not a filter the app
 applies — it is a rule Postgres enforces on every query, including one sent from
 a browser with the anon key. The rules are:
 
-- **`profiles`** — you can read and update your own row. An admin can read all
-  of them. Nobody can change their own `role`; there is no policy that allows
-  it, so only the SQL editor can.
+- **`profiles`** — you can read your own row, and update your own `name`,
+  `grade` and `target_score`. An admin can read all of them. Nobody can change
+  their own `role`, so only the SQL editor can.
+
+  Worth understanding, because it is the one place row-level security is not
+  enough on its own: a policy restricts which **rows** a statement may touch,
+  never which **columns**. `profiles: update own` says "your row", and `role`
+  lives in your row — so under policies alone, `PATCH /rest/v1/profiles` with
+  `{"role":"admin"}` succeeded. Sanitising the payload in the API route did not
+  help, because the publishable key is in every browser and PostgREST answers
+  directly. The fix is a column-level `GRANT`, checked independently of RLS:
+  `UPDATE` is revoked on the table and granted back on exactly those three
+  columns. That is the `revoke`/`grant` pair in `schema.sql`.
 - **`attempts` / `mocks`** — you can read your own rows and insert rows under
   your own id. An admin can read everyone's. Nobody can insert under someone
   else's id, because the check is on the row being written, not on the request.
