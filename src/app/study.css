@@ -97,8 +97,15 @@
   .mth-frac {
     display: inline-flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    /* `stretch`, not `center`. In a column flex container the cross axis is the
+       horizontal one, so centring sized each half to its own content — which
+       made the bar (a border on the denominator) exactly as wide as the
+       denominator. A narrow denominator under a wide numerator therefore drew a
+       short bar centred under the middle of the numerator, leaving "12" poking
+       out one side and "28" the other. Stretching makes both halves fill the
+       box, so the bar always spans the wider of the two and `text-align: center`
+       keeps each half centred over it. */
+    align-items: stretch;
     vertical-align: middle;
     margin: 0 0.18em;
     /* 0.8em keeps a two-line stack near the height of one 1.65 text line, so a
