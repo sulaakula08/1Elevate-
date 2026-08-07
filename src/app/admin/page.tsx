@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import { newId } from "@/lib/storage";
 import { PeopleManager } from "@/components/PeopleManager";
 import { QuestionView } from "@/components/QuestionView";
+import { RichText } from "@/lib/math/markdown";
 import { ConfirmDialog, EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 
 type Draft = {
@@ -277,6 +278,10 @@ function AdminInner() {
             value={draft.passage.en}
             onChange={(e) => setText("passage", e.target.value)}
           />
+          {/* The passage goes through the same renderer as the prompt, so it
+              takes the same notation — worth saying here, since an author with a
+              formula in a stimulus has no reason to assume it. */}
+          <p className="text-[12.5px] text-muted mt-2">{t("admin.mathHintShort")}</p>
         </div>
 
         <div>
@@ -425,7 +430,9 @@ function AdminInner() {
                       {question.exam.toUpperCase()} · {subject ? tx(subject.name) : question.subjectId}{" "}
                       · {question.topic}
                     </p>
-                    <p className="text-sm truncate">{tx(question.prompt)}</p>
+                    {/* Rendered, not raw: a list of "$rac{3}{8}$" tells an
+                        author nothing about the item they are looking for. */}
+                    <RichText className="text-sm truncate block" text={tx(question.prompt)} />
                     <p className="text-xs text-faint mt-1 truncate">
                       {question.authorEmail ?? t("admin.unknownAuthor")}
                       {question.createdAt ? ` · ${formatWhen(question.createdAt)}` : ""}

@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { reviewQueue } from "@/lib/stats";
 import { PracticeRunner } from "@/components/PracticeRunner";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
+import { RichText } from "@/lib/math/markdown";
 import { Reveal } from "@/components/motion";
 
 export default function ReviewPage() {
@@ -63,9 +64,10 @@ function ReviewInner() {
                         {question.exam}
                       </span>
                     </div>
-                    <p className="mt-1.5 text-[14px] text-muted line-clamp-2 leading-relaxed">
-                      {tx(question.prompt)}
-                    </p>
+                    <RichText
+                      className="mt-1.5 block text-[14px] text-muted line-clamp-2 leading-relaxed"
+                      text={tx(question.prompt)}
+                    />
                   </div>
                 </Reveal>
               );

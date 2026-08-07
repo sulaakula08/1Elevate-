@@ -1051,3 +1051,24 @@ body[data-exam] .test-foot {
   border-color: rgba(255, 255, 255, 0.32);
   color: #fff;
 }
+
+/* ---------------- fraction bar and radical overbar ----------------
+   Deliberately unlayered, and this is not a style preference — it is the only
+   way these two rules can win. globals.css carries an unlayered
+   `* { border-color: var(--line) }` reset, and an unlayered declaration beats a
+   layered one whatever its specificity, so the `currentColor` set inside
+   `@layer components` lost: both rules were being drawn in the faint UI line
+   colour instead of the text colour, which is why a fraction appeared to have no
+   bar at all.
+
+   Thickness scales with the type — 0.06em, floored at 1px so it never vanishes
+   on a low-density display — because a hairline that stays 1px while the
+   surrounding text grows stops reading as a division bar. */
+.mth-frac-d {
+  border-top-color: currentColor;
+  border-top-width: max(1px, 0.06em);
+}
+.mth-sqrt-b {
+  border-top-color: currentColor;
+  border-top-width: max(1px, 0.055em);
+}

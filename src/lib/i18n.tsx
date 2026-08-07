@@ -390,6 +390,8 @@ const D: Dict = {
   },
   "admin.choice": { en: "Choice" },
   "admin.preview": { en: "Preview — how a student sees it" },
+  "admin.mathHintShort": { en: "Maths between dollar signs works here too: $\\frac{3}{8}$, $x^2$.",
+  },
   "admin.mathHint": { en: "Put maths between dollar signs and it renders as maths: $x^2$, $\\frac{3}{8}$, $\\sqrt{16}$, $a \\le b$. Use $$…$$ for a formula on its own line. Everything else stays plain text.",
   },
   "admin.explanationLabel": { en: "Explanation" },
