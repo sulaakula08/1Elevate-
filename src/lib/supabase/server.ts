@@ -18,8 +18,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  */
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Supabase renamed its keys: anon → publishable, service_role → secret. Both
+// namings are read, newest first, so a project created before or after the
+// change works without anyone editing their .env.local.
+const ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SERVICE_KEY =
+  process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /** False until the environment is configured, so routes can degrade politely. */
 export function supabaseConfigured(): boolean {

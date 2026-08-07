@@ -17,7 +17,12 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  */
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Both the current name (publishable) and the older one (anon). Next.js inlines
+// process.env.NEXT_PUBLIC_* at build time, so each has to be written out in
+// full — a computed lookup would not be replaced and would arrive undefined.
+const ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 let cached: SupabaseClient | null = null;
 
