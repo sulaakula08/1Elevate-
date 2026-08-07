@@ -79,20 +79,31 @@
   /* A real stacked fraction — the rule is a border, so it scales with the
      surrounding type instead of being drawn at a fixed pixel height.
 
-     Two numbers matter. The type is set at 0.78em with line-height 1, so the
-     whole stack is about 1.56em tall and fits inside a 1.65 line without forcing
-     the paragraph's lines apart. And the box is dropped 0.48em, which puts the
-     bar a little under a third of an em above the surrounding baseline — where
-     a reader expects a fraction bar to sit, level with a minus sign rather than
-     resting on the line. */
+     Placed with `vertical-align: middle`, and that is the whole trick. A length
+     offset cannot do this job: `vertical-align: <length>` moves the box's
+     *baseline*, and an inline-flex takes its baseline from its first item — the
+     numerator — so every offset was measured from the wrong edge, which is what
+     left the numerator sitting on the text line with the denominator hanging
+     under it, and left two fractions in one formula at two different heights.
+
+     `middle` instead aligns the box's own centre with the parent baseline plus
+     half an x-height, which is exactly the mathematical axis: the height a minus
+     sign and an equals sign already centre on. The bar lands there, with no
+     magic number to re-tune whenever the type size changes.
+
+     For that to hold, the bar must be the box's centre — so the padding above
+     and below it is symmetric, and both halves share one font size and a
+     line-height of 1. Do not make those asymmetric without moving the bar. */
   .mth-frac {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    vertical-align: -0.48em;
+    vertical-align: middle;
     margin: 0 0.18em;
-    font-size: 0.78em;
+    /* 0.8em keeps a two-line stack near the height of one 1.65 text line, so a
+       fraction inside a sentence does not shove the paragraph's lines apart. */
+    font-size: 0.8em;
     line-height: 1;
     text-align: center;
   }
@@ -105,10 +116,10 @@
     padding: 0.14em 0.3em 0;
     border-top: 1px solid currentColor;
   }
-  /* A display formula has a line to itself, so it can be full size. */
+  /* A display formula has a line to itself, so it can be full size. Only the
+     size changes — the axis alignment is the same rule. */
   .mth-block .mth-frac {
-    font-size: 0.95em;
-    vertical-align: -0.6em;
+    font-size: 1em;
   }
 
   .mth-scripted {
