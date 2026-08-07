@@ -10,6 +10,7 @@ import { HERO_COPY } from "./hero";
 import { SHOWCASE_COPY } from "./showcase";
 import { STUDY_COPY } from "./study";
 import { PLAN_COPY } from "./plan";
+import { COMMUNITY_COPY } from "./community";
 
 /** Every string carries all three content languages; `en` is the fallback. */
 export type CopyEntry = { en: string; ru: string; kk: string };
@@ -20,4 +21,5 @@ export const COPY: CopyDict = {
   ...SHOWCASE_COPY,
   ...STUDY_COPY,
   ...PLAN_COPY,
+  ...COMMUNITY_COPY,
 };

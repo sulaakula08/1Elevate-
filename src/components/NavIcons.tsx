@@ -58,6 +58,17 @@ export function NavTutorial({ size = 20 }: { size?: number }) {
   );
 }
 
+export function NavCommunity({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <circle cx="9" cy="8.5" r="3" {...S} />
+      <path d="M3.75 19c.5-3 2.6-4.7 5.25-4.7s4.75 1.7 5.25 4.7" {...S} />
+      <circle cx="16.5" cy="7.5" r="2.35" {...S} />
+      <path d="M15 14.6c2.15.15 3.85 1.7 4.25 4.4" {...S} />
+    </svg>
+  );
+}
+
 export function NavAdmin({ size = 20 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>

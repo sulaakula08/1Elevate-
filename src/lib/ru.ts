@@ -31,4 +31,7 @@ export const NOUNS = {
   topic: ["тема", "темы", "тем"] as [string, string, string],
   format: ["формат", "формата", "форматов"] as [string, string, string],
   test: ["тест", "теста", "тестов"] as [string, string, string],
+  comment: ["комментарий", "комментария", "комментариев"] as [string, string, string],
+  explanation: ["объяснение", "объяснения", "объяснений"] as [string, string, string],
+  point: ["балл", "балла", "баллов"] as [string, string, string],
 };

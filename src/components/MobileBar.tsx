@@ -9,6 +9,7 @@ import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
 import {
   NavAdmin,
+  NavCommunity,
   NavHome,
   NavMock,
   NavMore,
@@ -23,6 +24,7 @@ const TABS = [
   { href: "/practice", short: "nav.sPractice", Icon: NavPractice },
   { href: "/mock", short: "nav.sMock", Icon: NavMock },
   { href: "/review", short: "nav.sReview", Icon: NavReview },
+  { href: "/community", short: "nav.sCommunity", Icon: NavCommunity },
 ];
 
 /** Compact header for signed-in phones — the sidebar's job is done by the tabs. */
