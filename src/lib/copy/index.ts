@@ -10,6 +10,7 @@ import { HERO_COPY } from "./hero";
 import { SHOWCASE_COPY } from "./showcase";
 import { STUDY_COPY } from "./study";
 import { PLAN_COPY } from "./plan";
+import { COMMUNITY_COPY } from "./community";
 
 /** English-only, like the rest of the product. */
 export type CopyEntry = { en: string };
@@ -20,4 +21,5 @@ export const COPY: CopyDict = {
   ...SHOWCASE_COPY,
   ...STUDY_COPY,
   ...PLAN_COPY,
+  ...COMMUNITY_COPY,
 };

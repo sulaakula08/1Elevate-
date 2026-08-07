@@ -10,6 +10,7 @@ import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
 import {
   NavAdmin,
+  NavCommunity,
   NavHome,
   NavMock,
   NavPractice,
@@ -28,6 +29,7 @@ const PRACTICE: Item[] = [
   { href: "/review", key: "nav.review", Icon: NavReview },
 ];
 
+const SOCIAL: Item[] = [{ href: "/community", key: "nav.community", Icon: NavCommunity }];
 const PROGRESS: Item[] = [{ href: "/progress", key: "nav.progress", Icon: NavProgress }];
 const LEARN: Item[] = [{ href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial }];
 
@@ -134,6 +136,7 @@ export function Sidebar({
       <nav className="flex flex-col gap-0.5">
         {renderGroup(null, TOP)}
         {renderGroup(t("side.practice"), PRACTICE)}
+        {renderGroup(t("side.social"), SOCIAL)}
         {renderGroup(t("side.progress"), PROGRESS)}
         {renderGroup(t("side.learn"), LEARN)}
         {account.role !== "student" &&

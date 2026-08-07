@@ -41,7 +41,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru" data-theme="light" className="h-full" suppressHydrationWarning>
+    <html lang="en" data-theme="light" className="h-full" suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {THEME_BOOTSTRAP}
