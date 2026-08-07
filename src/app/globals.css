@@ -287,6 +287,52 @@ p {
     color: var(--tone, var(--accent));
     flex-shrink: 0;
   }
+  /* ---------------- answer picker (question editor) ----------------
+     Sized to the field it sits beside rather than to a browser default radio, so
+     the row reads as one control and the target is worth aiming at. Unselected
+     it is a quiet letter tile; selected it fills with the success colour and
+     swaps the letter for a tick — colour alone never carries the state, since
+     the tick and aria-checked both say it too. */
+  .qa-pick {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease;
+  }
+  .qa-pick:hover {
+    border-color: color-mix(in srgb, var(--success) 55%, var(--line-strong));
+    color: var(--foreground);
+  }
+  .qa-pick:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+  .qa-pick-on {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+    box-shadow: 0 1px 6px color-mix(in srgb, var(--success) 40%, transparent);
+  }
+  .qa-pick-on:hover {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+  }
+
   .glyph-sm {
     width: 1.75rem;
     height: 1.75rem;

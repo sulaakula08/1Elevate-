@@ -25,6 +25,9 @@ type Draft = {
 
 const EMPTY_TEXT: LocalizedText = { en: "" };
 
+/** Choice labels, matching the letters a student sees in the player. */
+const LETTERS = ["A", "B", "C", "D", "E", "F"];
+
 /** Absolute, minute-precision — an admin comparing two edits needs the clock. */
 function formatWhen(at: number): string {
   return new Date(at).toLocaleString(undefined, {
@@ -264,52 +267,48 @@ function AdminInner() {
           />
         </div>
 
+        {/*
+          The letter tile *is* the control: clicking A/B/C/D marks that choice
+          correct. A bare radio was 13px of browser default beside a 40px field,
+          which is both hard to hit and impossible to read as "this one is the
+          answer" — the letter says which choice, the fill says it is the right
+          one, and the tick removes any doubt.
+
+          Fixed at four choices, so neither an add nor a remove button: the SAT
+          is a four-option test. Anything imported with a different count still
+          renders and stays editable.
+        */}
         <div>
-          <label className="label">
-            {t("admin.choices")} — {t("admin.markCorrect")}
-          </label>
-          <div className="space-y-2">
-            {draft.choices.map((choice, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="answer"
-                  checked={draft.answer === index}
-                  onChange={() => setDraft((prev) => ({ ...prev, answer: index }))}
-                  aria-label={`${t("admin.markCorrect")} ${index + 1}`}
-                />
-                <input
-                  className="field"
-                  value={choice.en}
-                  onChange={(e) => setChoice(index, e.target.value)}
-                />
-                {draft.choices.length > 2 && (
+          <label className="label">{t("admin.choices")}</label>
+          <p className="text-[12.5px] text-muted -mt-1 mb-2.5">{t("admin.markCorrectHint")}</p>
+          <div role="radiogroup" aria-label={t("admin.markCorrect")} className="space-y-2">
+            {draft.choices.map((choice, index) => {
+              const isAnswer = draft.answer === index;
+              return (
+                <div key={index} className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    className="btn btn-ghost px-2"
-                    onClick={() =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        choices: prev.choices.filter((_, i) => i !== index),
-                        answer: prev.answer >= index && prev.answer > 0 ? prev.answer - 1 : prev.answer,
-                      }))
-                    }
+                    role="radio"
+                    aria-checked={isAnswer}
+                    className={`qa-pick ${isAnswer ? "qa-pick-on" : ""}`}
+                    onClick={() => setDraft((prev) => ({ ...prev, answer: index }))}
+                    title={`${t("admin.markCorrect")}: ${LETTERS[index]}`}
                   >
-                    ✕
+                    <span aria-hidden>{isAnswer ? "✓" : LETTERS[index]}</span>
+                    <span className="sr-only">
+                      {LETTERS[index]} — {t("admin.markCorrect")}
+                    </span>
                   </button>
-                )}
-              </div>
-            ))}
+                  <input
+                    className="field"
+                    value={choice.en}
+                    onChange={(e) => setChoice(index, e.target.value)}
+                    placeholder={`${t("admin.choice")} ${LETTERS[index]}`}
+                  />
+                </div>
+              );
+            })}
           </div>
-          <button
-            type="button"
-            className="btn btn-ghost text-xs mt-2"
-            onClick={() =>
-              setDraft((prev) => ({ ...prev, choices: [...prev.choices, { ...EMPTY_TEXT }] }))
-            }
-          >
-            +
-          </button>
         </div>
 
         <div>
