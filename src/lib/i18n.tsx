@@ -30,6 +30,8 @@ const D: Dict = {
   "nav.profile": { en: "Profile" },
   "nav.bank": { en: "Question Bank" },
   "nav.settings": { en: "Settings" },
+  "nav.darkMode": { en: "Dark theme" },
+  "nav.lightMode": { en: "Light theme" },
 
   /* ---------------- sidebar groups ---------------- */
   "side.practice": { en: "Practice" },

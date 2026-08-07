@@ -15,7 +15,6 @@ import {
   shuffle,
 } from "@/lib/stats";
 import { PracticeRunner } from "@/components/PracticeRunner";
-import { SubjectArt } from "@/components/SubjectArt";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { ProgressBar, Reveal } from "@/components/motion";
 
@@ -369,21 +368,13 @@ function BankInner() {
               return (
                 <Reveal as="li" key={subject.id} delay={i * 55}>
                   <div
-                    className="card-tone relative overflow-hidden p-5 h-full flex flex-col gap-4"
+                    className="qb-subject-card p-5 h-full flex flex-col gap-4"
                     style={{
                       ["--tone" as string]: subjectColor(subject.id),
                       ["--tone-soft" as string]: subjectColorSoft(subject.id),
                     }}
                   >
-                    {/* The subject's own sprite, held to the top right. It sits
-                        behind the content and takes no pointer events, so every
-                        control on the card still works. */}
-                    <SubjectArt
-                      kind={subject.id === "sat-math" ? "math" : "verbal"}
-                      className="qb-card-art"
-                    />
-
-                    <div className="relative flex items-start gap-3">
+                    <div className="flex items-start gap-3">
                       <span className="glyph" aria-hidden>
                         {subject.glyph}
                       </span>
@@ -400,7 +391,7 @@ function BankInner() {
 
                     {/* Progress, then the level mix — what is left to do, and how
                         hard it gets. */}
-                    <div className="relative space-y-2">
+                    <div className="space-y-2">
                       <div className="flex items-baseline gap-2 text-[12.5px] text-muted">
                         <span className="num">
                           {solved} / {subjectTotal}
@@ -418,7 +409,7 @@ function BankInner() {
                       />
                     </div>
 
-                    <div className="relative space-y-2.5">
+                    <div className="space-y-2.5">
                       <div className="qb-mix" role="img" aria-label={t("study.mixTitle")}>
                         {mix.map(({ value, count }) => (
                           <span
@@ -441,7 +432,7 @@ function BankInner() {
                     </div>
 
                     <button
-                      className="btn btn-primary btn-sm mt-auto w-full relative"
+                      className="btn btn-primary btn-sm mt-auto w-full"
                       disabled={available.length === 0}
                       onClick={() => start((q) => q.subjectId === subject.id, name)}
                     >

@@ -376,15 +376,41 @@
     flex-shrink: 0;
   }
 
-  /* The sprite on a bank card. These cards are pale rather than saturated, so
-     the art is smaller, corner-anchored and slightly held back — it decorates
-     the card without competing with the numbers on it. */
-  .qb-card-art {
-    right: 0.375rem;
-    bottom: 0.25rem;
-    width: 5.5rem;
-    opacity: 0.9;
-    filter: none;
+  /* A subject card in the bank: monochrome surface with the subject's hue only
+     as a wash from the top-right corner and a rule down the left edge. No
+     artwork — the card carries five numbers and a button, and anything
+     decorative behind them was noise. */
+  .qb-subject-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background:
+      radial-gradient(
+        110% 80% at 100% 0%,
+        color-mix(in srgb, var(--tone) 12%, transparent) 0%,
+        transparent 60%
+      ),
+      linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms ease,
+      transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .qb-subject-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--tone);
+    opacity: 0.75;
+  }
+  .qb-subject-card:hover {
+    border-color: color-mix(in srgb, var(--tone) 45%, var(--line));
+    box-shadow: var(--lift-brand);
+    transform: translateY(-2px);
   }
 
   /* ---------------- view switch ---------------- */
