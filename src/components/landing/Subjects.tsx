@@ -5,7 +5,7 @@ import { SUBJECTS, subjectColor } from "@/data/exams";
 import type { Question } from "@/data/types";
 import { statsFor, bankStats } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
-import { NOUNS, pluralize } from "@/lib/ru";
+import { NOUNS, pluralize } from "@/lib/plural";
 import { Reveal } from "../motion";
 import { SubjectScene } from "../three/SubjectScene";
 

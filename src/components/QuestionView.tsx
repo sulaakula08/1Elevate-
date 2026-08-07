@@ -16,6 +16,13 @@ type Props = {
   disabled?: boolean;
   /** Number keys pick a choice. Off in the mock report, where nothing is live. */
   keyboard?: boolean;
+  /**
+   * Answer eliminator, as the real test app has it: the student rules a choice
+   * out and it stops being selectable. Only rendered when the tool is on.
+   */
+  crossOutMode?: boolean;
+  crossedOut?: number[];
+  onToggleCross?: (index: number) => void;
 };
 
 /**
@@ -33,6 +40,9 @@ export function QuestionView({
   revealed,
   disabled,
   keyboard = true,
+  crossOutMode = false,
+  crossedOut = [],
+  onToggleCross,
 }: Props) {
   const { tx, t } = useI18n();
 
@@ -50,12 +60,14 @@ export function QuestionView({
       const index = Number(event.key) - 1;
       if (Number.isInteger(index) && index >= 0 && index < count) {
         event.preventDefault();
-        onSelect(index);
+        if (!crossedOut.includes(index)) onSelect(index);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [live, count, onSelect]);
+    // Rebinding when the ruled-out set changes is cheap, and it keeps the
+    // handler reading current state rather than a stale closure.
+  }, [live, count, onSelect, crossedOut]);
 
   /** State lives on one class, so a choice can never be two states at once. */
   const choiceClass = useCallback(
@@ -87,25 +99,42 @@ export function QuestionView({
         {question.choices.map((choice, index) => {
           const isSelected = selected === index;
           const wrongPick = revealed && isSelected && index !== question.answer;
+          const struck = crossedOut.includes(index);
+          const showCross = crossOutMode && !revealed && Boolean(onToggleCross);
           return (
-            <button
-              key={index}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              disabled={disabled}
-              onClick={() => onSelect(index)}
-              className={`${choiceClass(index)} ${wrongPick ? "shake" : ""}`}
-            >
-              <span className="q-mark" aria-hidden>
-                {revealed && index === question.answer
-                  ? "✓"
-                  : revealed && isSelected
-                    ? "✕"
-                    : LETTERS[index]}
-              </span>
-              <RichText className="q-text" text={tx(choice)} />
-            </button>
+            <div key={index} className={showCross ? "flex items-center gap-2" : undefined}>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                disabled={disabled || struck}
+                onClick={() => onSelect(index)}
+                className={`${choiceClass(index)} ${wrongPick ? "shake" : ""} ${
+                  struck ? "q-choice-struck" : ""
+                } ${showCross ? "flex-1 min-w-0" : ""}`}
+              >
+                <span className="q-mark" aria-hidden>
+                  {revealed && index === question.answer
+                    ? "✓"
+                    : revealed && isSelected
+                      ? "✕"
+                      : LETTERS[index]}
+                </span>
+                <RichText className="q-text" text={tx(choice)} />
+              </button>
+
+              {showCross && (
+                <button
+                  type="button"
+                  onClick={() => onToggleCross?.(index)}
+                  aria-pressed={struck}
+                  aria-label={`${struck ? t("ptool.undoCross") : t("ptool.crossOut")} ${LETTERS[index]}`}
+                  className={`cross-btn ${struck ? "cross-btn-on" : ""}`}
+                >
+                  {LETTERS[index]}
+                </button>
+              )}
+            </div>
           );
         })}
       </div>

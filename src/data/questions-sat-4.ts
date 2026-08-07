@@ -18,8 +18,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "5 · 4 = 20, and 20 − 3 = 17.",
-      ru: "5 · 4 = 20, затем 20 − 3 = 17.",
-      kk: "5 · 4 = 20, содан кейін 20 − 3 = 17.",
     },
   },
   {
@@ -34,8 +32,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 2,
     explanation: {
       en: "In y = mx + b, b is the y-intercept, so it is 9. The −2 is the slope.",
-      ru: "В y = mx + b свободный член b — это точка пересечения с осью y, то есть 9. −2 — наклон.",
-      kk: "y = mx + b өрнегінде b — y осімен қиылысу нүктесі, яғни 9. −2 — көлбеулік.",
     },
   },
   {
@@ -52,8 +48,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "Total spent is 7n and it cannot exceed 60, so 7n ≤ 60 (giving n ≤ 8).",
-      ru: "Всего потрачено 7n, и это не может превышать 60: 7n ≤ 60 (то есть n ≤ 8).",
-      kk: "Жалпы шығын 7n, ол 60-тан аспауы керек: 7n ≤ 60 (яғни n ≤ 8).",
     },
   },
   {
@@ -70,8 +64,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "With s + a = 200 and 8s + 12a = 2 000, substitute a = 200 − s: 8s + 2 400 − 12s = 2 000, so −4s = −400 and s = 100.",
-      ru: "Из s + a = 200 и 8s + 12a = 2 000 подставим a = 200 − s: 8s + 2 400 − 12s = 2 000, значит s = 100.",
-      kk: "s + a = 200 және 8s + 12a = 2 000 болса, a = 200 − s қойамыз: 8s + 2 400 − 12s = 2 000, демек s = 100.",
     },
   },
 
@@ -93,8 +85,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "This is a difference of squares: a² − b² = (a + b)(a − b), so x² − 9 = (x + 3)(x − 3).",
-      ru: "Это разность квадратов: a² − b² = (a + b)(a − b), значит x² − 9 = (x + 3)(x − 3).",
-      kk: "Бұл — квадраттар айырымы: a² − b² = (a + b)(a − b), демек x² − 9 = (x + 3)(x − 3).",
     },
   },
   {
@@ -111,8 +101,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 3,
     explanation: {
       en: "Work outward-in: g(2) = 4, then f(4) = 16 + 1 = 17. Doing f first would give the wrong 10.",
-      ru: "Считаем изнутри: g(2) = 4, затем f(4) = 16 + 1 = 17. Если начать с f, получится неверные 10.",
-      kk: "Іштен санаймыз: g(2) = 4, содан кейін f(4) = 16 + 1 = 17. f-тен бастасаңыз қате 10 шығады.",
     },
   },
   {
@@ -129,8 +117,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 2,
     explanation: {
       en: "One solution means the discriminant is zero: 36 − 4c = 0, so c = 9 (the perfect square (x + 3)²).",
-      ru: "Одно решение — дискриминант равен нулю: 36 − 4c = 0, значит c = 9 (полный квадрат (x + 3)²).",
-      kk: "Бір шешім — дискриминант нөл: 36 − 4c = 0, демек c = 9 (толық квадрат (x + 3)²).",
     },
   },
 
@@ -147,8 +133,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "180 / 3 = 60 km/h.",
-      ru: "180 / 3 = 60 км/ч.",
-      kk: "180 / 3 = 60 км/сағ.",
     },
   },
   {
@@ -165,8 +149,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 2,
     explanation: {
       en: "300 / 4 = 75 g per person, so 75 · 10 = 750 g.",
-      ru: "300 / 4 = 75 г на человека, значит 75 · 10 = 750 г.",
-      kk: "300 / 4 = 75 г бір адамға, демек 75 · 10 = 750 г.",
     },
   },
   {
@@ -189,8 +171,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "A margin of error gives an interval, not a point value: 35% ± 4 points. Random selection is exactly what licenses generalising to the city.",
-      ru: "Погрешность даёт интервал, а не точное значение: 35% ± 4 п.п. Случайный отбор как раз и позволяет обобщать на город.",
-      kk: "Қателік шегі нақты мән емес, аралық береді: 35% ± 4 п.т. Кездейсоқ іріктеу қалаға жалпылауға мүмкіндік береді.",
     },
   },
 
@@ -209,8 +189,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "Angles in a triangle sum to 180°: 180 − 50 − 60 = 70°.",
-      ru: "Сумма углов треугольника 180°: 180 − 50 − 60 = 70°.",
-      kk: "Үшбұрыш бұрыштарының қосындысы 180°: 180 − 50 − 60 = 70°.",
     },
   },
   {
@@ -227,8 +205,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 2,
     explanation: {
       en: "The full area is 36π; a 90° sector is one quarter of it: 9π.",
-      ru: "Полная площадь 36π; сектор 90° — это четверть: 9π.",
-      kk: "Толық аудан 36π; 90° сектор — оның ширегі: 9π.",
     },
   },
   {
@@ -245,8 +221,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 2,
     explanation: {
       en: "Sides are in the ratio 1 : √3 : 2, so the hypotenuse is twice the shortest side: 10. 5√3 is the middle leg.",
-      ru: "Стороны в отношении 1 : √3 : 2, значит гипотенуза вдвое больше короткой стороны: 10. 5√3 — средний катет.",
-      kk: "Қабырғалар 1 : √3 : 2 қатынасында, гипотенуза қысқа қабырғадан екі есе үлкен: 10. 5√3 — орта катет.",
     },
   },
 
@@ -271,8 +245,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "Fewer sign-ups but near-continuous running points to a small group using it more heavily, not to falling use.",
-      ru: "Меньше записей, но почти непрерывная работа означает, что небольшая группа пользуется интенсивнее, а не падение интереса.",
-      kk: "Тіркеу азайған, бірақ принтер үздіксіз жұмыс істейді — бұл шағын топтың жиі пайдаланғанын көрсетеді.",
     },
   },
   {
@@ -299,8 +271,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 0,
     explanation: {
       en: "Linking adoption to frequency of movement — and explicitly not to wealth — supports mobility rather than cost as the driver.",
-      ru: "Связь распространения с частотой переездов и явно не с достатком подтверждает мобильность, а не цену.",
-      kk: "Таралуды көшу жиілігімен байланыстырып, байлықпен емес деу — қозғалғыштықты, бағаны емес, дәлелдейді.",
     },
   },
 
@@ -320,8 +290,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "“Lean” with every paragraph working means nothing wasted — economical. The other options describe the draft or the opposite quality.",
-      ru: "«Lean», где каждый абзац работает, — значит ничего лишнего: economical. Остальные описывают черновик или обратное качество.",
-      kk: "«Lean» және әр абзац жұмыс істейді — артық ештеңе жоқ: economical. Қалғандары жобаны немесе қарама-қарсы сапаны сипаттайды.",
     },
   },
   {
@@ -344,8 +312,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 0,
     explanation: {
       en: "Showing the lakes started alike is what makes the single later difference explanatory — a controlled comparison.",
-      ru: "Показав, что озёра были одинаковыми, автор делает единственное последующее различие объясняющим — это контролируемое сравнение.",
-      kk: "Көлдердің бастапқыда бірдей болғанын көрсету кейінгі жалғыз айырмашылықты түсіндіруші етеді — бақыланатын салыстыру.",
     },
   },
 
@@ -364,8 +330,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 0,
     explanation: {
       en: "The second sentence is the expected consequence of the first, so a confirming transition fits.",
-      ru: "Второе предложение — ожидаемое следствие первого, поэтому нужен подтверждающий переход.",
-      kk: "Екінші сөйлем біріншінің күтілетін салдары, сондықтан растайтын байланыс керек.",
     },
   },
   {
@@ -392,8 +356,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "Only the second choice pairs what was linked with the measurable change — an economic effect. The others give dates or inputs.",
-      ru: "Только второй вариант связывает то, что соединили, с измеримым изменением — экономическим эффектом. Остальные дают даты или ресурсы.",
-      kk: "Тек екінші нұсқа байланысты өлшенетін өзгеріспен — экономикалық әсермен — біріктіреді.",
     },
   },
 
@@ -412,8 +374,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "The subject is “list” (singular), not “documents”, so the verb is “is”.",
-      ru: "Подлежащее — «list» (ед. ч.), а не «documents», поэтому «is».",
-      kk: "Бастауыш — «list» (жекеше), «documents» емес, сондықтан «is».",
     },
   },
   {
@@ -430,8 +390,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 0,
     explanation: {
       en: "“After the storm passed” is a dependent clause, so a comma joins it to the main clause. A semicolon would need two independent clauses.",
-      ru: "«After the storm passed» — зависимая часть, поэтому нужна запятая. Точка с запятой требует двух независимых предложений.",
-      kk: "«After the storm passed» — тәуелді бөлік, сондықтан үтір керек. Нүктелі үтір екі тәуелсіз сөйлемді талап етеді.",
     },
   },
   {
@@ -448,8 +406,6 @@ export const SAT_QUESTIONS_4: Question[] = [
     answer: 1,
     explanation: {
       en: "Ignore the interrupting phrase: the plural subject “samples” takes “were”. “Being” would leave the sentence without a main verb.",
-      ru: "Игнорируем вставку: подлежащее «samples» во мн. ч. требует «were». С «being» предложение осталось бы без сказуемого.",
-      kk: "Кіріспе орамды елемейміз: көптік бастауыш «samples» «were» талап етеді. «Being» болса сөйлем баяндауышсыз қалады.",
     },
   },
 ];

@@ -19,7 +19,7 @@ export type ExamDate = {
   at: string;
   /** IANA zone of the sitting. Display only — the offset above pins the instant. */
   timeZone: string;
-  /** Optional short note, e.g. a registration deadline. Russian, like the rest of the UI. */
+  /** Optional short note, e.g. a registration deadline. */
   note?: string;
 };
 
@@ -77,9 +77,9 @@ export function countdownTo(exam: ExamDate, now: number): Countdown {
   };
 }
 
-/** "29 августа 2026", in the sitting's own zone. Client-side only (Intl + locale). */
+/** "29 August 2026", in the sitting's own zone. Client-side only (Intl + locale). */
 export function formatExamDate(exam: ExamDate): string {
-  return new Intl.DateTimeFormat("ru-RU", {
+  return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",

@@ -210,7 +210,7 @@ function ProgressInner() {
   );
 }
 
-/** Minimal inline line chart — normalised so SAT and ЕНТ scores share an axis. */
+/** Minimal inline line chart, normalised onto the 400–1600 SAT scale. */
 function ScoreTrend({ points }: { points: { score: number; max: number; at: number }[] }) {
   const width = 640;
   const height = 170;

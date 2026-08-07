@@ -5,9 +5,9 @@ import { Providers } from "@/components/Providers";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "1Elevate — подготовка к SAT",
+  title: "1Elevate — SAT preparation",
   description:
-    "Подготовка к SAT: банк вопросов по официальной спецификации, пробные тесты с реальным таймингом, аналитика прогресса и ИИ-помощник Elevate.",
+    "SAT preparation: a question bank written to the official blueprint, mock tests with real timing, progress analytics and Elevate, the AI assistant.",
 };
 
 /**

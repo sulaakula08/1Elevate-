@@ -4,7 +4,7 @@ import { SUBJECTS } from "@/data/exams";
 import type { Question } from "@/data/types";
 import { bankStats, statsFor } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
-import { NOUNS, plural } from "@/lib/ru";
+import { NOUNS, plural } from "@/lib/plural";
 import { CountUp, Reveal } from "../motion";
 
 /**
@@ -29,7 +29,7 @@ function dividers(i: number): string {
  *
  * Every number is counted from the bank that is actually rendered, and the noun
  * under it is agreed with that number at runtime — so a bank that grows to 101
- * questions reads "вопрос", not "вопросов", without anyone editing this file.
+  * one question reads "question", not "questions", without anyone editing this file.
  */
 export function Stats({ bank }: { bank: Question[] }) {
   const { t, tx } = useI18n();

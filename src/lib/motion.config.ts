@@ -27,6 +27,9 @@ export const MOTION = {
     ease: "back.out(1.7)",
   },
 
+  /** The gradient second line, which rises as one block. See Hero.tsx. */
+  headlineB: { duration: 0.8, y: 24, ease: "power3.out", overlap: -0.5 },
+
   /** Sub-headline, buttons and the fine print, each overlapping the last. */
   lede: { duration: 0.7, y: 18, ease: "power3.out", overlap: -0.55 },
   actions: { duration: 0.7, y: 16, stagger: 0.08, ease: "power3.out", overlap: -0.45 },

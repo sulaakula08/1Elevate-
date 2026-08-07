@@ -35,6 +35,27 @@ const PLOT = { x0: 70, x1: 364, y0: 16, y1: 150 };
 const SCALE = { min: 1000, max: 1600 };
 const GRID = [1600, 1400, 1200, 1000];
 
+/**
+ * A cubic through every point, with each tangent taken from the neighbours —
+ * the Catmull–Rom construction. A polyline kinks at every mock; this reads as a
+ * trend, which is what the card is claiming.
+ */
+function smooth(points: { x: number; y: number }[]): string {
+  if (points.length < 2) return "";
+  let d = `M${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    d +=
+      ` C${p1.x + (p2.x - p0.x) / 6},${p1.y + (p2.y - p0.y) / 6}` +
+      ` ${p2.x - (p3.x - p1.x) / 6},${p2.y - (p3.y - p1.y) / 6}` +
+      ` ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
 const yFor = (score: number) =>
   PLOT.y1 - ((score - SCALE.min) / (SCALE.max - SCALE.min)) * (PLOT.y1 - PLOT.y0);
 const xFor = (index: number) =>
@@ -54,7 +75,7 @@ export function HeroScoreChart({ className = "" }: { className?: string }) {
   const areaId = `${uid}-area`;
 
   const points = MOCKS.map((mock, i) => ({ ...mock, x: xFor(i), y: yFor(mock.total) }));
-  const line = `M${points.map((p) => `${p.x},${p.y}`).join(" L")}`;
+  const line = smooth(points);
   const area = `${line} L${PLOT.x1},${PLOT.y1} L${PLOT.x0},${PLOT.y1} Z`;
   const shown = points[active];
 

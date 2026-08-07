@@ -61,7 +61,7 @@ counts the total, the per-level split, the per-subject split, distinct domains a
 topics, and the blueprint's own module / question / minute figures. Landing
 statistics, the question bank, the dashboard and the mock setup screen all read
 from it, so no two screens can disagree and no count is written by hand.
-`lib/ru.ts` agrees each count with its noun — 1 вопрос, 2 вопроса, 5 вопросов.
+`lib/plural.ts` agrees each count with its noun — 1 question, 2 questions.
 
 ## Exam format
 
@@ -95,7 +95,7 @@ fresh id for anything that would collide. Survivors are persisted through the sa
 Provenance lives in `lib/generation/provenance.ts`, beside the bank rather than
 inside `Question` — source, timestamp, provider, model, validation status — which
 keeps the shared question type free of a concern only generated items have.
-Generated questions carry a visible **ИИ** badge in practice and in mock tests: a
+Generated questions carry a visible **AI** badge in practice and in mock tests: a
 student sitting a practice exam is entitled to know which items a model wrote.
 
 Failure is never fatal. No key, a failed request, or too few valid drafts all

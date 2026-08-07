@@ -7,7 +7,7 @@ import type { Account } from "@/lib/storage";
 import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
-import { NOUNS, pluralize } from "@/lib/ru";
+import { NOUNS, pluralize } from "@/lib/plural";
 import {
   maxScore,
   overall,

@@ -508,6 +508,7 @@ p {
      from the first frame. visibility (not display) so layout — and therefore the
      ScrollTrigger measurements — is unchanged. */
   html.js-motion .split .ch,
+  html.js-motion [data-motion="headline-b"],
   html.js-motion [data-motion="lede"],
   html.js-motion [data-motion="action"],
   html.js-motion [data-motion="fine-print"],

@@ -69,6 +69,21 @@ export function useLandingMotion(scope: RefObject<HTMLElement | null>) {
       }
 
       master
+        // fromTo, not from: from() takes the element's current state as its
+        // destination, and this one is pre-hidden by CSS and re-created when the
+        // effect is double-invoked — so it would read 0 as the value to land on
+        // and animate 0 → 0. Both ends are stated here so it cannot happen.
+        .fromTo(
+          q("[data-motion='headline-b']"),
+          { opacity: 0, y: MOTION.headlineB.y },
+          {
+            opacity: 1,
+            y: 0,
+            duration: MOTION.headlineB.duration,
+            ease: MOTION.headlineB.ease,
+          },
+          MOTION.headlineB.overlap,
+        )
         .from(
           q("[data-motion='lede']"),
           {

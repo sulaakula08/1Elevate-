@@ -11,8 +11,8 @@ import { SHOWCASE_COPY } from "./showcase";
 import { STUDY_COPY } from "./study";
 import { PLAN_COPY } from "./plan";
 
-/** Every string carries all three content languages; `en` is the fallback. */
-export type CopyEntry = { en: string; ru: string; kk: string };
+/** English-only, like the rest of the product. */
+export type CopyEntry = { en: string };
 export type CopyDict = Record<string, CopyEntry>;
 
 export const COPY: CopyDict = {

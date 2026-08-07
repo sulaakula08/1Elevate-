@@ -84,7 +84,6 @@ export type QuestionDraft = {
   choices?: unknown;
   answer?: unknown;
   explanation?: unknown;
-  explanationRu?: unknown;
 };
 
 type Shared = {
@@ -142,7 +141,6 @@ export function validateDraft(
   if (!prompt || !explanation) return null;
 
   const passage = text(draft.passage);
-  const explanationRu = text(draft.explanationRu);
 
   return {
     id: context.id,
@@ -155,7 +153,7 @@ export function validateDraft(
     prompt: { en: prompt },
     choices: shared.choices,
     answer: shared.answer,
-    explanation: { en: explanation, ...(explanationRu ? { ru: explanationRu } : {}) },
+    explanation: { en: explanation },
   };
 }
 

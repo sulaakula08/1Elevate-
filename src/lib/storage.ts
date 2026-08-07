@@ -50,7 +50,7 @@ export type MockResult = {
   sections: MockSectionResult[];
   correct: number;
   total: number;
-  /** SAT: 400–1600. ЕНТ: points on the 140-point scale. */
+  /** SAT: 400–1600. */
   score: number;
   /** Question ids answered incorrectly, for the review queue. */
   wrong: string[];
@@ -133,7 +133,7 @@ export function ensureVersion() {
 export function loadAccounts(): Account[] {
   // Fill in fields added after an account was first written, so profiles made
   // by an older build keep working. Profiles created when the app also covered
-  // ЕНТ may carry a non-SAT target score; clamp those onto the SAT scale.
+  // An older build may carry a non-SAT target score; clamp it onto the SAT scale.
   const stored = read<Account[]>(K.accounts, []);
   const normalised = stored.map((account) => {
     const target = account.targetScore ?? 1400;

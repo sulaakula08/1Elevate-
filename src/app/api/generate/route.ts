@@ -47,7 +47,6 @@ const OUTPUT_SCHEMA = {
           choices: { type: "array", items: { type: "string" } },
           answer: { type: "integer", enum: [0, 1, 2, 3, 4, 5] },
           explanation: { type: "string" },
-          explanationRu: { type: "string" },
         },
         required: [
           "topic",
@@ -58,7 +57,6 @@ const OUTPUT_SCHEMA = {
           "choices",
           "answer",
           "explanation",
-          "explanationRu",
         ],
         additionalProperties: false,
       },
@@ -78,7 +76,7 @@ function systemPrompt(request: GenerateRequest, subjectName: string, total: numb
 Write exactly ${total} new ${subjectName} questions: ${mix}.
 
 Format rules — the response is parsed by a program, so every field matters:
-- "prompt", "choices", "passage" and "explanation" are in English, because the real exam is in English. "explanationRu" is the same explanation in Russian, because the interface is Russian.
+- Every field is written in English: the real exam is in English and so is the interface.
 - Between ${MIN_CHOICES} and ${MAX_CHOICES} answer choices, four unless the item type calls for otherwise. Exactly one is correct; "answer" is its zero-based index. No two choices may say the same thing.
 - "passage" is the stimulus a Reading & Writing item is built on. Write an original passage — never reproduce a real exam text or a copyrighted source. Use an empty string when the question needs no passage.
 - "topic" must be one of the topics listed below. "domain" must be one of the official content domains listed below.

@@ -1,7 +1,8 @@
-export type Lang = "en" | "ru" | "kk";
-
-/** Content text. `en` is required and acts as the fallback for missing translations. */
-export type LocalizedText = { en: string; ru?: string; kk?: string };
+/**
+ * Content text. The product is English-only — the wrapper object stays so item
+ * records keep one consistent shape for prompts, choices and explanations.
+ */
+export type LocalizedText = { en: string };
 
 /** The product is SAT-only. Kept as a union so exam-scoped code stays explicit. */
 export type ExamId = "sat";
@@ -17,7 +18,7 @@ export type Question = {
    * Official content domain the item is written against — the four SAT domains
    * (Information and Ideas, Craft and Structure, Expression of Ideas, Standard
    * English Conventions, Algebra, Advanced Math, Problem-Solving and Data
-   * Analysis, Geometry and Trigonometry) or the ЕНТ syllabus section.
+   * Analysis, Geometry and Trigonometry).
    */
   domain?: string;
   difficulty: Difficulty;

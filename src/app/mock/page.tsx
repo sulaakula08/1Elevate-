@@ -8,7 +8,7 @@ import { fillMissingQuestions } from "@/lib/generation/client";
 import { generatedIds, recordProvenance } from "@/lib/generation/provenance";
 import { fillRequests, shortfall } from "@/lib/generation/shortfall";
 import { useI18n } from "@/lib/i18n";
-import { NOUNS, pluralize } from "@/lib/ru";
+import { NOUNS, pluralize } from "@/lib/plural";
 import type { Attempt, MockResult, MockSectionResult } from "@/lib/storage";
 import { maxScore, pct, scaleScore, shuffle } from "@/lib/stats";
 import { MockRunner, type MockAnswers, type MockSection } from "@/components/MockRunner";

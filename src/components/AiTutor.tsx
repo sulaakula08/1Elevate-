@@ -20,6 +20,13 @@ type Props = {
   question: Question;
   /** What the student picked, if they have answered. */
   chosenIndex?: number | null;
+  /**
+   * Controlled mode. The test surface draws its own "Ask the tutor" button in
+   * the footer — a floating launcher would sit on top of the navigation there —
+   * so it passes the open state in and the launcher is suppressed.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 /** Characters revealed per second. Fast enough to keep up, slow enough to read. */
@@ -83,9 +90,18 @@ function Done({ text }: { text: string }) {
   return <RichText text={text} block />;
 }
 
-export function AiTutor({ question, chosenIndex }: Props) {
-  const { t, tx, lang } = useI18n();
-  const [open, setOpen] = useState(false);
+export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }: Props) {
+  const { t, tx } = useI18n();
+  const controlled = openProp !== undefined;
+  const [openState, setOpenState] = useState(false);
+  const open = controlled ? openProp : openState;
+  const setOpen = useCallback(
+    (value: boolean) => {
+      if (controlled) onOpenChange?.(value);
+      else setOpenState(value);
+    },
+    [controlled, onOpenChange],
+  );
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -143,7 +159,6 @@ export function AiTutor({ question, chosenIndex }: Props) {
           signal: controller.signal,
           body: JSON.stringify({
             messages: [...history, { role: "user", content: trimmed }],
-            lang,
             question: {
               exam: question.exam,
               subject: subject ? tx(subject.name) : question.subjectId,
@@ -189,7 +204,7 @@ export function AiTutor({ question, chosenIndex }: Props) {
         setStreaming(false);
       }
     },
-    [chosenIndex, lang, question, streaming, t, turns, tx],
+    [chosenIndex, question, streaming, t, turns, tx],
   );
 
   const copy = useCallback(async (turn: Turn) => {
@@ -216,6 +231,8 @@ export function AiTutor({ question, chosenIndex }: Props) {
   ];
 
   if (!open) {
+    // A controlled caller draws its own trigger.
+    if (controlled) return null;
     return (
       <button
         onClick={() => setOpen(true)}
@@ -230,7 +247,9 @@ export function AiTutor({ question, chosenIndex }: Props) {
 
   return (
     <div
-      className="scale-in tutor-panel fixed bottom-5 right-5 z-30 w-[min(23rem,calc(100vw-2.5rem))]"
+      className={`scale-in tutor-panel fixed right-5 z-30 w-[min(23rem,calc(100vw-2.5rem))] ${
+        controlled ? "bottom-20" : "bottom-5"
+      }`}
       role="dialog"
       aria-label={t("study.tutorName")}
     >

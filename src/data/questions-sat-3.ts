@@ -21,8 +21,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 2,
     explanation: {
       en: "Expand: 3x − 6 = x + 8. Subtract x and add 6: 2x = 14, so x = 7.",
-      ru: "Раскроем скобки: 3x − 6 = x + 8. Тогда 2x = 14 и x = 7.",
-      kk: "Жақшаны ашамыз: 3x − 6 = x + 8. Сонда 2x = 14, x = 7.",
     },
   },
   {
@@ -44,8 +42,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 3,
     explanation: {
       en: "The second equation is the first multiplied by 2, so both describe the same line — every point on it is a solution.",
-      ru: "Второе уравнение — это первое, умноженное на 2, значит это одна и та же прямая: решений бесконечно много.",
-      kk: "Екінші теңдеу — біріншісі 2-ге көбейтілген, яғни бір түзу: шешім шексіз көп.",
     },
   },
   {
@@ -67,8 +63,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "Start at 60 and lose 4 each minute, so the rate is negative: L(m) = 60 − 4m.",
-      ru: "Начинаем с 60 и теряем 4 в минуту, скорость отрицательная: L(m) = 60 − 4m.",
-      kk: "60-тан бастап минутына 4 азаяды, жылдамдық теріс: L(m) = 60 − 4m.",
     },
   },
 
@@ -85,8 +79,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "Complete the square: f(x) = (x − 3)² + 2. The square is never negative, so the minimum is 2 (at x = 3). 3 is where the minimum occurs, not the value.",
-      ru: "Выделим квадрат: f(x) = (x − 3)² + 2. Минимум равен 2 (при x = 3). 3 — это точка, а не значение.",
-      kk: "Квадратты бөлеміз: f(x) = (x − 3)² + 2. Минимум 2 (x = 3 болғанда). 3 — нүкте, мән емес.",
     },
   },
   {
@@ -103,8 +95,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 2,
     explanation: {
       en: "15 hours is three doubling periods: 400 · 2³ = 400 · 8 = 3 200. Tripling (1 200) would be linear growth, not exponential.",
-      ru: "15 часов — три периода удвоения: 400 · 2³ = 3 200. Умножение на 3 (1 200) — это линейный рост.",
-      kk: "15 сағат — үш еселену кезеңі: 400 · 2³ = 3 200. 3-ке көбейту (1 200) — сызықтық өсу.",
     },
   },
   {
@@ -119,8 +109,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "Squaring gives x² + x − 6 = 0, so x = 2 or x = −3. Checking: x = 2 works (3 = 3); x = −3 fails (2 ≠ −2). Only one solution survives.",
-      ru: "Возведение в квадрат даёт x² + x − 6 = 0: x = 2 или x = −3. Проверка: x = 2 подходит (3 = 3), x = −3 нет (2 ≠ −2). Остаётся одно решение.",
-      kk: "Квадраттасақ x² + x − 6 = 0: x = 2 немесе x = −3. Тексеру: x = 2 дұрыс (3 = 3), x = −3 жарамсыз (2 ≠ −2). Бір шешім қалады.",
     },
   },
 
@@ -142,8 +130,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "The condition restricts the group to the 120 tea-drinkers, so the denominator is 120, not 200: 45/120 = 0.375.",
-      ru: "Условие ограничивает группу 120 любителями чая, поэтому знаменатель 120, а не 200: 45/120 = 0,375.",
-      kk: "Шарт топты 120 шай ішушіге шектейді, сондықтан бөлгіш — 120, 200 емес: 45/120 = 0,375.",
     },
   },
   {
@@ -160,8 +146,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "Increase is 50, over the original 250: 50/250 = 0.20 = 20%. Dividing by 300 instead gives the wrong 16.7%.",
-      ru: "Прирост 50 от исходных 250: 50/250 = 20%. Деление на 300 даёт неверные 16,7%.",
-      kk: "Өсім 50, бастапқы 250-ден: 50/250 = 20%. 300-ге бөлу қате 16,7% береді.",
     },
   },
   {
@@ -183,8 +167,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 0,
     explanation: {
       en: "The mean uses every value, so large outliers drag it upward; the median only depends on position, so it barely moves.",
-      ru: "Среднее учитывает все значения, поэтому большие выбросы тянут его вверх; медиана зависит от позиции и почти не меняется.",
-      kk: "Орташа барлық мәнді ескереді, сондықтан үлкен шектен тыс мәндер оны көтереді; медиана орынға тәуелді, аз өзгереді.",
     },
   },
 
@@ -208,8 +190,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 0,
     explanation: {
       en: "In (x − h)² + (y − k)² = r², the centre is (h, k) and r is the square root of the constant: (3, −2) with r = 5.",
-      ru: "В (x − h)² + (y − k)² = r² центр (h, k), а r — корень из константы: (3, −2), r = 5.",
-      kk: "(x − h)² + (y − k)² = r² өрнегінде центр (h, k), r — тұрақтының түбірі: (3, −2), r = 5.",
     },
   },
   {
@@ -226,8 +206,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 2,
     explanation: {
       en: "Area scales with the square of the linear ratio: (3/5)² = 9/25. The cube, 27 : 125, would be the volume ratio.",
-      ru: "Площадь растёт как квадрат линейного отношения: (3/5)² = 9/25. Куб 27 : 125 — это отношение объёмов.",
-      kk: "Аудан сызықтық қатынастың квадратына тәуелді: (3/5)² = 9/25. Куб 27 : 125 — көлем қатынасы.",
     },
   },
   {
@@ -244,8 +222,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "Sine and cosine of complementary angles are equal: cos(90° − A) = sin A = 0.6.",
-      ru: "Синус и косинус дополнительных углов равны: cos(90° − A) = sin A = 0,6.",
-      kk: "Толықтауыш бұрыштардың синусы мен косинусы тең: cos(90° − A) = sin A = 0,6.",
     },
   },
   {
@@ -262,8 +238,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 2,
     explanation: {
       en: "V = πr²h = π · 9 · 5 = 45π. Using 2πrh (30π) gives the lateral surface area instead.",
-      ru: "V = πr²h = π · 9 · 5 = 45π. Формула 2πrh (30π) — это площадь боковой поверхности.",
-      kk: "V = πr²h = π · 9 · 5 = 45π. 2πrh (30π) — бүйір бет ауданы.",
     },
   },
 
@@ -290,8 +264,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "The passage offers two findings — milk residue and managed herds — to question the riding-first assumption. The other options overstate or reverse what the text says.",
-      ru: "Текст приводит два факта — следы молока и управляемые табуны — чтобы усомниться в версии «сначала верховая езда». Остальные варианты искажают текст.",
-      kk: "Мәтін екі дерек келтіреді — сүт іздері және бағылған жылқы — «алдымен ат үстінде» болжамына күмән келтіру үшін. Қалғандары мәтінді бұрмалайды.",
     },
   },
   {
@@ -318,8 +290,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 0,
     explanation: {
       en: "2.5× growth on the lane street versus roughly 5% on the comparison streets supports only the first claim; the data says nothing about city-wide share.",
-      ru: "Рост в 2,5 раза против примерно 5% на сравниваемых улицах подтверждает только первый вариант; о доле по городу данных нет.",
-      kk: "Веложолды көшеде 2,5 есе, басқаларында шамамен 5% өсім — тек бірінші тұжырымды дәлелдейді; қала бойынша үлес туралы дерек жоқ.",
     },
   },
 
@@ -344,8 +314,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "The text describes a structural choice and gives the reason for it (\"not an accident\"). It neither criticises nor summarises the method itself.",
-      ru: "Текст описывает структурный выбор и объясняет его причину («не случайно»). Он не критикует и не пересказывает методологию.",
-      kk: "Мәтін құрылымдық шешімді сипаттап, себебін айтады («кездейсоқ емес»). Сынамайды да, әдісті қайталамайды да.",
     },
   },
   {
@@ -372,8 +340,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "Text 2 accepts that remote work moves opportunity but adds a precondition — trained workers — which Text 1's example assumes. It never disputes pay.",
-      ru: "Текст 2 согласен, что удалённая работа перераспределяет возможности, но добавляет условие — наличие подготовленных работников. Уровень оплаты он не оспаривает.",
-      kk: "2-мәтін қашықтан жұмыс мүмкіндікті таратады дегенмен келіседі, бірақ шарт қосады — дайын мамандар. Жалақыны даулмайды.",
     },
   },
 
@@ -402,8 +368,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "Only the second choice pairs the estimate with the reason it is imprecise, which is exactly the stated goal.",
-      ru: "Только второй вариант связывает оценку с причиной её неточности — это и есть заявленная цель.",
-      kk: "Тек екінші нұсқа бағаны оның дәл емес себебімен байланыстырады — мақсат дәл осы.",
     },
   },
   {
@@ -420,8 +384,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 2,
     explanation: {
       en: "The second sentence introduces a drawback that limits the advantages in the first, so a contrast transition is required.",
-      ru: "Второе предложение вводит недостаток, ограничивающий преимущества первого, поэтому нужен противительный переход.",
-      kk: "Екінші сөйлем бірінші сөйлемдегі артықшылықты шектейтін кемшілік енгізеді — қарсылықты байланыс керек.",
     },
   },
 
@@ -440,8 +402,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "Two independent clauses need a semicolon (or a comma plus a conjunction). A comma alone is a splice, and no punctuation is a run-on.",
-      ru: "Два независимых предложения требуют точки с запятой (или запятой с союзом). Одна запятая — это splice, без знака — run-on.",
-      kk: "Екі тәуелсіз сөйлемге нүктелі үтір керек (немесе үтір + жалғаулық). Жалғыз үтір — қате, белгісіз — run-on.",
     },
   },
   {
@@ -458,8 +418,6 @@ export const SAT_QUESTIONS_3: Question[] = [
     answer: 1,
     explanation: {
       en: "With “neither … nor”, the verb agrees with the nearer subject — “players”, which is plural — so “were” is correct.",
-      ru: "При «neither … nor» глагол согласуется с ближайшим подлежащим — «players» (мн. ч.), поэтому «were».",
-      kk: "«Neither … nor» тіркесінде етістік жақын бастауышпен үйлеседі — «players» көптік, сондықтан «were».",
     },
   },
 ];

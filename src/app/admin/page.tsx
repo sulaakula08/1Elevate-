@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 import { SUBJECTS, getSubject } from "@/data/exams";
 import { SEED_QUESTIONS } from "@/data";
-import type { Difficulty, ExamId, Lang, LocalizedText, Question } from "@/data/types";
+import type { Difficulty, ExamId, LocalizedText, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
-import { LANGS, useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { newId } from "@/lib/storage";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 
@@ -22,7 +22,7 @@ type Draft = {
   explanation: LocalizedText;
 };
 
-const EMPTY_TEXT: LocalizedText = { en: "", ru: "", kk: "" };
+const EMPTY_TEXT: LocalizedText = { en: "" };
 
 function emptyDraft(): Draft {
   return {
@@ -66,7 +66,6 @@ function AdminInner() {
   const { t, tx } = useI18n();
   const { account, bank, saveQuestion, deleteQuestion, replaceCustomQuestions } = useApp();
   const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [formLang, setFormLang] = useState<Lang>("en");
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -84,23 +83,20 @@ function AdminInner() {
   const subjectOptions = SUBJECTS.filter((s) => s.exam === draft.exam);
 
   function setText(field: "passage" | "prompt" | "explanation", value: string) {
-    setDraft((prev) => ({ ...prev, [field]: { ...prev[field], [formLang]: value } }));
+    setDraft((prev) => ({ ...prev, [field]: { en: value } }));
   }
 
   function setChoice(index: number, value: string) {
     setDraft((prev) => ({
       ...prev,
       choices: prev.choices.map((choice, i) =>
-        i === index ? { ...choice, [formLang]: value } : choice,
+        i === index ? { en: value } : choice,
       ),
     }));
   }
 
   function clean(text: LocalizedText): LocalizedText {
-    const out: LocalizedText = { en: text.en.trim() };
-    if (text.ru?.trim()) out.ru = text.ru.trim();
-    if (text.kk?.trim()) out.kk = text.kk.trim();
-    return out;
+    return { en: text.en.trim() };
   }
 
   function submit(event: React.FormEvent) {
@@ -191,25 +187,7 @@ function AdminInner() {
             {customQuestions.some((q) => q.id === draft.id)
               ? t("admin.editQuestion")
               : t("admin.newQuestion")}
-          </h2>
-          <div className="ml-auto flex gap-1">
-            {LANGS.map((lang) => (
-              <button
-                key={lang.id}
-                type="button"
-                onClick={() => setFormLang(lang.id)}
-                className="px-2.5 py-1 rounded-md text-xs transition-colors"
-                style={
-                  formLang === lang.id
-                    ? { background: "var(--brand)", color: "var(--brand-contrast)" }
-                    : { color: "var(--muted)" }
-                }
-              >
-                {lang.id.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </div>
+          </h2>        </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
@@ -255,22 +233,22 @@ function AdminInner() {
 
         <div>
           <label className="label">
-            {t("admin.passage")} · {formLang.toUpperCase()}
+            {t("admin.passage")}
           </label>
           <textarea
             className="field min-h-20"
-            value={draft.passage[formLang] ?? ""}
+            value={draft.passage.en}
             onChange={(e) => setText("passage", e.target.value)}
           />
         </div>
 
         <div>
           <label className="label">
-            {t("admin.prompt")} · {formLang.toUpperCase()}
+            {t("admin.prompt")}
           </label>
           <textarea
             className="field min-h-16"
-            value={draft.prompt[formLang] ?? ""}
+            value={draft.prompt.en}
             onChange={(e) => setText("prompt", e.target.value)}
           />
         </div>
@@ -291,7 +269,7 @@ function AdminInner() {
                 />
                 <input
                   className="field"
-                  value={choice[formLang] ?? ""}
+                  value={choice.en}
                   onChange={(e) => setChoice(index, e.target.value)}
                 />
                 {draft.choices.length > 2 && (
@@ -325,11 +303,11 @@ function AdminInner() {
 
         <div>
           <label className="label">
-            {t("admin.explanationLabel")} · {formLang.toUpperCase()}
+            {t("admin.explanationLabel")}
           </label>
           <textarea
             className="field min-h-16"
-            value={draft.explanation[formLang] ?? ""}
+            value={draft.explanation.en}
             onChange={(e) => setText("explanation", e.target.value)}
           />
         </div>

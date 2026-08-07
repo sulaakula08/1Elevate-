@@ -17,14 +17,9 @@ import { SplitChars } from "../SplitChars";
 export function Hero() {
   const { t } = useI18n();
 
-  // The last word carries the accent colour. Splitting the sentence here rather
-  // than storing it twice keeps one source string for the h1's aria-label, in
-  // any language. The headline's only other space is non-breaking, so this also
-  // marks the single place the line is allowed to wrap.
+  // Two lines: the promise, then the differentiator in the brand gradient.
   const title = t("hero.title");
-  const cut = title.lastIndexOf(" ");
-  const lead = cut < 0 ? "" : title.slice(0, cut);
-  const accent = cut < 0 ? title : title.slice(cut + 1);
+  const accent = t("hero.titleB");
 
   return (
     <section className="relative pt-10 sm:pt-14 lg:pt-20 pb-14 sm:pb-20" data-motion="hero">
@@ -36,15 +31,17 @@ export function Hero() {
           <h1
             className="display split text-[clamp(2.125rem,8.5vw,2.75rem)] sm:text-[3.25rem] lg:text-[3.75rem]"
             data-motion="headline"
-            aria-label={title}
+            aria-label={`${title} ${accent}`}
           >
-            {lead ? (
-              <>
-                <SplitChars text={lead} />{" "}
-              </>
-            ) : null}
-            <span className="hero-title-accent">
-              <SplitChars text={accent} />
+            <SplitChars text={title} />
+            <br />
+            {/* Not split, deliberately. background-clip: text paints in this
+                element's background layer, and a transformed child — which every
+                .ch becomes once GSAP touches it — gets its own layer above that,
+                so a split gradient line renders as invisible glyphs. One
+                transform on the span keeps the gradient and still animates. */}
+            <span className="hero-title-accent inline-block" data-motion="headline-b">
+              {accent}
             </span>
           </h1>
 
