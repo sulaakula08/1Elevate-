@@ -86,6 +86,8 @@ const K = {
   sidebar: `${NS}.sidebarCollapsed`,
   /** Set once the pre-Supabase local profiles have been cleared. */
   legacyPurged: `${NS}.legacyPurged`,
+  /** Which generation of cached history this browser holds. See DATA_EPOCH. */
+  epoch: `${NS}.dataEpoch`,
   user: (id: string) => `${NS}.user.${id}`,
 };
 
@@ -247,6 +249,43 @@ export function loadTheme(): "light" | "dark" | null {
 
 export function saveTheme(theme: "light" | "dark") {
   write(K.theme, theme);
+}
+
+/* ---------------- cached history generations ---------------- */
+
+/**
+ * Bump this to discard every browser's cached practice history once.
+ *
+ * Epoch 2 exists because /api/attempts and /api/mocks used to return every row
+ * the read policy allowed rather than only the caller's, so an admin's cache
+ * filled with other students' attempts and mock scores. Clearing the cache is
+ * not cosmetic: the sync layer treats a cached row the server does not have for
+ * this account as local work to upload, so leaving those rows in place would
+ * have re-filed another student's practice as the admin's own.
+ *
+ * What this costs: history that exists only in this browser and was never
+ * synced. Everything a signed-in student has done is on the server and comes
+ * straight back on the next load, so the loss is bounded to unsynced offline
+ * work — a fair price for not attributing one person's results to another.
+ */
+export const DATA_EPOCH = 2;
+
+/** True when a wipe happened, so the caller can resync rather than trust state. */
+export function ensureDataEpoch(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (read<number>(K.epoch, 1) >= DATA_EPOCH) return false;
+
+    for (const key of Object.keys(window.localStorage)) {
+      if (key.startsWith(`${NS}.user.`) || key.startsWith(`${NS}.outbox.`)) {
+        window.localStorage.removeItem(key);
+      }
+    }
+    write(K.epoch, DATA_EPOCH);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /* ---------------- sidebar ---------------- */

@@ -16,6 +16,7 @@ import {
   type MockResult,
   type UserData,
   EMPTY_USER_DATA,
+  ensureDataEpoch,
   ensureVersion,
   loadCustomQuestions,
   loadTheme,
@@ -128,6 +129,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     migrateKeys();
     ensureVersion();
+    // Before anything reads a cached history: drop caches from an older epoch,
+    // so a browser holding another account's rows starts clean and refetches.
+    ensureDataEpoch();
     // The pre-Supabase browser profiles go here, once.
     purgeLegacyAccounts();
     setCustom(loadCustomQuestions());

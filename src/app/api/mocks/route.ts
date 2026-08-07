@@ -98,11 +98,13 @@ export async function GET(request: Request) {
   const { data: auth, error: authError } = await client.auth.getUser();
   if (authError || !auth.user) return unauthorized();
 
-  // No account filter: the policy already narrows this to rows the caller may
-  // see — their own, or everyone's for an admin.
+  // Scoped to the caller, explicitly — same reasoning as /api/attempts. The read
+  // policy permits an admin to see every row, which is why an admin's own score
+  // history was filling up with mock tests other people had sat.
   const { data, error } = await client
     .from("mocks")
     .select("id, exam, score, correct, total, sections, wrong, at")
+    .eq("account_id", auth.user.id)
     .order("at", { ascending: false })
     .limit(500);
 

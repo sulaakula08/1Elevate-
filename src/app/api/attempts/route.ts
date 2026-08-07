@@ -128,7 +128,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true, saved: rows.length });
 }
 
-/** The signed-in student's own history. Admins get the same shape for anyone. */
+/** The caller's own history. Only ever theirs — see the filter below. */
 export async function GET(request: Request) {
   if (!supabaseConfigured()) return notConfigured();
 
@@ -141,11 +141,23 @@ export async function GET(request: Request) {
   const { data: auth, error: authError } = await client.auth.getUser();
   if (authError || !auth.user) return unauthorized();
 
-  // No account filter: the policy already narrows this to rows the caller may
-  // see — their own, or everyone's if they are an admin.
+  /*
+   * Scoped to the caller, explicitly.
+   *
+   * This used to rely on the read policy alone, which allows "own rows, or every
+   * row if you are an admin" — a deliberate rule for a future admin tool, but the
+   * wrong one for this endpoint. The result was that an admin's own dashboard
+   * showed the whole school's history as theirs: mock scores they never sat,
+   * practice they never did. Worse, the merge on the next sign-in adopted those
+   * rows into their local cache.
+   *
+   * This route answers exactly one question — what has *this* account done — so
+   * it says so in the query rather than depending on who is asking.
+   */
   const { data, error } = await client
     .from("attempts")
     .select("question_id, subject_id, exam, topic, difficulty, chosen, correct, mode, ms, at")
+    .eq("account_id", auth.user.id)
     .order("at", { ascending: false })
     .limit(5000);
 
