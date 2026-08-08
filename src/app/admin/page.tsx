@@ -86,6 +86,8 @@ function AdminInner() {
   const [error, setError] = useState<string | null>(null);
   // The question the admin has asked to delete but not yet confirmed.
   const [toDelete, setToDelete] = useState<Question | null>(null);
+  /** The editor starts folded: most visits here are to read, not to write. */
+  const [editorOpen, setEditorOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   if (account!.role === "student") {
@@ -221,13 +223,46 @@ function AdminInner() {
         {t("admin.title")}
       </PageTitle>
 
-      <form onSubmit={submit} className="panel p-6 space-y-6">
-        <div className="flex items-center gap-2">
-          <h2 className="font-bold">
-            {customQuestions.some((q) => q.id === draft.id)
-              ? t("admin.editQuestion")
-              : t("admin.newQuestion")}
-          </h2>        </div>
+      {/*
+        The editor folds away.
+
+        It is the tallest thing on this page by a distance, and an admin who came
+        here to read the usage figures or the feedback should not have to scroll
+        past a full question form to reach them. Editing a question from the list
+        below opens it again, so the fold can never hide the thing you just asked
+        to edit.
+      */}
+      <div className="panel">
+        <button
+          type="button"
+          className="ed-head"
+          aria-expanded={editorOpen}
+          onClick={() => setEditorOpen((open) => !open)}
+        >
+          <span className="min-w-0">
+            <span className="block font-bold">
+              {customQuestions.some((q) => q.id === draft.id)
+                ? t("admin.editQuestion")
+                : t("admin.newQuestion")}
+            </span>
+            <span className="block text-[12.5px] text-muted mt-0.5">
+              {editorOpen ? t("admin.editorHide") : t("admin.editorShow")}
+            </span>
+          </span>
+          <span
+            className="text-faint text-[12px] ml-auto shrink-0 transition-transform"
+            style={{ transform: editorOpen ? "rotate(90deg)" : "none" }}
+            aria-hidden
+          >
+            ▸
+          </span>
+        </button>
+
+      <form
+        onSubmit={submit}
+        className="px-6 pb-6 space-y-6"
+        hidden={!editorOpen}
+      >
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
@@ -414,6 +449,7 @@ function AdminInner() {
           />
         </div>
       </form>
+      </div>
 
       <section>
         <h2 className="label-xs mb-4">
@@ -445,6 +481,7 @@ function AdminInner() {
                       className="btn btn-ghost text-xs"
                       onClick={() => {
                         setDraft(toDraft(question));
+                        setEditorOpen(true);
                         setNotice(null);
                         setError(null);
                         window.scrollTo({ top: 0, behavior: "smooth" });

@@ -157,6 +157,65 @@ export async function GET(request: Request) {
     return { day: key, count: signupPerDay.get(key) ?? 0 };
   });
 
+  /* ---------------- all of it, by month ----------------
+     The fortnight charts answer "what is happening now"; this answers "what has
+     happened since we started", which is a different question and the one an
+     admin asks when deciding whether the product is growing. Three narrow
+     column reads bucketed by calendar month — cheap, because none of them pulls
+     a row body, and month buckets keep the payload to a couple of dozen entries
+     however long the project runs. */
+
+  const monthKey = (ms: number) => {
+    const d = new Date(ms);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const [allAttempts, allMocks, allProfiles] = await Promise.all([
+    db.from("attempts").select("at").order("at", { ascending: true }).limit(100_000),
+    db.from("mocks").select("at").order("at", { ascending: true }).limit(20_000),
+    db
+      .from("profiles")
+      .select("created_at")
+      .order("created_at", { ascending: true })
+      .limit(20_000),
+  ]);
+
+  const months = new Map<
+    string,
+    { month: string; answers: number; mocks: number; joins: number }
+  >();
+  const bump = (key: string, field: "answers" | "mocks" | "joins") => {
+    const entry = months.get(key) ?? { month: key, answers: 0, mocks: 0, joins: 0 };
+    entry[field] += 1;
+    months.set(key, entry);
+  };
+
+  for (const row of (allAttempts.data ?? []) as { at: string }[]) {
+    bump(monthKey(new Date(row.at).getTime()), "answers");
+  }
+  for (const row of (allMocks.data ?? []) as { at: string }[]) {
+    bump(monthKey(new Date(row.at).getTime()), "mocks");
+  }
+  for (const row of (allProfiles.data ?? []) as { created_at: string }[]) {
+    bump(monthKey(new Date(row.created_at).getTime()), "joins");
+  }
+
+  // Every month between the first record and now, including the empty ones: a
+  // gap in the history is information, and a list that silently skips it reads
+  // as continuous activity.
+  const firstKeys = [...months.keys()].sort();
+  const history: { month: string; answers: number; mocks: number; joins: number }[] = [];
+  if (firstKeys.length > 0) {
+    const [startYear, startMonth] = firstKeys[0].split("-").map(Number);
+    const cursor = new Date(startYear, startMonth - 1, 1);
+    const end = new Date();
+    while (cursor <= end) {
+      const key = monthKey(cursor.getTime());
+      history.push(months.get(key) ?? { month: key, answers: 0, mocks: 0, joins: 0 });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+  }
+
   /* ---------------- roles, and how the bank was built ---------------- */
 
   const { data: roleRows } = await client.from("profiles").select("role").limit(5000);
@@ -191,5 +250,6 @@ export async function GET(request: Request) {
     feedback: { total: feedbackTotal, open: feedbackOpen },
     days,
     joins,
+    history,
   });
 }

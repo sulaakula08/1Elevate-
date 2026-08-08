@@ -19,7 +19,6 @@ import {
   NavProgress,
   NavReview,
   NavSettings,
-  NavTutorial,
 } from "./NavIcons";
 
 const TABS = [
@@ -120,7 +119,6 @@ export function MobileTabs() {
             <div className="panel p-2" style={{ boxShadow: "var(--overlay)" }}>
               {[
                 { href: "/progress", key: "nav.progress", Icon: NavProgress },
-                { href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial },
                 { href: "/feedback", key: "nav.feedback", Icon: NavFeedback },
                 { href: "/settings", key: "nav.settings", Icon: NavSettings },
                 { href: "/account", key: "nav.profile", Icon: NavHome },

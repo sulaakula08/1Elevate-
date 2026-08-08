@@ -1846,3 +1846,24 @@ p {
 body[data-exam] .notif-float {
   display: none !important;
 }
+
+@layer components {
+  /* The header of a foldable panel: a full-width target, so the whole strip is
+     clickable rather than just the word in it. */
+  .ed-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 1.125rem 1.5rem;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+    transition: background 160ms ease;
+  }
+  .ed-head:hover {
+    background: var(--surface-2);
+  }
+}

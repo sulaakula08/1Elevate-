@@ -15,7 +15,6 @@ import {
   NavPractice,
   NavProgress,
   NavReview,
-  NavTutorial,
 } from "./NavIcons";
 
 /** Primary destinations. `short` is used where space is tight. */
@@ -165,15 +164,6 @@ export function TopBar() {
                         <NavHome size={17} />
                         {t("nav.profile")}
                       </Link>
-                      <Link
-                        href="/tutorial"
-                        className="menu-item"
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        <NavTutorial size={17} />
-                        {t("nav.tutorial")}
-                      </Link>
                       {account.role !== "student" && (
                         <Link
                           href="/admin"
@@ -259,7 +249,6 @@ export function TopBar() {
                 <div className="panel p-2" style={{ boxShadow: "var(--overlay)" }}>
                   {[
                     { href: "/progress", key: "nav.progress", Icon: NavProgress },
-                    { href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial },
                     { href: "/account", key: "nav.profile", Icon: NavHome },
                     ...(account && account.role !== "student"
                       ? [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }]

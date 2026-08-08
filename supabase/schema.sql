@@ -557,3 +557,43 @@ create policy "feedback: update admin"
   on public.feedback for update
   using (public.is_admin())
   with check (public.is_admin());
+
+-- ------------------------------------------------------- reset statistics --
+-- Wipes every student's practice history: attempts, mock results and the
+-- community's derived counters stay out of it — this is progress data only.
+--
+-- A definer function rather than a delete policy, for the same reason set_role()
+-- is one. There is no delete policy on attempts or mocks anywhere in this file,
+-- and that is deliberate: an append-only log cannot lose a row to a bug. This is
+-- the single, named exception, and it checks the caller is the owner before it
+-- touches anything.
+--
+-- Accounts are not touched. Signups are the one figure that must survive a
+-- reset, because it is the only record of who ever joined.
+
+create or replace function public.reset_statistics()
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  removed_attempts bigint;
+  removed_mocks bigint;
+begin
+  if not public.is_owner() then
+    raise exception 'Only the owner can reset statistics' using errcode = '42501';
+  end if;
+
+  select count(*) into removed_attempts from public.attempts;
+  select count(*) into removed_mocks from public.mocks;
+
+  delete from public.attempts;
+  delete from public.mocks;
+
+  return json_build_object('attempts', removed_attempts, 'mocks', removed_mocks);
+end;
+$$;
+
+revoke all on function public.reset_statistics() from public;
+grant execute on function public.reset_statistics() to authenticated;

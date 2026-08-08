@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { apiFetch } from "@/lib/supabase/client";
 import { CountUp } from "@/components/motion";
+import { ConfirmDialog } from "@/components/ui";
 
 /**
  * How the product is being used, for an admin.
@@ -28,12 +30,17 @@ type Stats = {
   feedback: { total: number; open: number };
   days: { day: string; count: number }[];
   joins: { day: string; count: number }[];
+  history: { month: string; answers: number; mocks: number; joins: number }[];
 };
 
 export function UsageStats() {
   const { t } = useI18n();
+  const { account } = useApp();
   const [stats, setStats] = useState<Stats | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "denied" | "failed">("loading");
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetNote, setResetNote] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -84,6 +91,25 @@ export function UsageStats() {
   const modeTotal =
     stats.usage.byMode.practice + stats.usage.byMode.review + stats.usage.byMode.mock;
 
+  async function resetStatistics() {
+    setResetting(true);
+    setResetNote(null);
+    const response = await apiFetch("/api/admin/reset", { method: "POST" });
+    setResetting(false);
+    setConfirmReset(false);
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      setResetNote(body.error ?? t("stats.resetFailed"));
+      return;
+    }
+    const body = (await response.json()) as { attempts: number; mocks: number };
+    setResetNote(`${t("stats.resetDone")}: ${body.attempts} · ${body.mocks}`);
+    // Re-read rather than zeroing locally: the figures must come from the
+    // database, including anything written between the click and the answer.
+    void load();
+  }
+
   return (
     <section className="mt-14">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -103,11 +129,17 @@ export function UsageStats() {
       <div className="grid sm:grid-cols-2 gap-8 mt-8">
         <Series
           label={t("stats.answersPerDay")}
+          peakLabel={t("stats.peak")}
           days={stats.days}
           tone="var(--brand)"
           note={stats.usage.capped ? t("stats.capped") : undefined}
         />
-        <Series label={t("stats.joinsPerDay")} days={stats.joins} tone="var(--success)" />
+        <Series
+          label={t("stats.joinsPerDay")}
+          peakLabel={t("stats.peak")}
+          days={stats.joins}
+          tone="var(--success)"
+        />
       </div>
 
       {/* ---------------- what they actually use ---------------- */}
@@ -153,6 +185,61 @@ export function UsageStats() {
         {t("stats.rolesLine")}: {stats.users.roles.student ?? 0} · {stats.users.roles.admin ?? 0}{" "}
         · {stats.users.roles.owner ?? 0}. {t("stats.authorsLine")}: {stats.bank.authors}.
       </p>
+
+      {/* ---------------- reset ----------------
+          Owner only, matching what reset_statistics() enforces: offering an
+          admin a button the database will refuse is a worse experience than not
+          offering it. Accounts survive — signups are the one figure a reset must
+          not touch. */}
+      {account?.role === "owner" && (
+        <div className="mt-10 pt-6 border-t">
+          <p className="text-[13px] font-semibold" style={{ color: "var(--danger)" }}>
+            {t("stats.resetTitle")}
+          </p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-muted max-w-xl">
+            {t("stats.resetBody")}
+          </p>
+          {resetNote && <p className="notice mt-3">{resetNote}</p>}
+          <button
+            className="btn btn-sm mt-4"
+            style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+            disabled={resetting}
+            onClick={() => setConfirmReset(true)}
+          >
+            {resetting ? "…" : t("stats.resetAction")}
+          </button>
+        </div>
+      )}
+
+      {confirmReset && (
+        <ConfirmDialog
+          title={t("stats.resetConfirmTitle")}
+          body={t("stats.resetConfirmBody")}
+          confirmLabel={t("stats.resetAction")}
+          danger
+          busy={resetting}
+          onConfirm={() => void resetStatistics()}
+          onCancel={() => setConfirmReset(false)}
+        />
+      )}
+
+      {/* ---------------- the whole run ---------------- */}
+      <div className="mt-12 pt-8 border-t">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h3 className="display text-[19px]">{t("stats.historyTitle")}</h3>
+          <p className="text-[13px] text-muted">{t("stats.historySub")}</p>
+        </div>
+        <History
+          rows={stats.history}
+          labels={{
+            month: t("stats.month"),
+            answers: t("stats.colAnswers"),
+            mocks: t("stats.colMocks"),
+            joins: t("stats.colJoins"),
+            empty: t("stats.historyEmpty"),
+          }}
+        />
+      </div>
     </section>
   );
 }
@@ -179,20 +266,32 @@ function Figure({
   );
 }
 
-/** Fourteen days as bars. Same shape as the student's own activity chart. */
+/**
+ * Fourteen days as bars, each labelled with its own count and the chart labelled
+ * with its peak.
+ *
+ * Bars alone give shape and nothing else: an admin could see Tuesday was the
+ * busiest day but not whether that meant nine answers or nine hundred, which is
+ * the difference between a quiet week and a broken one. The peak sits on the
+ * highest bar rather than on an axis, so the number is where the eye already is.
+ */
 function Series({
   label,
+  peakLabel,
   days,
   tone,
   note,
 }: {
   label: string;
+  /** Copy comes in as a prop: this file lays out numbers, it does not read the dictionary. */
+  peakLabel: string;
   days: { day: string; count: number }[];
   tone: string;
   note?: string;
 }) {
   const peak = Math.max(1, ...days.map((d) => d.count));
   const total = days.reduce((sum, d) => sum + d.count, 0);
+  const peakIndex = days.findIndex((d) => d.count === peak && d.count > 0);
 
   return (
     <div>
@@ -200,20 +299,126 @@ function Series({
         <p className="label-xs">{label}</p>
         <span className="num text-[12px] text-faint ml-auto">{total}</span>
       </div>
-      <div className="mt-4 flex items-end gap-1 h-20">
-        {days.map((day) => (
-          <div
-            key={day.day}
-            className="flex-1 rounded-[2px] transition-[height] duration-500"
-            title={`${day.day}: ${day.count}`}
-            style={{
-              height: `${Math.max(day.count ? 8 : 3, (day.count / peak) * 100)}%`,
-              background: day.count ? tone : "var(--line)",
-            }}
-          />
+
+      {/* The peak, on its own line above the bars. Reserved even when every day
+          is empty, so two charts side by side keep their baselines aligned. */}
+      <p className="num text-[11px] text-faint mt-3 h-4">
+        {peakIndex === -1 ? "" : `${peakLabel} ${peak}`}
+      </p>
+
+      <div className="flex items-end gap-1 h-20">
+        {days.map((day, i) => (
+          <div key={day.day} className="flex-1 flex flex-col justify-end h-full">
+            <div
+              className="rounded-[2px] transition-[height] duration-500"
+              title={`${day.day}: ${day.count}`}
+              style={{
+                height: `${Math.max(day.count ? 8 : 3, (day.count / peak) * 100)}%`,
+                background: day.count
+                  ? i === peakIndex
+                    ? tone
+                    : `color-mix(in srgb, ${tone} 62%, transparent)`
+                  : "var(--line)",
+              }}
+            />
+          </div>
         ))}
       </div>
+
+      {/* One number per bar. Zeroes render as a dash: "0" fourteen times is a
+          wall of noise, and the gap is the point. */}
+      <div className="flex gap-1 mt-1.5">
+        {days.map((day) => (
+          <span
+            key={day.day}
+            className="num flex-1 text-center text-[10px] text-faint tabular-nums"
+          >
+            {day.count > 0 ? day.count : "·"}
+          </span>
+        ))}
+      </div>
+
       {note && <p className="text-[11.5px] text-faint mt-2">{note}</p>}
     </div>
   );
+}
+
+/**
+ * Every month since the first record, newest first — including months where
+ * nothing happened, because a gap in the history is information and a list that
+ * skips it reads as continuous activity.
+ */
+function History({
+  rows,
+  labels,
+}: {
+  rows: Stats["history"];
+  labels: { month: string; answers: string; mocks: string; joins: string; empty: string };
+}) {
+  if (rows.length === 0) {
+    return <p className="text-[14px] text-muted mt-4">{labels.empty}</p>;
+  }
+
+  const peak = Math.max(1, ...rows.map((r) => r.answers));
+  const totals = rows.reduce(
+    (sum, r) => ({
+      answers: sum.answers + r.answers,
+      mocks: sum.mocks + r.mocks,
+      joins: sum.joins + r.joins,
+    }),
+    { answers: 0, mocks: 0, joins: 0 },
+  );
+
+  return (
+    <div className="mt-5 overflow-x-auto">
+      <table className="w-full text-[13px] border-collapse">
+        <thead>
+          <tr className="text-left">
+            <th className="label-xs font-normal py-2">{labels.month}</th>
+            <th className="label-xs font-normal py-2 w-[38%]">{labels.answers}</th>
+            <th className="label-xs font-normal py-2 text-right">{labels.mocks}</th>
+            <th className="label-xs font-normal py-2 text-right">{labels.joins}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[...rows].reverse().map((row) => (
+            <tr key={row.month} className="border-t">
+              <td className="num py-2.5 whitespace-nowrap">{monthName(row.month)}</td>
+              <td className="py-2.5">
+                <span className="flex items-center gap-2">
+                  {/* The bar is the comparison, the number is the fact. */}
+                  <span
+                    className="h-1.5 rounded-full shrink-0"
+                    style={{
+                      width: `${(row.answers / peak) * 100}%`,
+                      minWidth: row.answers > 0 ? "2px" : "0",
+                      background: "var(--brand)",
+                    }}
+                  />
+                  <span className="num text-[12.5px] text-muted">{row.answers}</span>
+                </span>
+              </td>
+              <td className="num py-2.5 text-right text-muted">{row.mocks}</td>
+              <td className="num py-2.5 text-right text-muted">{row.joins}</td>
+            </tr>
+          ))}
+          <tr className="border-t-2">
+            <td className="py-2.5 font-semibold">Σ</td>
+            <td className="num py-2.5 font-semibold">{totals.answers}</td>
+            <td className="num py-2.5 text-right font-semibold">{totals.mocks}</td>
+            <td className="num py-2.5 text-right font-semibold">{totals.joins}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** "2026-08" as "Aug 2026" — the raw key is unreadable in a column of twelve. */
+function monthName(key: string): string {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric",
+  });
 }

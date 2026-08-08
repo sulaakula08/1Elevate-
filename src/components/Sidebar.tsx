@@ -17,7 +17,6 @@ import {
   NavPractice,
   NavProgress,
   NavReview,
-  NavTutorial,
 } from "./NavIcons";
 
 type Item = { href: string; key: string; Icon: (p: { size?: number }) => React.ReactElement };
@@ -32,10 +31,7 @@ const PRACTICE: Item[] = [
 
 const SOCIAL: Item[] = [{ href: "/community", key: "nav.community", Icon: NavCommunity }];
 const PROGRESS: Item[] = [{ href: "/progress", key: "nav.progress", Icon: NavProgress }];
-const LEARN: Item[] = [
-  { href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial },
-  { href: "/feedback", key: "nav.feedback", Icon: NavFeedback },
-];
+const LEARN: Item[] = [{ href: "/feedback", key: "nav.feedback", Icon: NavFeedback }];
 
 /**
  * Desktop navigation rail: brand, exam switcher, grouped links, account row.

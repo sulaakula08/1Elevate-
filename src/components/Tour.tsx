@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { loadTourDone, saveTourDone } from "@/lib/storage";
 import { TutorAvatar } from "./TutorAvatar";
 
-/** Fire this to (re)start the tour from anywhere: the nav, the tutorial page. */
+/** Fire this to (re)start the tour from anywhere. */
 export const TOUR_EVENT = "elevate:tour";
 
 type Step = {
@@ -40,7 +40,7 @@ export function Tour() {
     setActive(true);
   }, []);
 
-  // Manual restart from the nav or the tutorial page.
+  // Manual restart, from wherever the event is dispatched.
   useEffect(() => {
     const onEvent = () => start();
     window.addEventListener(TOUR_EVENT, onEvent);

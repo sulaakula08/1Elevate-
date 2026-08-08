@@ -26,7 +26,6 @@ const D: Dict = {
   "nav.sPractice": { en: "Practice" },
   "nav.sMock": { en: "Mock" },
   "nav.sReview": { en: "Review" },
-  "nav.tutorial": { en: "Tutorial" },
   "nav.feedback": { en: "Feedback" },
   "nav.profile": { en: "Profile" },
   "nav.bank": { en: "Question Bank" },
@@ -85,6 +84,26 @@ const D: Dict = {
   "stats.rolesLine": { en: "Students · admins · owners" },
   "stats.authorsLine": { en: "People who have written questions" },
   "stats.capped": { en: "Sampled — the busiest days may read low." },
+  "stats.peak": { en: "Peak" },
+  "stats.historyTitle": { en: "History" },
+  "stats.historySub": { en: "Every month since the first record, not just the last fortnight.",
+  },
+  "stats.month": { en: "Month" },
+  "stats.historyEmpty": { en: "Nothing recorded yet." },
+  /* Column headers, kept short: the full labels above are sentences. */
+  "stats.colAnswers": { en: "Answers" },
+  "stats.colMocks": { en: "Mocks" },
+  "stats.colJoins": { en: "Joined" },
+
+  "stats.resetTitle": { en: "Reset all statistics" },
+  "stats.resetBody": { en: "Deletes every account's answers and mock results, across the whole platform — the boards, the streaks and the progress pages all go back to zero. Accounts themselves are kept, so signups and roles survive. There is no undo.",
+  },
+  "stats.resetAction": { en: "Reset statistics" },
+  "stats.resetConfirmTitle": { en: "Reset every student's progress?" },
+  "stats.resetConfirmBody": { en: "Answers and mock results for all accounts are deleted. Accounts, roles and the question bank are kept. This cannot be undone.",
+  },
+  "stats.resetDone": { en: "Cleared — answers · mocks" },
+  "stats.resetFailed": { en: "Could not reset the statistics." },
 
   /* ---------------- notifications ---------------- */
   "notif.title": { en: "Notifications" },
@@ -160,7 +179,7 @@ const D: Dict = {
   "an.noActivity": { en: "Nothing yet — your first session will show up here.",
   },
 
-  /* ---------------- tutorial ---------------- */
+  /* ---------------- guided tour, shown once on first visit ---------------- */
   "tour.skip": { en: "Skip" },
   "tour.next": { en: "Next" },
   "tour.done": { en: "Got it" },
@@ -181,20 +200,6 @@ const D: Dict = {
   "tour.d5": { en: "Accuracy per subject and topic, a review queue built from your mistakes, and your mock score trend.",
   },
   "tour.replay": { en: "Replay the tour" },
-
-  "tutorial.title": { en: "How 1Elevate works",
-  },
-  "tutorial.sub": { en: "Four minutes now saves you a lot of guessing later. Try the demo question at the bottom.",
-  },
-  "tutorial.demoTitle": { en: "Try it: a real practice question" },
-  "tutorial.demoHint": { en: "Pick an answer, then check it. This is exactly what a practice session looks like.",
-  },
-  "tutorial.startTour": { en: "Start the guided tour" },
-  "tutorial.formatTitle": { en: "The format we follow" },
-  "tutorial.satFormat": { en: "SAT — 98 questions, 2 h 14 min. Reading & Writing (54) and Math (44), each in two modules, scored 400–1600.",
-  },
-  "tutorial.sourceNote": { en: "Questions are written by us to match the official blueprints — we don't reproduce copyrighted exam papers.",
-  },
 
   "account.profile": { en: "Profile" },
   "account.memberSince": { en: "Studying since" },
@@ -504,6 +509,8 @@ const D: Dict = {
   },
   "admin.choice": { en: "Choice" },
   "admin.preview": { en: "Preview — how a student sees it" },
+  "admin.editorShow": { en: "Closed — open it to write or paste a question" },
+  "admin.editorHide": { en: "Open. Close it to get the page back." },
   "admin.mathHintShort": { en: "Maths between dollar signs works here too: $\\frac{3}{8}$, $x^2$.",
   },
   "admin.mathHint": { en: "Put maths between dollar signs and it renders as maths: $x^2$, $\\frac{3}{8}$, $\\sqrt{16}$, $a \\le b$. Use $$…$$ for a formula on its own line. Everything else stays plain text.",

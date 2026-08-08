@@ -48,16 +48,6 @@ export function NavProgress({ size = 20 }: { size?: number }) {
   );
 }
 
-export function NavTutorial({ size = 20 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
-      <circle cx="12" cy="12" r="8.5" {...S} />
-      <path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.3" {...S} />
-      <circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
 export function NavCommunity({ size = 20 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
