@@ -93,9 +93,9 @@ export type CommunityPost = {
   author: CommunityAuthor;
   createdAt: number;
   exam: ExamId;
-  /** Subtopic under the subject, e.g. "Systems of equations" — matches the
-   *  question bank's topic taxonomy (see data/questions-sat*.ts) so the two
-   *  read as one vocabulary. */
+  /** Subtopic under the subject, e.g. "Systems of equations" — drawn from the
+   *  same vocabulary as a question's `topic`, which admins now set when they
+   *  write the item, so a post and a question read as one taxonomy. */
   topic?: string;
   /** Free-text body every post type may add below its structured content. */
   text?: string;
