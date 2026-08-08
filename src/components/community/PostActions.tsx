@@ -2,11 +2,17 @@
 
 import type { CommunityReactionKind } from "@/data/community";
 import { useI18n } from "@/lib/i18n";
-import { IconComment, IconSave } from "./icons";
+import { IconComment, IconCongrats, IconHelpful, IconSave } from "./icons";
 
-const REACTION_EMOJI: Record<CommunityReactionKind, string> = {
-  helpful: "💡",
-  congrats: "👏",
+/**
+ * Drawn icons rather than emoji. Emoji render in the platform's own style, at
+ * its own weight and colour, so 💡 and 👏 sat next to the line-drawn comment
+ * and save icons as if pasted in from somewhere else — and neither could show
+ * a pressed state. These share the icon set's geometry and fill when active.
+ */
+const REACTION_ICON: Record<CommunityReactionKind, typeof IconHelpful> = {
+  helpful: IconHelpful,
+  congrats: IconCongrats,
 };
 
 /**
@@ -37,7 +43,10 @@ export function PostActions({
   onToggleSave: () => void;
 }) {
   const { t } = useI18n();
-  const reactionLabel = t(reactionKind === "helpful" ? "community.reactionHelpful" : "community.reactionCongrats");
+  const reactionLabel = t(
+    reactionKind === "helpful" ? "community.reactionHelpful" : "community.reactionCongrats",
+  );
+  const ReactionIcon = REACTION_ICON[reactionKind];
 
   return (
     <div className="flex items-center gap-1.5 pt-1 -ml-2">
@@ -47,7 +56,7 @@ export function PostActions({
         aria-pressed={reacted}
         onClick={onToggleReaction}
       >
-        <span aria-hidden>{REACTION_EMOJI[reactionKind]}</span>
+        <ReactionIcon size={16} filled={reacted} />
         {reactionLabel}
         {reactionCount > 0 && <span className="num cm-action-count">{reactionCount}</span>}
       </button>
@@ -58,7 +67,7 @@ export function PostActions({
         aria-expanded={commentsOpen}
         onClick={onToggleComments}
       >
-        <IconComment size={16} />
+        <IconComment size={16} filled={commentsOpen} />
         {t("community.actionComment")}
         {commentCount > 0 && <span className="num cm-action-count">{commentCount}</span>}
       </button>

@@ -356,3 +356,158 @@ create trigger on_auth_user_created
 -- this file where a student could grant themselves admin:
 --
 --   select email, role from public.profiles where role <> 'student';
+
+-- =========================================================== community ==
+-- The feed: posts, reactions, comments and saves.
+--
+-- Everything a student writes is attributed to their auth id, never to a name
+-- sent by the browser, so a post cannot be published under someone else's
+-- identity no matter what the client sends.
+
+-- ------------------------------------------------------- public profiles --
+-- Names have to be visible to everyone or a feed is anonymous, but the
+-- profiles table also holds email, grade and target score, and its read policy
+-- correctly limits a student to their own row.
+--
+-- This view is the narrow window through it: id and display name, nothing else.
+-- It is deliberately NOT security_invoker, so it runs as its owner and is not
+-- blocked by that policy — which is safe precisely because the column list is
+-- fixed here and cannot be widened by a caller.
+
+create or replace view public.public_profiles as
+  select
+    id,
+    -- Never expose the address. A student who set no name is shown the part
+    -- before the @, which is what they would have been called anyway.
+    coalesce(nullif(trim(name), ''), split_part(coalesce(email, ''), '@', 1), 'Student') as display_name,
+    role
+  from public.profiles;
+
+revoke all on public.public_profiles from anon, public;
+grant select on public.public_profiles to authenticated;
+
+-- -------------------------------------------------------------- posts --
+
+create table if not exists public.community_posts (
+  id         uuid primary key default gen_random_uuid(),
+  author_id  uuid not null references public.profiles (id) on delete cascade,
+  type       text not null check (type in
+               ('question', 'progress', 'achievement', 'explanation', 'study-update', 'resource')),
+  exam       text not null default 'sat',
+  topic      text,
+  text       text,
+  -- The type-specific block, kept as jsonb for the same reason the question
+  -- bank does: six post shapes would otherwise mean six sets of nullable
+  -- columns, and a new post type would mean a migration.
+  payload    jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists community_posts_recent on public.community_posts (created_at desc);
+
+alter table public.community_posts enable row level security;
+
+drop policy if exists "posts: read signed in" on public.community_posts;
+create policy "posts: read signed in"
+  on public.community_posts for select to authenticated using (true);
+
+drop policy if exists "posts: insert own" on public.community_posts;
+create policy "posts: insert own"
+  on public.community_posts for insert
+  with check (author_id = auth.uid());
+
+drop policy if exists "posts: update own" on public.community_posts;
+create policy "posts: update own"
+  on public.community_posts for update
+  using (author_id = auth.uid()) with check (author_id = auth.uid());
+
+-- Authors can withdraw their own post; admins can remove anyone's, because a
+-- feed with no moderation is a liability the moment it has real users.
+drop policy if exists "posts: delete own or admin" on public.community_posts;
+create policy "posts: delete own or admin"
+  on public.community_posts for delete
+  using (author_id = auth.uid() or public.is_admin());
+
+-- ---------------------------------------------------------- reactions --
+-- The composite primary key is what makes a reaction idempotent: reacting
+-- twice is the same row, so a double tap or a retry cannot inflate a count.
+
+create table if not exists public.community_reactions (
+  post_id    uuid not null references public.community_posts (id) on delete cascade,
+  account_id uuid not null references public.profiles (id) on delete cascade,
+  kind       text not null check (kind in ('helpful', 'congrats')),
+  created_at timestamptz not null default now(),
+  primary key (post_id, account_id, kind)
+);
+
+alter table public.community_reactions enable row level security;
+
+drop policy if exists "reactions: read signed in" on public.community_reactions;
+create policy "reactions: read signed in"
+  on public.community_reactions for select to authenticated using (true);
+
+drop policy if exists "reactions: write own" on public.community_reactions;
+create policy "reactions: write own"
+  on public.community_reactions for insert
+  with check (account_id = auth.uid());
+
+drop policy if exists "reactions: remove own" on public.community_reactions;
+create policy "reactions: remove own"
+  on public.community_reactions for delete
+  using (account_id = auth.uid());
+
+-- ----------------------------------------------------------- comments --
+
+create table if not exists public.community_comments (
+  id         uuid primary key default gen_random_uuid(),
+  post_id    uuid not null references public.community_posts (id) on delete cascade,
+  author_id  uuid not null references public.profiles (id) on delete cascade,
+  text       text not null check (length(trim(text)) > 0),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists community_comments_by_post
+  on public.community_comments (post_id, created_at);
+
+alter table public.community_comments enable row level security;
+
+drop policy if exists "comments: read signed in" on public.community_comments;
+create policy "comments: read signed in"
+  on public.community_comments for select to authenticated using (true);
+
+drop policy if exists "comments: insert own" on public.community_comments;
+create policy "comments: insert own"
+  on public.community_comments for insert
+  with check (author_id = auth.uid());
+
+drop policy if exists "comments: delete own or admin" on public.community_comments;
+create policy "comments: delete own or admin"
+  on public.community_comments for delete
+  using (author_id = auth.uid() or public.is_admin());
+
+-- -------------------------------------------------------------- saves --
+-- A private bookmark. Unlike a reaction, nobody else may read it, so the read
+-- policy is the student's own rows only.
+
+create table if not exists public.community_saves (
+  post_id    uuid not null references public.community_posts (id) on delete cascade,
+  account_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_id, account_id)
+);
+
+alter table public.community_saves enable row level security;
+
+drop policy if exists "saves: read own" on public.community_saves;
+create policy "saves: read own"
+  on public.community_saves for select using (account_id = auth.uid());
+
+drop policy if exists "saves: write own" on public.community_saves;
+create policy "saves: write own"
+  on public.community_saves for insert
+  with check (account_id = auth.uid());
+
+drop policy if exists "saves: remove own" on public.community_saves;
+create policy "saves: remove own"
+  on public.community_saves for delete
+  using (account_id = auth.uid());

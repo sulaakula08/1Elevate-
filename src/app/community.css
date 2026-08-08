@@ -4,6 +4,31 @@
   /* ---------------- feed ---------------- */
   .cm-post {
     padding: 1.125rem 1.25rem 1rem;
+    /* The card is the unit of attention, so the whole surface responds rather
+       than only the buttons inside it. Border, not shadow: the feed is a
+       vertical stack and shadows on a stack read as clutter. */
+    transition:
+      border-color 180ms ease,
+      background 180ms ease;
+  }
+  .cm-post:hover {
+    border-color: var(--line-strong);
+  }
+
+  /* A post that has just been published, so publishing has a visible result
+     rather than the feed silently reordering underneath the composer. */
+  @keyframes cm-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .cm-post-new {
+    animation: cm-arrive 340ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   }
 
   .cm-quote {
@@ -48,6 +73,21 @@
     background: var(--surface-2);
     color: var(--foreground);
   }
+  /* A real press. Without it a toggle on a touch screen gives no feedback at
+     all until the count changes, which is a whole network round trip later. */
+  .cm-action:active {
+    transform: scale(0.96);
+  }
+  .cm-action svg {
+    /* The icon supports the label rather than competing with it — until the
+       action is on, when it carries the state and comes up to full strength. */
+    opacity: 0.75;
+    transition: opacity 150ms ease;
+  }
+  .cm-action:hover svg,
+  .cm-action-on svg {
+    opacity: 1;
+  }
   .cm-action-on {
     color: var(--accent);
     background: var(--accent-soft);
@@ -62,6 +102,10 @@
   .cm-action-count {
     color: inherit;
     opacity: 0.85;
+    /* Lining figures, so a count going 9 → 10 does not shift the label. */
+    font-variant-numeric: tabular-nums;
+    min-width: 1ch;
+    text-align: right;
   }
 
   /* ---------------- comments ---------------- */
