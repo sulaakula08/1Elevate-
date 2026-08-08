@@ -69,6 +69,15 @@ export function NavCommunity({ size = 20 }: { size?: number }) {
   );
 }
 
+/** A speech bubble: the section is for saying something, not for reading. */
+export function NavFeedback({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <path d="M20 13.5a2.5 2.5 0 0 1-2.5 2.5H9l-4 3.2V16H6.5A2.5 2.5 0 0 1 4 13.5v-6A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5Z" {...S} />
+    </svg>
+  );
+}
+
 export function NavAdmin({ size = 20 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>

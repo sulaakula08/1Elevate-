@@ -11,6 +11,7 @@ import { Logo } from "./Logo";
 import {
   NavAdmin,
   NavCommunity,
+  NavFeedback,
   NavHome,
   NavMock,
   NavPractice,
@@ -31,7 +32,10 @@ const PRACTICE: Item[] = [
 
 const SOCIAL: Item[] = [{ href: "/community", key: "nav.community", Icon: NavCommunity }];
 const PROGRESS: Item[] = [{ href: "/progress", key: "nav.progress", Icon: NavProgress }];
-const LEARN: Item[] = [{ href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial }];
+const LEARN: Item[] = [
+  { href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial },
+  { href: "/feedback", key: "nav.feedback", Icon: NavFeedback },
+];
 
 /**
  * Desktop navigation rail: brand, exam switcher, grouped links, account row.

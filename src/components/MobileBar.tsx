@@ -10,6 +10,7 @@ import { Logo } from "./Logo";
 import {
   NavAdmin,
   NavCommunity,
+  NavFeedback,
   NavHome,
   NavMock,
   NavMore,
@@ -120,6 +121,7 @@ export function MobileTabs() {
               {[
                 { href: "/progress", key: "nav.progress", Icon: NavProgress },
                 { href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial },
+                { href: "/feedback", key: "nav.feedback", Icon: NavFeedback },
                 { href: "/account", key: "nav.profile", Icon: NavHome },
                 ...(account && account.role !== "student"
                   ? [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }]

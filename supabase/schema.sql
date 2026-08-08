@@ -511,3 +511,49 @@ drop policy if exists "saves: remove own" on public.community_saves;
 create policy "saves: remove own"
   on public.community_saves for delete
   using (account_id = auth.uid());
+
+-- ---------------------------------------------------------------- feedback --
+-- What students tell the team. Insert-your-own, read-by-admins: a student can
+-- send a message and can read their own back, and nobody but an admin or the
+-- owner can read anyone else's — feedback is often about a person's own
+-- difficulty with the product, and it is written on the understanding that the
+-- team reads it, not the class.
+
+create table if not exists public.feedback (
+  id         uuid primary key default gen_random_uuid(),
+  account_id uuid not null references public.profiles (id) on delete cascade,
+  -- Free text. Kept as one column rather than a form: the useful part of
+  -- feedback is the sentence nobody anticipated a field for.
+  message    text not null check (char_length(btrim(message)) between 1 and 4000),
+  -- What the student says it is about, from a fixed list the app offers.
+  category   text not null default 'other'
+             check (category in ('bug', 'content', 'idea', 'other')),
+  -- Set by an admin once it has been dealt with, so a long list stays workable.
+  handled_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists feedback_created_at_idx
+  on public.feedback (created_at desc);
+
+alter table public.feedback enable row level security;
+
+drop policy if exists "feedback: read own or admin" on public.feedback;
+create policy "feedback: read own or admin"
+  on public.feedback for select
+  using (account_id = auth.uid() or public.is_admin());
+
+-- `with check` and not `using`: this is the rule for rows being written. The
+-- account id cannot be forged, because it must equal the caller's own id.
+drop policy if exists "feedback: insert own" on public.feedback;
+create policy "feedback: insert own"
+  on public.feedback for insert
+  with check (account_id = auth.uid());
+
+-- Only an admin marks a message handled. A student cannot edit what they sent,
+-- which keeps the record of what was reported honest.
+drop policy if exists "feedback: update admin" on public.feedback;
+create policy "feedback: update admin"
+  on public.feedback for update
+  using (public.is_admin())
+  with check (public.is_admin());

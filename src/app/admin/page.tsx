@@ -8,6 +8,8 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { newId } from "@/lib/storage";
 import { PeopleManager } from "@/components/PeopleManager";
+import { FeedbackInbox } from "@/components/admin/FeedbackInbox";
+import { UsageStats } from "@/components/admin/UsageStats";
 import { QuestionView } from "@/components/QuestionView";
 import { RichText } from "@/lib/math/markdown";
 import { ConfirmDialog, EmptyState, PageTitle, RequireAccount } from "@/components/ui";
@@ -464,9 +466,16 @@ function AdminInner() {
         )}
       </section>
 
+      {/* How the product is being used, then who is using it, then what they
+          have said about it. Each panel decides for itself whether the caller
+          may see it — the API refuses a student, the policies refuse a student. */}
+      <UsageStats />
+
       {/* Role management. Visible to admins as a read-only roster; only the
           owner sees the buttons, and only the database can actually grant. */}
       <PeopleManager />
+
+      <FeedbackInbox />
 
       {toDelete && (
         <ConfirmDialog
