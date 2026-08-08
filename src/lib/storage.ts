@@ -270,8 +270,15 @@ export function saveTheme(theme: "light" | "dark") {
  * synced. Everything a signed-in student has done is on the server and comes
  * straight back on the next load, so the loss is bounded to unsynced offline
  * work — a fair price for not attributing one person's results to another.
+ *
+ * Epoch 3: epoch 2 cleared the caches, but by then the mis-attributed rows had
+ * already been uploaded and were sitting on the server under the wrong account,
+ * so the next fetch simply brought them back. Deleting them server-side is the
+ * actual fix; this bump exists because a browser whose cache still holds them
+ * would upload them a second time the moment it syncs. Order matters — delete
+ * the rows first, then let this clear what is left behind.
  */
-export const DATA_EPOCH = 2;
+export const DATA_EPOCH = 3;
 
 /** True when a wipe happened, so the caller can resync rather than trust state. */
 export function ensureDataEpoch(): boolean {
