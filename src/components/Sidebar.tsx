@@ -8,7 +8,6 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
-import { NotificationsBell } from "./NotificationsBell";
 import {
   NavAdmin,
   NavCommunity,
@@ -87,7 +86,6 @@ export function Sidebar({
             <Logo />
           </Link>
         )}
-        <NotificationsBell className={collapsed ? "" : "ml-auto"} />
         {onToggle && (
           <button
             type="button"
@@ -186,14 +184,20 @@ export function Sidebar({
           aria-label={t("nav.settings")}
           title={t("nav.settings")}
         >
+          {/* Sliders, not a cog and definitely not a sun: the old icon was a
+              circle with eight radiating lines, which is a sun in every other
+              interface a student uses. Three faders read as "settings" with no
+              ambiguity, and stay legible at 17px. */}
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
-            <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
             <path
-              d="M12 3.5v2M12 18.5v2M4.9 7.8l1.7 1M17.4 15.2l1.7 1M4.9 16.2l1.7-1M17.4 8.8l1.7-1"
+              d="M4 7.5h9M17.5 7.5H20M4 16.5h4M12.5 16.5H20M4 12h13M20 12h0"
               stroke="currentColor"
               strokeWidth="1.6"
               strokeLinecap="round"
             />
+            <circle cx="15" cy="7.5" r="2.1" stroke="currentColor" strokeWidth="1.6" />
+            <circle cx="10.5" cy="16.5" r="2.1" stroke="currentColor" strokeWidth="1.6" />
+            <circle cx="18.6" cy="12" r="1.4" stroke="currentColor" strokeWidth="1.6" />
           </svg>
         </Link>
       </div>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/lib/app-state";
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "@/lib/storage";
+import { NotificationsBell } from "./NotificationsBell";
 import { Sidebar } from "./Sidebar";
 import { MobileHeader, MobileTabs } from "./MobileBar";
 import { TopBar } from "./TopBar";
@@ -70,6 +71,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar account={account} collapsed={collapsed} onToggle={toggleSidebar} />
       <div className="flex-1 min-w-0 flex flex-col">
         <MobileHeader />
+
+        {/*
+          The bell lives here, not in the rail.
+
+          Two problems with the rail: the panel is 21rem wide and the rail is
+          15rem, so anchoring it to the button's right edge ran it off the left of
+          the screen — and collapsing the rail to 4rem took the bell with it.
+          Pinned to the top right of the viewport it is reachable in both rail
+          states, and the panel opens inwards where there is always room.
+
+          Desktop only: phones have it in their own header already.
+        */}
+        <div className="notif-float hidden md:block">
+          <NotificationsBell />
+        </div>
         {/*
           Centred, and wider than it was.
 
@@ -79,7 +95,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           side. Centring inside the remaining space means the content re-centres
           itself whenever the rail changes width, with no width calculation.
         */}
-        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+        {/* The wider desktop gutter is what keeps the floating bell off the
+            content: equal on both sides, so the column stays centred. */}
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-8 md:px-14 py-6 sm:py-8">
           {children}
         </main>
         <Footer />

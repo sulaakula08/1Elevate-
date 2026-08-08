@@ -1792,8 +1792,9 @@ p {
     box-shadow: var(--overlay);
     overflow: hidden;
   }
-  /* On a phone the bell sits at the right edge of the header, so a right-anchored
-     panel would run off screen; pin it to the viewport instead. */
+  /* Anchored to the button's right edge, so it opens inwards — away from the
+     screen edge the bell sits against. On a phone there is not 21rem to open
+     into, so it spans the viewport instead. */
   @media (max-width: 30rem) {
     .notif-panel {
       position: fixed;
@@ -1822,4 +1823,26 @@ p {
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
+}
+
+@layer components {
+  /* The bell, pinned to the top right of the viewport rather than placed in the
+     rail. Fixed, so it survives the rail collapsing and page scroll; on a
+     surface of its own, so it reads as a control rather than as page content. */
+  .notif-float {
+    position: fixed;
+    top: 0.875rem;
+    right: 1rem;
+    z-index: 40;
+  }
+  .notif-float .bar-btn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--lift);
+  }
+}
+
+/* A timed test owns the screen — see useExamMode. */
+body[data-exam] .notif-float {
+  display: none !important;
 }

@@ -78,11 +78,13 @@ export function NavFeedback({ size = 20 }: { size?: number }) {
   );
 }
 
+/** Three faders. A circle with radiating lines — the previous icon — is a sun. */
 export function NavSettings({ size = 20 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
-      <circle cx="12" cy="12" r="3.2" {...S} />
-      <path d="M12 3.5v2M12 18.5v2M4.9 7.8l1.7 1M17.4 15.2l1.7 1M4.9 16.2l1.7-1M17.4 8.8l1.7-1" {...S} />
+      <path d="M4 7.5h9M17.5 7.5H20M4 16.5h4M12.5 16.5H20" {...S} />
+      <circle cx="15" cy="7.5" r="2.1" {...S} />
+      <circle cx="10.5" cy="16.5" r="2.1" {...S} />
     </svg>
   );
 }
