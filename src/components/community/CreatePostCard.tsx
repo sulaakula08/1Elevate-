@@ -3,11 +3,12 @@
 import type { CommunityPostType } from "@/data/community";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
+import { POST_TYPE_ICON } from "./icons";
 
-const QUICK_ACTIONS: { type: CommunityPostType; emoji: string; labelKey: string }[] = [
-  { type: "question", emoji: "❓", labelKey: "community.postTypeQuestion" },
-  { type: "progress", emoji: "📈", labelKey: "community.postTypeProgress" },
-  { type: "achievement", emoji: "🏆", labelKey: "community.postTypeAchievement" },
+const QUICK_ACTIONS: { type: CommunityPostType; labelKey: string }[] = [
+  { type: "question", labelKey: "community.postTypeQuestion" },
+  { type: "progress", labelKey: "community.postTypeProgress" },
+  { type: "achievement", labelKey: "community.postTypeAchievement" },
 ];
 
 /** Collapsed composer entry point — expands into ComposerModal on click, never shows a bare textarea inline (see AGENTS §5). */
@@ -36,7 +37,10 @@ export function CreatePostCard({ onOpen }: { onOpen: (type: CommunityPostType | 
             className="chip shrink-0"
             onClick={() => onOpen(action.type)}
           >
-            <span aria-hidden>{action.emoji}</span>
+            {(() => {
+              const Icon = POST_TYPE_ICON[action.type];
+              return <Icon size={16} />;
+            })()}
             {t(action.labelKey)}
           </button>
         ))}

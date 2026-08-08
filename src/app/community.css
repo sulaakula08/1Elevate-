@@ -200,6 +200,46 @@
     border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
     background: var(--surface-2);
   }
+  .cm-type-btn:active {
+    transform: scale(0.985);
+  }
+
+  /* The icon sits in its own tinted well rather than floating on the card, so
+     six tiles read as one set. Emoji could not take a colour at all; these
+     inherit the brand and lift to full strength on hover, which is what makes
+     the whole tile feel like the target. */
+  .cm-type-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.375rem;
+    height: 2.375rem;
+    margin-bottom: 0.375rem;
+    border-radius: var(--radius-sm);
+    background: var(--brand-soft);
+    color: var(--brand);
+    transition:
+      background 180ms ease,
+      color 180ms ease;
+  }
+  .cm-type-btn:hover .cm-type-icon {
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+
+  /* The milestone mark on an achievement card. Amber because a medal is warm
+     and the brand hue is already carrying every other affordance on the card. */
+  .cm-badge-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--s-amber-soft);
+    color: var(--s-amber);
+  }
 
   /* ---------------- Home preview ---------------- */
   .cm-preview-card {

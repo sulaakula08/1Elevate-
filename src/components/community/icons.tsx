@@ -101,3 +101,126 @@ export function IconShare({ size = 16 }: IconProps) {
     </Svg>
   );
 }
+
+/* ---------------- post types ----------------
+   The composer used emoji for these. Emoji are a typeface, not an icon set:
+   they arrive at the platform's own weight, colour and optical size, so six of
+   them in a grid read as six different illustrations rather than one family —
+   and they cannot take the accent colour when a type is selected.
+
+   These share the geometry above. Each has a filled variant so the chosen type
+   is unmistakable without relying on the card border alone. */
+
+/** Ask a question — a speech bubble carrying a query. */
+export function IconAsk({ size = 20, filled = false }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path
+        d="M12 3.9c-4.4 0-8 2.8-8 6.3 0 2 1.16 3.8 2.97 5-.16 1.2-.64 2.25-1.35 3.1 1.75-.2 3.24-.88 4.3-1.66.66.12 1.36.19 2.08.19 4.4 0 8-2.8 8-6.3s-3.6-6.3-8-6.3Z"
+        {...STROKE}
+        fill={filled ? "currentColor" : "none"}
+      />
+      <path
+        d="M10.4 8.5a1.7 1.7 0 0 1 3.3.55c0 1.13-1.7 1.45-1.7 2.55"
+        {...STROKE}
+        stroke={filled ? "var(--surface)" : "currentColor"}
+      />
+      <circle cx="12" cy="14.1" r="0.85" fill={filled ? "var(--surface)" : "currentColor"} />
+    </Svg>
+  );
+}
+
+/** Share progress — a score line stepping up. */
+export function IconProgress({ size = 20, filled = false }: IconProps) {
+  return (
+    <Svg size={size}>
+      {filled && <rect x="3.2" y="3.2" width="17.6" height="17.6" rx="3.4" fill="currentColor" />}
+      <path
+        d="M5.5 15.6 9.6 11.4l3 2.6 5.4-5.6"
+        {...STROKE}
+        stroke={filled ? "var(--surface)" : "currentColor"}
+      />
+      <path
+        d="M14.6 8.4H18v3.4"
+        {...STROKE}
+        stroke={filled ? "var(--surface)" : "currentColor"}
+      />
+    </Svg>
+  );
+}
+
+/** Explain something — a lamp, drawn rather than the emoji bulb. */
+export function IconExplain({ size = 20, filled = false }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path
+        d="M12 3.6a5.7 5.7 0 0 0-3.4 10.28c.5.37.8.94.8 1.55v.37h5.2v-.37c0-.61.3-1.18.8-1.55A5.7 5.7 0 0 0 12 3.6Z"
+        {...STROKE}
+        fill={filled ? "currentColor" : "none"}
+      />
+      <path d="M10.1 18.4h3.8M10.8 20.6h2.4" {...STROKE} />
+    </Svg>
+  );
+}
+
+/** Study update — a checklist, the shape of a finished session. */
+export function IconStudyUpdate({ size = 20, filled = false }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path
+        d="M6.4 3.9h11.2c.5 0 .9.4.9.9v14.4c0 .5-.4.9-.9.9H6.4a.9.9 0 0 1-.9-.9V4.8c0-.5.4-.9.9-.9Z"
+        {...STROKE}
+        fill={filled ? "currentColor" : "none"}
+      />
+      <path
+        d="m8.6 9 1.3 1.3 2.3-2.3M8.6 15l1.3 1.3 2.3-2.3M14.6 9.3h2.2M14.6 15.3h2.2"
+        {...STROKE}
+        stroke={filled ? "var(--surface)" : "currentColor"}
+      />
+    </Svg>
+  );
+}
+
+/** Achievement — a trophy. */
+export function IconAchievement({ size = 20, filled = false }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path
+        d="M7.6 4.2h8.8v4.3a4.4 4.4 0 0 1-8.8 0V4.2Z"
+        {...STROKE}
+        fill={filled ? "currentColor" : "none"}
+      />
+      <path d="M7.6 5.6H5.3a2.4 2.4 0 0 0 2.4 2.4M16.4 5.6h2.3a2.4 2.4 0 0 1-2.4 2.4" {...STROKE} />
+      <path d="M12 12.9v3.5M9 19.8h6M9.9 16.4h4.2l.7 3.4H9.2l.7-3.4Z" {...STROKE} />
+    </Svg>
+  );
+}
+
+/** Share a resource — a document with a corner fold. */
+export function IconResource({ size = 20, filled = false }: IconProps) {
+  return (
+    <Svg size={size}>
+      <path
+        d="M13.4 3.6H7.3a1 1 0 0 0-1 1v14.8a1 1 0 0 0 1 1h9.4a1 1 0 0 0 1-1V7.8l-4.3-4.2Z"
+        {...STROKE}
+        fill={filled ? "currentColor" : "none"}
+      />
+      <path d="M13.3 3.7v4.2h4.3" {...STROKE} stroke={filled ? "var(--surface)" : "currentColor"} />
+      <path
+        d="M9.1 12.6h5.8M9.1 16h4"
+        {...STROKE}
+        stroke={filled ? "var(--surface)" : "currentColor"}
+      />
+    </Svg>
+  );
+}
+
+/** Every post type, keyed the way CommunityPostType is. */
+export const POST_TYPE_ICON = {
+  question: IconAsk,
+  progress: IconProgress,
+  explanation: IconExplain,
+  "study-update": IconStudyUpdate,
+  achievement: IconAchievement,
+  resource: IconResource,
+} as const;

@@ -1,16 +1,26 @@
 "use client";
 
 import type { AchievementPostData } from "@/data/community";
+import { IconAchievement } from "./icons";
 
-/** Milestone post: streaks read as an emoji + headline; score clubs additionally show the climb that earned it. */
+/**
+ * Milestone post: a headline, and for score clubs the climb that earned it.
+ *
+ * The badge is drawn rather than the emoji the composer used to attach. An
+ * emoji here rendered at the platform's own weight beside the app's own
+ * typography, and every milestone got the same medal regardless of what it was
+ * for — so it read as decoration rather than as a mark the product awards.
+ */
 export function AchievementPostContent({ data }: { data: AchievementPostData }) {
   const hasClimb = data.startScore !== undefined && data.currentScore !== undefined;
   const delta = hasClimb ? data.currentScore! - data.startScore! : 0;
 
   return (
     <div className="space-y-2.5">
-      <p className="flex items-center gap-2 text-[19px] font-semibold tracking-[-0.02em]">
-        <span aria-hidden>{data.emoji}</span>
+      <p className="flex items-center gap-2.5 text-[19px] font-semibold tracking-[-0.02em]">
+        <span className="cm-badge-mark" aria-hidden>
+          <IconAchievement size={18} filled />
+        </span>
         {data.title}
       </p>
 

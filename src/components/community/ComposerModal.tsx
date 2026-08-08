@@ -5,16 +5,17 @@ import type { CommunityPostType } from "@/data/community";
 import { subjectsFor } from "@/data/exams";
 import { useI18n } from "@/lib/i18n";
 import { useCommunity, type CreatePostInput } from "@/lib/community-state";
+import { POST_TYPE_ICON } from "./icons";
 
-type TypeOption = { id: CommunityPostType; emoji: string; labelKey: string; hintKey: string };
+type TypeOption = { id: CommunityPostType; labelKey: string; hintKey: string };
 
 const TYPE_OPTIONS: TypeOption[] = [
-  { id: "question", emoji: "❓", labelKey: "community.postTypeQuestion", hintKey: "community.postTypeQuestionHint" },
-  { id: "progress", emoji: "📈", labelKey: "community.postTypeProgress", hintKey: "community.postTypeProgressHint" },
-  { id: "explanation", emoji: "💡", labelKey: "community.postTypeExplanation", hintKey: "community.postTypeExplanationHint" },
-  { id: "study-update", emoji: "📝", labelKey: "community.postTypeStudyUpdate", hintKey: "community.postTypeStudyUpdateHint" },
-  { id: "achievement", emoji: "🏆", labelKey: "community.postTypeAchievement", hintKey: "community.postTypeAchievementHint" },
-  { id: "resource", emoji: "📎", labelKey: "community.postTypeResource", hintKey: "community.postTypeResourceHint" },
+  { id: "question", labelKey: "community.postTypeQuestion", hintKey: "community.postTypeQuestionHint" },
+  { id: "progress", labelKey: "community.postTypeProgress", hintKey: "community.postTypeProgressHint" },
+  { id: "explanation", labelKey: "community.postTypeExplanation", hintKey: "community.postTypeExplanationHint" },
+  { id: "study-update", labelKey: "community.postTypeStudyUpdate", hintKey: "community.postTypeStudyUpdateHint" },
+  { id: "achievement", labelKey: "community.postTypeAchievement", hintKey: "community.postTypeAchievementHint" },
+  { id: "resource", labelKey: "community.postTypeResource", hintKey: "community.postTypeResourceHint" },
 ];
 
 const SUBJECT_TYPES: CommunityPostType[] = ["question", "explanation", "study-update", "resource"];
@@ -216,8 +217,11 @@ export function ComposerModal({
                   className="cm-type-btn"
                   onClick={() => setType(option.id)}
                 >
-                  <span className="text-[22px]" aria-hidden>
-                    {option.emoji}
+                  <span className="cm-type-icon" aria-hidden>
+                    {(() => {
+                      const Icon = POST_TYPE_ICON[option.id];
+                      return <Icon size={22} />;
+                    })()}
                   </span>
                   <span className="text-[13px] font-medium">{t(option.labelKey)}</span>
                   <span className="text-[11.5px] text-faint leading-snug">{t(option.hintKey)}</span>
