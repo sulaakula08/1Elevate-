@@ -213,7 +213,7 @@ function BankInner() {
     : null;
 
   return (
-    <div className="max-w-3xl mx-auto pb-8">
+    <div className="max-w-4xl mx-auto pb-8">
       <PageTitle sub={t("study.bankSub")}>{t("study.bankTitle")}</PageTitle>
 
       {/* ---------------- filters ---------------- */}

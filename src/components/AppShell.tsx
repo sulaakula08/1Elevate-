@@ -70,7 +70,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar account={account} collapsed={collapsed} onToggle={toggleSidebar} />
       <div className="flex-1 min-w-0 flex flex-col">
         <MobileHeader />
-        <main className="flex-1 w-full max-w-5xl px-4 sm:px-8 py-6 sm:py-8">{children}</main>
+        {/*
+          Centred, and wider than it was.
+
+          `mx-auto` was missing, so every page sat hard against the sidebar with
+          all of the slack on the right — and collapsing the rail made that worse
+          rather than better, because the extra 11rem went entirely to the empty
+          side. Centring inside the remaining space means the content re-centres
+          itself whenever the rail changes width, with no width calculation.
+        */}
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+          {children}
+        </main>
         <Footer />
         <MobileTabs />
       </div>

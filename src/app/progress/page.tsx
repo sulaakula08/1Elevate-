@@ -59,7 +59,7 @@ function ProgressInner() {
 
   if (stats.total === 0 && data.mocks.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <PageTitle>{t("progress.title")}</PageTitle>
         <EmptyState>{t("progress.noData")}</EmptyState>
       </div>
@@ -67,7 +67,7 @@ function ProgressInner() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <PageTitle>{t("progress.title")}</PageTitle>
 
       {/* ---------------- where you stand ----------------

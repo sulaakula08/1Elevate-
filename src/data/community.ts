@@ -18,6 +18,12 @@ export type CommunityPostType =
   | "resource";
 
 export type CommunityAuthor = {
+  /**
+   * Account id, when the post came from the server. Absent on a post still
+   * being written locally, and on any seeded content — so anything reading it
+   * must treat "no id" as "not mine" rather than as a match.
+   */
+  id?: string;
   name: string;
   /** School, cohort or "SAT 1480" — one short line of context under the name. */
   context?: string;
@@ -328,18 +334,4 @@ export const COMMUNITY_POSTS: CommunityPost[] = [
   },
 ];
 
-/** Static demo modules for the right sidebar — see CommunitySidebar. */
-export const WEEKLY_LEADERS: { name: string; xp: number }[] = [
-  { name: "Aisha M.", xp: 2840 },
-  { name: "Dias N.", xp: 2510 },
-  { name: "Aruzhan S.", xp: 2320 },
-];
 
-export const WEEKLY_CHALLENGE = {
-  title: "SAT Math Sprint",
-  description: "Solve 100 questions this week",
-  current: 64,
-  target: 100,
-};
-
-export const TRENDING_TAGS = ["#SATMath", "#1500Club", "#AugustSAT"];

@@ -8,6 +8,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
+import { NotificationsBell } from "./NotificationsBell";
 import {
   NavAdmin,
   NavCommunity,
@@ -54,7 +55,7 @@ export function Sidebar({
   onToggle?: () => void;
 }) {
   const { t, tx } = useI18n();
-  const { data, theme, toggleTheme } = useApp();
+  const { data } = useApp();
   const pathname = usePathname();
   const days = streak(data.attempts);
 
@@ -86,6 +87,7 @@ export function Sidebar({
             <Logo />
           </Link>
         )}
+        <NotificationsBell className={collapsed ? "" : "ml-auto"} />
         {onToggle && (
           <button
             type="button"
@@ -175,44 +177,25 @@ export function Sidebar({
             </span>
           )}
         </Link>
-        {/* Theme, not settings. This slot used to hold a cog that linked to
-            /account — the same destination as the name beside it — so the only
-            thing it could do was look like a control and then navigate. The
-            avatar already goes to the profile; this switches the theme.
-
-            Rendered in both states — collapsing the rail should not take the
-            theme switch away, so on a tight rail it stacks under the avatar. */}
-        <button
-          type="button"
+        {/* Settings, not a single toggle. The theme switch that used to live
+            here is one preference among several now, and a rail with one
+            preference on it and the rest hidden is a worse map than a door. */}
+        <Link
+          href="/settings"
           className="bar-btn shrink-0"
-          onClick={toggleTheme}
-          aria-label={t(theme === "dark" ? "nav.lightMode" : "nav.darkMode")}
-          title={t(theme === "dark" ? "nav.lightMode" : "nav.darkMode")}
+          aria-label={t("nav.settings")}
+          title={t("nav.settings")}
         >
-          {theme === "dark" ? (
-            // Sun: switching to light.
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
-              <circle cx="12" cy="12" r="4.1" stroke="currentColor" strokeWidth="1.6" />
-              <path
-                d="M12 2.8v2.1M12 19.1v2.1M2.8 12h2.1M19.1 12h2.1M5.5 5.5l1.5 1.5M17 17l1.5 1.5M5.5 18.5L7 17M17 7l1.5-1.5"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-            </svg>
-          ) : (
-            // Moon: switching to dark.
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
-              <path
-                d="M20 14.4A8.4 8.4 0 1 1 9.6 4a6.9 6.9 0 0 0 10.4 10.4Z"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
-        </button>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
+            <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
+            <path
+              d="M12 3.5v2M12 18.5v2M4.9 7.8l1.7 1M17.4 15.2l1.7 1M4.9 16.2l1.7-1M17.4 8.8l1.7-1"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        </Link>
       </div>
     </aside>
   );

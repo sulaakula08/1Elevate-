@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from "react";
 import type { Question } from "@/data/types";
 import { useI18n } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { RichText } from "@/lib/math/markdown";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
@@ -45,6 +46,7 @@ export function QuestionView({
   onToggleCross,
 }: Props) {
   const { tx, t } = useI18n();
+  const { settings } = useSettings();
 
   const live = keyboard && !disabled;
   const count = question.choices.length;
@@ -139,7 +141,7 @@ export function QuestionView({
         })}
       </div>
 
-      {live && !revealed && (
+      {live && !revealed && settings.showHints && (
         <p className="text-[12px] text-faint">{t("study.keyHint")}</p>
       )}
 

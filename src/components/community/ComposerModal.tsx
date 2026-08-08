@@ -5,6 +5,7 @@ import type { CommunityPostType } from "@/data/community";
 import { subjectsFor } from "@/data/exams";
 import { useI18n } from "@/lib/i18n";
 import { useCommunity, type CreatePostInput } from "@/lib/community-state";
+import { useSendDelay } from "@/lib/send-delay";
 import { POST_TYPE_ICON } from "./icons";
 
 type TypeOption = { id: CommunityPostType; labelKey: string; hintKey: string };
@@ -152,6 +153,7 @@ export function ComposerModal({
 }) {
   const { t, tx } = useI18n();
   const { createPost } = useCommunity();
+  const { pending, send } = useSendDelay();
   // The parent only mounts this component while the composer is open (see
   // app/community/page.tsx), so a fresh mount is exactly when state should
   // reset — no effect needed to sync it with an `open` flag.
@@ -176,8 +178,10 @@ export function ComposerModal({
 
   const submit = () => {
     if (!type || !canSubmit(type, form)) return;
-    createPost(toInput(type, form));
-    onClose();
+    send(() => {
+      createPost(toInput(type, form));
+      onClose();
+    });
   };
 
   return (
@@ -264,8 +268,10 @@ export function ComposerModal({
                     <span className="label">{t("community.composerMyAnswer")}</span>
                     <input
                       type="text"
-                      maxLength={1}
-                      className="field uppercase"
+                      maxLength={8}
+                      inputMode="text"
+                      className="field"
+                      placeholder={t("community.composerAnswerHint")}
                       value={form.myAnswer}
                       onChange={(event) => set("myAnswer", event.target.value.toUpperCase())}
                     />
@@ -274,8 +280,10 @@ export function ComposerModal({
                     <span className="label">{t("community.composerCorrectAnswer")}</span>
                     <input
                       type="text"
-                      maxLength={1}
-                      className="field uppercase"
+                      maxLength={8}
+                      inputMode="text"
+                      className="field"
+                      placeholder={t("community.composerAnswerHint")}
                       value={form.correctAnswer}
                       onChange={(event) => set("correctAnswer", event.target.value.toUpperCase())}
                     />
@@ -427,16 +435,16 @@ export function ComposerModal({
               </label>
 
               <div className="flex items-center justify-end gap-2 pt-1">
-                <button type="button" className="btn" onClick={onClose}>
+                <button type="button" className="btn" onClick={onClose} disabled={pending}>
                   {t("community.composerCancel")}
                 </button>
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={!canSubmit(type, form)}
+                  disabled={!canSubmit(type, form) || pending}
                   onClick={submit}
                 >
-                  {t("community.composerPost")}
+                  {pending ? t("community.posting") : t("community.composerPost")}
                 </button>
               </div>
             </div>

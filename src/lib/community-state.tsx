@@ -285,6 +285,7 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
       if (!trimmed || !account) return;
 
       const author: CommunityAuthor = {
+        id: account.id,
         name: account.name,
         context: account.grade || undefined,
         colorSeed: toneFor(account.id),

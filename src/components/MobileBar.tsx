@@ -7,6 +7,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
+import { NotificationsBell } from "./NotificationsBell";
 import {
   NavAdmin,
   NavCommunity,
@@ -17,6 +18,7 @@ import {
   NavPractice,
   NavProgress,
   NavReview,
+  NavSettings,
   NavTutorial,
 } from "./NavIcons";
 
@@ -30,7 +32,7 @@ const TABS = [
 
 /** Compact header for signed-in phones — the sidebar's job is done by the tabs. */
 export function MobileHeader() {
-  const { account, theme, toggleTheme, data } = useApp();
+  const { account, data } = useApp();
   const days = streak(data.attempts);
 
   return (
@@ -56,9 +58,7 @@ export function MobileHeader() {
             </span>
           )}
 
-          <button className="bar-btn w-8 h-8" onClick={toggleTheme} aria-label="Toggle theme">
-            {theme === "dark" ? "☀" : "☾"}
-          </button>
+          <NotificationsBell />
 
           <Link
             href="/account"
@@ -122,6 +122,7 @@ export function MobileTabs() {
                 { href: "/progress", key: "nav.progress", Icon: NavProgress },
                 { href: "/tutorial", key: "nav.tutorial", Icon: NavTutorial },
                 { href: "/feedback", key: "nav.feedback", Icon: NavFeedback },
+                { href: "/settings", key: "nav.settings", Icon: NavSettings },
                 { href: "/account", key: "nav.profile", Icon: NavHome },
                 ...(account && account.role !== "student"
                   ? [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }]

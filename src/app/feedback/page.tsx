@@ -77,7 +77,7 @@ function FeedbackInner() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto pb-16">
+    <div className="max-w-3xl mx-auto pb-16">
       <PageTitle sub={t("feedback.sub")}>{t("feedback.title")}</PageTitle>
 
       <form onSubmit={submit} className="panel p-6 space-y-5">

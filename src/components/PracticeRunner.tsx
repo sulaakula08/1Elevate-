@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
+import { useSettings } from "@/lib/settings";
 import { generatedIds } from "@/lib/generation/provenance";
 import { useI18n } from "@/lib/i18n";
 import type { QuizMode } from "@/lib/storage";
@@ -59,6 +60,7 @@ function setAt<T>(list: T[], index: number, value: T): T[] {
 export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Props) {
   const { t } = useI18n();
   const { recordAttempts } = useApp();
+  const { settings } = useSettings();
   const count = questions.length;
 
   const [index, setIndex] = useState(0);
@@ -76,7 +78,9 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
   const [elapsed, setElapsed] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [timerHidden, setTimerHidden] = useState(false);
+  // Seeded from the preference, then owned by the session: a student who
+  // hides the clock in Settings can still show it for one module.
+  const [timerHidden, setTimerHidden] = useState(settings.hideTimer);
 
   const [streak, setStreak] = useState(0);
   const [toast, setToast] = useState<string | null>(null);

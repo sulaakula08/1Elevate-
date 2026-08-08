@@ -88,6 +88,9 @@ const K = {
   legacyPurged: `${NS}.legacyPurged`,
   /** Which generation of cached history this browser holds. See DATA_EPOCH. */
   epoch: `${NS}.dataEpoch`,
+  settings: `${NS}.settings`,
+  /** When the notification list was last opened, for the unread count. */
+  seenNotifications: `${NS}.seenNotifications`,
   user: (id: string) => `${NS}.user.${id}`,
 };
 
@@ -286,6 +289,51 @@ export function ensureDataEpoch(): boolean {
   } catch {
     return false;
   }
+}
+
+/* ---------------- settings ---------------- */
+
+/**
+ * Preferences that belong to this browser rather than to the account.
+ *
+ * Theme lives in its own key for one reason: the inline script in layout.tsx
+ * reads it before React boots, to stamp `data-theme` and avoid a flash of the
+ * wrong palette. Everything else can wait for hydration, so it shares one blob.
+ */
+export type Settings = {
+  /** Off silences the in-app notification list — nothing is sent anywhere. */
+  notifications: boolean;
+  /** Honours a preference for less movement even when the OS does not state one. */
+  reduceMotion: boolean;
+  /** Hide the clock during practice by default, for students it distracts. */
+  hideTimer: boolean;
+  /** Open the question navigator's keyboard hints. Off for people who know them. */
+  showHints: boolean;
+};
+
+export const DEFAULT_SETTINGS: Settings = {
+  notifications: true,
+  reduceMotion: false,
+  hideTimer: false,
+  showHints: true,
+};
+
+export function loadSettings(): Settings {
+  return { ...DEFAULT_SETTINGS, ...read<Partial<Settings>>(K.settings, {}) };
+}
+
+export function saveSettings(settings: Settings) {
+  write(K.settings, settings);
+}
+
+/* ---------------- notifications ---------------- */
+
+export function loadSeenNotifications(): number {
+  return read<number>(K.seenNotifications, 0);
+}
+
+export function saveSeenNotifications(at: number) {
+  write(K.seenNotifications, at);
 }
 
 /* ---------------- sidebar ---------------- */

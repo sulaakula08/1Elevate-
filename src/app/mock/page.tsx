@@ -220,7 +220,7 @@ function MockInner() {
     const hitGoal = report.result.score >= account!.targetScore;
 
     return (
-      <div className="max-w-2xl mx-auto pt-12 pb-20">
+      <div className="max-w-3xl mx-auto pt-12 pb-20">
         <div className="text-center fade-in">
           {hitGoal ? (
             <SuccessTick className="mx-auto" size={48} />
@@ -311,7 +311,7 @@ function MockInner() {
   const generated = generatedIds();
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <PageTitle sub={t("plan.mockSub")}>{t("plan.mockTitle")}</PageTitle>
 
       {plan.length === 0 ? (

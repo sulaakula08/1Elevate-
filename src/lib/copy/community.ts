@@ -36,6 +36,9 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.composerTopic": { en: "Topic (optional)" },
   "community.composerBody": { en: "Details" },
   "community.composerMyAnswer": { en: "My answer" },
+  /* Both answer fields take a letter for a multiple-choice item or a written
+     value for a Math grid-in, so the hint has to show both. */
+  "community.composerAnswerHint": { en: "B, or 0.375" },
   "community.composerCorrectAnswer": { en: "Correct answer" },
   "community.composerFromScore": { en: "Previous score" },
   "community.composerToScore": { en: "New score" },
@@ -85,11 +88,10 @@ export const COMMUNITY_COPY: CopyDict = {
     en: "Follow classmates to see their progress and questions in this tab.",
   },
 
-  "community.sidebarLeaders": { en: "Weekly Leaders" },
-  "community.sidebarViewLeaderboard": { en: "View leaderboard" },
-  "community.sidebarChallenge": { en: "Weekly Challenge" },
-  "community.sidebarChallengeContinue": { en: "Continue challenge" },
-  "community.sidebarTrending": { en: "Trending in Community" },
+  /* Posting is written through to the server, but the confirmation waits a beat
+     — see useSendDelay. */
+  "community.posting": { en: "Posting…" },
+  "community.sending": { en: "Sending…" },
 
   "community.homeTitle": { en: "From your community" },
   "community.homeSeeAll": { en: "See all" },

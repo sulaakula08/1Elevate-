@@ -38,7 +38,7 @@ function ReviewInner() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <PageTitle sub={t("review.desc")}>{t("review.title")}</PageTitle>
 
       {queue.length === 0 ? (

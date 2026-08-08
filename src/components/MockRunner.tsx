@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Question } from "@/data/types";
 import { useExamMode } from "@/lib/exam-mode";
+import { useSettings } from "@/lib/settings";
 import { generatedIds } from "@/lib/generation/provenance";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmDialog } from "@/components/ui";
@@ -60,6 +61,7 @@ function formatClock(seconds: number): string {
  */
 export function MockRunner({ sections, onFinish, onExit }: Props) {
   const { t } = useI18n();
+  const { settings } = useSettings();
   useExamMode();
 
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -77,7 +79,9 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
   const [crossOutMode, setCrossOutMode] = useState(false);
   const [directionsOpen, setDirectionsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  const [timerHidden, setTimerHidden] = useState(false);
+  // Seeded from the preference, then owned by the session: a student who
+  // hides the clock in Settings can still show it for one module.
+  const [timerHidden, setTimerHidden] = useState(settings.hideTimer);
   const [confirmExit, setConfirmExit] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   /** Index of the module waiting on the other side of the break, if any. */

@@ -78,6 +78,15 @@ export function NavFeedback({ size = 20 }: { size?: number }) {
   );
 }
 
+export function NavSettings({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <circle cx="12" cy="12" r="3.2" {...S} />
+      <path d="M12 3.5v2M12 18.5v2M4.9 7.8l1.7 1M17.4 15.2l1.7 1M4.9 16.2l1.7-1M17.4 8.8l1.7-1" {...S} />
+    </svg>
+  );
+}
+
 export function NavAdmin({ size = 20 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>

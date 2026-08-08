@@ -59,7 +59,7 @@ function Profile() {
   const gap = standing ? account!.targetScore - standing.latest : null;
 
   return (
-    <div className="max-w-lg mx-auto pt-10 pb-20">
+    <div className="max-w-2xl mx-auto pt-10 pb-20">
       {/* ---------------- identity ---------------- */}
       <header className="flex items-start gap-4 fade-up">
         <span

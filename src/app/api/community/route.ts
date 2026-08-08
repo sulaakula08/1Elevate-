@@ -133,6 +133,7 @@ export async function GET(request: Request) {
 
   const names = new Map((profileRows ?? []).map((p) => [p.id as string, p.display_name as string]));
   const authorFor = (id: string) => ({
+    id,
     name: names.get(id) ?? "Student",
     colorSeed: toneFor(id),
   });
