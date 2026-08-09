@@ -2,7 +2,6 @@
 
 import type { QuestionPostData } from "@/data/community";
 import { useI18n } from "@/lib/i18n";
-import { NOUNS, pluralize } from "@/lib/plural";
 import { SubjectTopicTag } from "./SubjectTopicTag";
 
 /** A request for help — the prompt sits in a quoted block so it reads as "someone else's problem", not the poster's own statement. */
@@ -40,11 +39,6 @@ export function QuestionPostContent({
         </div>
       )}
 
-      {data.explanationCount > 0 && (
-        <p className="text-micro text-faint">
-          {pluralize(data.explanationCount, NOUNS.explanation)}
-        </p>
-      )}
     </div>
   );
 }

@@ -672,6 +672,19 @@ p {
   }
 
   /* ---------------- form ---------------- */
+  /* A <select> with .field kept the platform's own chevron and control
+     background, so it sat beside the text inputs looking like it came from a
+     different interface. Same surface, same border, one drawn chevron. */
+  select.field {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6.5L8 10.5L12 6.5' fill='none' stroke='%236d6d78' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6875rem center;
+    background-size: 1rem;
+    cursor: pointer;
+  }
   .field {
     width: 100%;
     border-radius: var(--radius-sm);

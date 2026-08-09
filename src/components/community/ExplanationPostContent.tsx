@@ -14,8 +14,12 @@ export function ExplanationPostContent({
   return (
     <div className="space-y-2.5">
       <SubjectTopicTag subjectId={data.subjectId} topic={topic} />
-      <p className="text-body font-medium tracking-[-0.01em]">{data.title}</p>
-      <p className="text-sm leading-relaxed text-muted">{data.body}</p>
+      {/* The explanation is the whole point of the post, so it is set as
+          readable prose rather than as 14px grey supporting text — it was
+          previously the least prominent thing in a post whose entire value is
+          the writing. */}
+      <p className="t-h3">{data.title}</p>
+      <p className="text-body leading-relaxed cm-prose">{data.body}</p>
     </div>
   );
 }

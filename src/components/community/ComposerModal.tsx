@@ -184,6 +184,31 @@ export function ComposerModal({
     });
   };
 
+  const bodyField = (
+    <label className="block">
+      <span className="label">
+        {type === "question"
+          ? t("community.composerQuestionBody")
+          : type === "achievement"
+            ? t("community.composerDetail")
+            : t("community.composerBody")}
+      </span>
+      <textarea
+        className="field cm-textarea"
+        rows={type === "question" ? 4 : 3}
+        value={form.text}
+        onChange={(event) => set("text", event.target.value)}
+        placeholder={t(
+          type === "question"
+            ? "community.composerBodyPlaceholderQuestion"
+            : type === "explanation"
+              ? "community.composerBodyPlaceholderExplanation"
+              : "community.composerBodyPlaceholderGeneric",
+        )}
+      />
+    </label>
+  );
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center fade-in"
@@ -214,39 +239,71 @@ export function ComposerModal({
         <div className="cm-composer-body px-5 pb-5">
           {!type ? (
             /*
-             * A list, not a 3×2 grid of icon cards. The grid was the third place
-             * in the product using the same icon-tile / bold-title / grey-line
-             * card, and six equally sized cards say the six choices are equally
-             * likely — they are not. A row per option scans in one pass and the
-             * descriptions no longer wrap to ragged heights.
+             * Asking for help is the strongest educational action in the
+             * product, and a flat list of six equal rows said the six were
+             * equally likely. It leads now, with its own surface and a sentence
+             * saying what it does; the other five follow as a plain list.
+             *
+             * Not a 3×2 grid of icon cards — that was the third place in the
+             * product using the same icon-tile / bold-title / grey-line card.
              */
-            <ul className="cm-type-list">
-              {TYPE_OPTIONS.map((option) => (
-                <li key={option.id}>
-                  <button
-                    type="button"
-                    className="cm-type-row"
-                    onClick={() => setType(option.id)}
-                  >
-                    <span className="cm-type-icon" aria-hidden>
-                      {(() => {
-                        const Icon = POST_TYPE_ICON[option.id];
-                        return <Icon size={18} />;
-                      })()}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium">{t(option.labelKey)}</span>
-                      <span className="block text-micro text-faint">{t(option.hintKey)}</span>
-                    </span>
-                    <span className="cm-type-chevron" aria-hidden>
-                      ›
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              <button
+                type="button"
+                className="cm-type-lead"
+                onClick={() => setType("question")}
+              >
+                <span className="cm-type-lead-icon" aria-hidden>
+                  {(() => {
+                    const Icon = POST_TYPE_ICON.question;
+                    return <Icon size={20} />;
+                  })()}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-body font-semibold">
+                    {t("community.postTypeQuestion")}
+                  </span>
+                  <span className="block text-sm text-muted mt-0.5">
+                    {t("community.postTypeQuestionHint")}
+                  </span>
+                </span>
+                <span className="cm-type-chevron" aria-hidden>
+                  ›
+                </span>
+              </button>
+
+              <p className="t-label cm-type-divider">{t("community.composerOrShare")}</p>
+
+              <ul className="cm-type-list">
+                {TYPE_OPTIONS.filter((option) => option.id !== "question").map((option) => (
+                  <li key={option.id}>
+                    <button
+                      type="button"
+                      className="cm-type-row"
+                      onClick={() => setType(option.id)}
+                    >
+                      <span className="cm-type-icon" aria-hidden>
+                        {(() => {
+                          const Icon = POST_TYPE_ICON[option.id];
+                          return <Icon size={18} />;
+                        })()}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium">{t(option.labelKey)}</span>
+                        <span className="block text-micro text-faint">{t(option.hintKey)}</span>
+                      </span>
+                      <span className="cm-type-chevron" aria-hidden>
+                        ›
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : (
             <div className="space-y-3.5">
+              {type === "question" && bodyField}
+
               {SUBJECT_TYPES.includes(type) && (
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
@@ -428,24 +485,11 @@ export function ComposerModal({
                 </label>
               )}
 
-              <label className="block">
-                <span className="label">
-                  {type === "achievement" ? t("community.composerDetail") : t("community.composerBody")}
-                </span>
-                <textarea
-                  className="field cm-textarea"
-                  rows={3}
-                  value={form.text}
-                  onChange={(event) => set("text", event.target.value)}
-                  placeholder={t(
-                    type === "question"
-                      ? "community.composerBodyPlaceholderQuestion"
-                      : type === "explanation"
-                        ? "community.composerBodyPlaceholderExplanation"
-                        : "community.composerBodyPlaceholderGeneric",
-                  )}
-                />
-              </label>
+              {/* Asked last for every other type; asked first for a question,
+                  because the problem is the post. It used to sit under
+                  "Details" below the answer letters, so the composer asked what
+                  you picked before it asked what you were stuck on. */}
+              {type !== "question" && bodyField}
 
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button type="button" className="btn" onClick={onClose} disabled={pending}>

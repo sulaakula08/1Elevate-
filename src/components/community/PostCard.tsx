@@ -56,12 +56,13 @@ export function PostCard({ post }: { post: CommunityPostView }) {
      * Every other property of the card stays identical, which is what keeps a
      * mixed feed calm.
      */
-    <article className="card cm-post" data-type={post.type}>
+    <article className="cm-post" data-type={post.type}>
       <PostHeader author={post.author} createdAt={post.createdAt} />
-      <div className="mt-3">
+      <div className="mt-2.5">
         <PostBody post={post} />
       </div>
       <PostActions
+        postType={post.type}
         reactionKind={reactionKind}
         reactionCount={post.reactions[reactionKind]}
         reacted={Boolean(post.userReactions[reactionKind])}

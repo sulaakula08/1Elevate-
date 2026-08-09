@@ -1,6 +1,6 @@
 "use client";
 
-import type { CommunityReactionKind } from "@/data/community";
+import type { CommunityPostType, CommunityReactionKind } from "@/data/community";
 import { useI18n } from "@/lib/i18n";
 import { IconComment, IconCongrats, IconHelpful, IconSave } from "./icons";
 
@@ -22,6 +22,7 @@ const REACTION_ICON: Record<CommunityReactionKind, typeof IconHelpful> = {
  * shows, per AGENTS §7 ("do not add 10 different emoji reactions").
  */
 export function PostActions({
+  postType,
   reactionKind,
   reactionCount,
   reacted,
@@ -32,6 +33,7 @@ export function PostActions({
   saved,
   onToggleSave,
 }: {
+  postType: CommunityPostType;
   reactionKind: CommunityReactionKind;
   reactionCount: number;
   reacted: boolean;
@@ -47,6 +49,29 @@ export function PostActions({
     reactionKind === "helpful" ? "community.reactionHelpful" : "community.reactionCongrats",
   );
   const ReactionIcon = REACTION_ICON[reactionKind];
+  /*
+   * A reply to a question is an explanation, and calling it "Comment" made the
+   * most valuable contribution in the product sound like small talk. The data
+   * model is untouched — these are the same comments, named for what they are
+   * on the post type that asked for them.
+   */
+  const isQuestion = postType === "question";
+  /* With no replies yet the noun has nothing to count and "explanations" on its
+     own read as a broken label, so an unanswered question asks for the verb
+     instead — which is also the more useful thing to offer. */
+  const commentLabel = t(
+    commentCount === 0
+      ? isQuestion
+        ? "community.actionExplain"
+        : "community.actionComment"
+      : isQuestion
+        ? commentCount === 1
+          ? "community.actionExplanation"
+          : "community.actionExplanations"
+        : commentCount === 1
+          ? "community.actionCommentOne"
+          : "community.actionCommentMany",
+  );
 
   return (
     <div className="flex items-center gap-1.5 pt-1 -ml-2">
@@ -68,8 +93,8 @@ export function PostActions({
         onClick={onToggleComments}
       >
         <IconComment size={16} filled={commentsOpen} />
-        {t("community.actionComment")}
         {commentCount > 0 && <span className="num cm-action-count">{commentCount}</span>}
+        {commentLabel}
       </button>
 
       <button
