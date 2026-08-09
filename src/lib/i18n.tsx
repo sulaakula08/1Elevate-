@@ -422,7 +422,7 @@ const D: Dict = {
   "home.subjects": { en: "Subjects" },
   "home.progress": { en: "Progress" },
   "home.focus": { en: "Focus areas" },
-  "home.ofTarget": { en: "of your target" },
+  "home.ofTarget": { en: "Target" },
   "home.targetLabel": { en: "your target score" },
   "home.noMockYet": { en: "Not measured yet — sit a mock" },
   "home.bestMock": { en: "Best mock score" },

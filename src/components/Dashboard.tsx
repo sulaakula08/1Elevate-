@@ -6,15 +6,7 @@ import type { Account } from "@/lib/storage";
 import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
-import { NOUNS, pluralize } from "@/lib/plural";
-import {
-  maxScore,
-  overall,
-  pct,
-  reviewQueue,
-  streak,
-  weakTopics,
-} from "@/lib/stats";
+import { maxScore, overall, pct, reviewQueue, weakTopics } from "@/lib/stats";
 import { SubjectScene } from "./three/SubjectScene";
 import { CountUp, ProgressBar, Reveal } from "./motion";
 import { ExamCountdown } from "./dashboard/ExamCountdown";
@@ -33,7 +25,6 @@ export function Dashboard({ account }: { account: Account }) {
   const queue = reviewQueue(data, bank);
   const weak = weakTopics(examAttempts, 2, 3);
   const lastMock = [...data.mocks].reverse().find((m) => m.exam === exam);
-  const days = streak(data.attempts);
   const fresh = stats.total === 0;
 
   /** Distinct questions answered per subject — "solved of total", as on the card. */
@@ -72,13 +63,6 @@ export function Dashboard({ account }: { account: Account }) {
       hint: queue.length === 0 ? t("plan.queueClear") : undefined,
       rule: null,
       action: queue.length > 0 ? { href: "/review", label: t("an.openQueue") } : undefined,
-    },
-    {
-      label: t("plan.streak"),
-      value: days,
-      suffix: "",
-      hint: days === 0 ? t("plan.streakStart") : pluralize(days, NOUNS.day),
-      rule: null,
     },
   ];
 
@@ -244,7 +228,7 @@ export function Dashboard({ account }: { account: Account }) {
               <span className="dash-score-target">
                 {lastMock ? (
                   <>
-                    <span className="num">{account.targetScore}</span> {t("home.ofTarget")}
+                    {t("home.ofTarget")} <span className="num">{account.targetScore}</span>
                   </>
                 ) : (
                   t("home.targetLabel")
@@ -263,42 +247,42 @@ export function Dashboard({ account }: { account: Account }) {
               {t("common.total")} <span className="num">{maxScore(exam)}</span>
             </p>
 
+            {/* Supporting figures as one inline ruled row, not four columns of
+                headline numbers and not four cards. They are facts that qualify
+                the score above them, so they are set at the weight of facts. */}
+            <dl className="dash-metrics">
+              {metrics.map((metric) => (
+                <div key={metric.label} className="dash-metric">
+                  <dt>
+                    <span className="dash-metric-label">{metric.label}</span>
+                    {metric.hint && <span className="dash-metric-hint">{metric.hint}</span>}
+                  </dt>
+                  <dd className="num dash-metric-value" data-zero={metric.value === 0}>
+                    <CountUp value={metric.value} suffix={metric.suffix} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
             <div className="dash-score-foot">
               <ExamCountdown inline />
               <Link href="/mock" className="btn btn-primary btn-sm">
                 {t("home.startMock")}
               </Link>
             </div>
-
-            {/* Activity lives in this column rather than below the grid. As its
-                own row it left the score column ending early and the metrics
-                column running on, with about 200px of nothing between them —
-                consistency is part of "where am I", so it sits with it. */}
-            <div className="dash-activity">
-              <div className="dash-head dash-head-tight">
-                <p className="t-label">{t("home.activity")}</p>
-                <span className="text-micro text-faint">{t("home.actQuarter")}</span>
-              </div>
-              <StudyActivity attempts={data.attempts} />
-            </div>
           </div>
 
-          {/* A ruled list, label left and figure right. Four equal columns each
-              with a big number made every metric look like a headline; a
-              student reads these as supporting facts, so they are set as one. */}
-          <dl className="dash-metrics">
-            {metrics.map((metric) => (
-              <div key={metric.label} className="dash-metric">
-                <dt>
-                  <span className="dash-metric-label">{metric.label}</span>
-                  {metric.hint && <span className="dash-metric-hint">{metric.hint}</span>}
-                </dt>
-                <dd className="num dash-metric-value" data-zero={metric.value === 0}>
-                  <CountUp value={metric.value} suffix={metric.suffix} />
-                </dd>
-              </div>
-            ))}
-          </dl>
+          {/* Thirteen columns of 13px is about 217px wide: natural in this
+              narrow column, and lost in the score column where it left a wide
+              void to its right. Alone here, the two columns end up close enough
+              in height that neither leaves a dead rectangle. */}
+          <div className="dash-activity">
+            <div className="dash-head dash-head-tight">
+              <p className="t-label">{t("home.activity")}</p>
+              <span className="text-micro text-faint">{t("home.actQuarter")}</span>
+            </div>
+            <StudyActivity attempts={data.attempts} />
+          </div>
         </div>
       </section>
 

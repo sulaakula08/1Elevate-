@@ -2139,21 +2139,31 @@ p {
   /* The bell, pinned to the top right of the viewport rather than placed in the
      rail. Fixed, so it survives the rail collapsing and page scroll; on a
      surface of its own, so it reads as a control rather than as page content. */
-  .notif-float {
-    position: fixed;
-    top: 0.875rem;
-    right: 1rem;
+  /* Zero-height, so docking the bell costs the page no vertical space and the
+     first section still starts where it would have. */
+  .notif-dock {
+    position: sticky;
+    /* Level with the content at rest; once it sticks, a little air above it so
+       it is not pressed against the top edge of the window. */
+    top: 0.75rem;
     z-index: 40;
+    height: 0;
+    justify-content: flex-end;
+    pointer-events: none;
   }
-  .notif-float .bar-btn {
+  .notif-dock > * {
+    pointer-events: auto;
+  }
+  /* No shadow. Raised off a surface it read as a floating action button; level
+     with the content it reads as chrome. */
+  .notif-dock .bar-btn {
     border: 1px solid var(--line);
     background: var(--surface);
-    box-shadow: var(--lift);
   }
 }
 
 /* A timed test owns the screen — see useExamMode. */
-body[data-exam] .notif-float {
+body[data-exam] .notif-dock {
   display: none !important;
 }
 

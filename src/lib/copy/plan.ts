@@ -8,11 +8,9 @@ export const PLAN_COPY: CopyDict = {
   "plan.answered": { en: "Answered" },
   "plan.accuracy": { en: "Accuracy" },
   "plan.queue": { en: "In review" },
-  "plan.streak": { en: "Day streak" },
   "plan.ofBank": { en: "of the bank" },
   "plan.noAttempts": { en: "no attempts yet" },
   "plan.queueClear": { en: "all cleared" },
-  "plan.streakStart": { en: "start today" },
   "plan.startHere": { en: "Start with one session — ten questions, and this screen fills with your own data." },
 
   /* ---------------- exam countdown ---------------- */

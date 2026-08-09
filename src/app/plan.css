@@ -417,21 +417,29 @@
     border-top: 1px solid var(--line);
   }
 
+
   /* Label left, figure right, one hairline per row. Not four columns of
      headline-sized numbers competing with the score. */
+  /* One row of three, ruled top and bottom. Stacked in a narrow side column
+     they were a second vertical list competing with the activity grid; sitting
+     under the score they read as its footnotes, which is what they are. */
   .dash-metrics {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 1.5rem;
+    margin-top: 1.5rem;
+    padding: 0.875rem 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  @media (max-width: 26rem) {
+    .dash-metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.875rem 1.5rem;
+    }
   }
   .dash-metric {
-    display: flex;
-    align-items: baseline;
-    gap: 1rem;
-    padding: 0.75rem 0;
-    border-top: 1px solid var(--line);
-  }
-  .dash-metric:last-child {
-    border-bottom: 1px solid var(--line);
+    min-width: 0;
   }
   .dash-metric-label {
     display: block;
@@ -445,7 +453,7 @@
     color: var(--faint);
   }
   .dash-metric-value {
-    margin-left: auto;
+    margin-top: 0.25rem;
     font-size: var(--t-h3);
     font-weight: 600;
     letter-spacing: -0.02em;
@@ -454,10 +462,19 @@
     color: var(--faint);
   }
 
+  /* Its own column on desktop, so it needs no rule of its own — the grid gap
+     separates it. Under the score on narrow screens it does. */
   .dash-activity {
-    margin-top: 2rem;
+    margin-top: 1.75rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--line);
+  }
+  @media (min-width: 60rem) {
+    .dash-activity {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
   }
 
   /* ================= focus areas =================
@@ -467,6 +484,11 @@
   .dash-focus {
     display: flex;
     flex-direction: column;
+    /* Capped to the reading measure. Across the full workspace width the topic
+       name and its mastery figure ended up about 1100px apart, and the rule
+       under them stretched so far that the difference between 61% and 75% was
+       no longer legible as a length. */
+    max-width: var(--w-read);
   }
   .dash-focus-row {
     display: grid;

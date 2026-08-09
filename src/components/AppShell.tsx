@@ -96,29 +96,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileHeader />
 
         {/*
-          The bell lives here, not in the rail.
-
-          Two problems with the rail: the panel is 21rem wide and the rail is
-          15rem, so anchoring it to the button's right edge ran it off the left of
-          the screen — and collapsing the rail to 4rem took the bell with it.
-          Pinned to the top right of the viewport it is reachable in both rail
-          states, and the panel opens inwards where there is always room.
-
-          Desktop only: phones have it in their own header already.
-        */}
-        <div className="notif-float hidden md:block">
-          <NotificationsBell />
-        </div>
-        {/*
-          Centred, and wider than it was.
-
-          `mx-auto` was missing, so every page sat hard against the sidebar with
-          all of the slack on the right — and collapsing the rail made that worse
-          rather than better, because the extra 11rem went entirely to the empty
-          side. Centring inside the remaining space means the content re-centres
-          itself whenever the rail changes width, with no width calculation.
-        */}
-        {/*
           The shell owns the gutter; the page owns its width by picking
           `container-read` or `container-app`. Before this, nine pages each
           chose their own `max-w-*` and the column moved on every navigation.
@@ -127,7 +104,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           links as a marketing footer under a feed added nothing and pushed a
           "Local build" disclaimer under every screen.
         */}
-        <main className="flex-1 w-full px-5 sm:px-8 lg:px-10 py-8 sm:py-10">{children}</main>
+        <main className="flex-1 w-full px-5 sm:px-8 lg:px-10 py-8 sm:py-10">
+          {/*
+            The bell docks to the content column, not to the viewport corner.
+
+            It cannot go in the rail: the panel is 21rem wide against a 15rem
+            rail, so anchoring it there ran the panel off the left of the screen,
+            and collapsing the rail to 4rem took the bell with it. But pinned to
+            the corner of the window it was a floating pill with nothing behind
+            it, aligned to nothing on the page. Sticky and zero-height, it sits
+            on the content's own right edge and top margin — the same line the
+            page's first section starts on — and still follows the scroll.
+
+            Desktop only: phones have it in their own header already.
+          */}
+          <div className="notif-dock hidden md:flex">
+            <NotificationsBell />
+          </div>
+          {children}
+        </main>
         <MobileTabs />
       </div>
     </div>
