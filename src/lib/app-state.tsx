@@ -336,10 +336,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       persistCustom(
         exists ? custom.map((q) => (q.id === marked.id ? marked : q)) : [...custom, marked],
       );
-      void apiFetch("/api/questions", {
-        method: "POST",
-        body: JSON.stringify({ questions: [marked] }),
-      });
+      void (async () => {
+        const response = await apiFetch("/api/questions", {
+          method: "POST",
+          body: JSON.stringify({ questions: [marked] }),
+        });
+        if (!response.ok) return;
+
+        // A new question is saved with a blank id and numbered by the server,
+        // so the optimistic copy has to be renamed to the id it was actually
+        // given — otherwise the editor holds a question the database has never
+        // heard of, and the next save would create a second one.
+        const body = (await response.json().catch(() => ({}))) as {
+          assigned?: { from: string; to: string }[];
+        };
+        const given = body.assigned?.find((a) => a.from === String(marked.id));
+        if (!given) return;
+        setCustom((current) => {
+          const next = current.map((q) =>
+            q.id === marked.id ? { ...q, id: given.to } : q,
+          );
+          saveCustomQuestions(next);
+          return next;
+        });
+      })();
     },
     [account?.email, custom, persistCustom],
   );

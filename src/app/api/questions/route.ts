@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Question } from "@/data/types";
+import { SEED_QUESTIONS } from "@/data";
 import { supabaseConfigured, tokenFrom, userClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -112,7 +113,8 @@ function toQuestion(row: Row): Question {
 
 /** Enough to reject a malformed paste before it reaches the database. */
 function invalid(question: Question): string | null {
-  if (!question?.id) return "Every question needs an id.";
+  // No id check: a new question arrives without one and is numbered below.
+  if (!question) return "Empty question.";
   if (!question.subjectId) return "Every question needs a subject.";
   if (!Array.isArray(question.choices) || question.choices.length < 2) {
     return "Every question needs at least two choices.";
@@ -128,6 +130,46 @@ function invalid(question: Question): string | null {
 }
 
 const MAX_BATCH = 200;
+
+/**
+ * Question ids are a running number per section: sat-math-041, sat-rw-018.
+ *
+ * They are allocated here rather than in the browser because two admins writing
+ * at the same moment would otherwise pick the same number, and the save is an
+ * upsert — the second one would quietly overwrite the first's question instead
+ * of failing. The server holds the only view of what already exists.
+ */
+const ID_PATTERN = (subjectId: string) => new RegExp(`^${subjectId}-(\d+)$`);
+
+function suffixOf(id: string, subjectId: string): number | null {
+  const match = ID_PATTERN(subjectId).exec(id);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * The highest number already used for a section, across both the shipped bank
+ * and the database.
+ *
+ * SEED_QUESTIONS is empty today, so in practice numbering starts at 001 per
+ * section. It is still consulted because a shipped set is not stored in
+ * Postgres, and if one ever returns — a diagnostic, say — counting only the
+ * rows would hand a new question an id that already belongs to a shipped one.
+ */
+function highestUsed(subjectId: string, existingIds: string[]): number {
+  let top = 0;
+  for (const question of SEED_QUESTIONS) {
+    if (question.subjectId !== subjectId) continue;
+    const n = suffixOf(question.id, subjectId);
+    if (n !== null && n > top) top = n;
+  }
+  for (const id of existingIds) {
+    const n = suffixOf(id, subjectId);
+    if (n !== null && n > top) top = n;
+  }
+  return top;
+}
+
+const formatId = (subjectId: string, n: number) => `${subjectId}-${String(n).padStart(3, "0")}`;
 
 export async function GET(request: Request) {
   if (!supabaseConfigured()) return notConfigured();
@@ -188,8 +230,47 @@ export async function POST(request: Request) {
   const originalAuthor = new Map(
     (existing ?? []).map((row) => [row.id as string, row.created_by as string | null]),
   );
+  const known = new Set(originalAuthor.keys());
 
-  const rows = questions.map((q) =>
+  /*
+   * Give every genuinely new question its section number.
+   *
+   * "New" means the id is not already a row: the editor sends a blank id, and
+   * anything that does not resolve to an existing question is treated the same
+   * way rather than trusted. An id that IS a row is left exactly as it is, so
+   * editing a question never renumbers it — the number is how an author refers
+   * to it, and it has to stay put.
+   */
+  const subjectsNeeding = [
+    ...new Set(
+      questions.filter((q) => !known.has(String(q.id))).map((q) => String(q.subjectId)),
+    ),
+  ];
+
+  const nextNumber = new Map<string, number>();
+  for (const subjectId of subjectsNeeding) {
+    const { data: taken } = await found.client
+      .from("custom_questions")
+      .select("id")
+      .eq("subject_id", subjectId);
+    nextNumber.set(
+      subjectId,
+      highestUsed(subjectId, (taken ?? []).map((r) => r.id as string)) + 1,
+    );
+  }
+
+  const assigned: { from: string; to: string }[] = [];
+  const numbered = questions.map((q) => {
+    if (known.has(String(q.id))) return q;
+    const subjectId = String(q.subjectId);
+    const n = nextNumber.get(subjectId) ?? 1;
+    nextNumber.set(subjectId, n + 1);
+    const id = formatId(subjectId, n);
+    assigned.push({ from: String(q.id), to: id });
+    return { ...q, id };
+  });
+
+  const rows = numbered.map((q) =>
     toRow(q, originalAuthor.get(String(q.id)) ?? found.user.id),
   );
   const { error } = await found.client
@@ -206,7 +287,7 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, saved: rows.length });
+  return NextResponse.json({ ok: true, saved: rows.length, assigned });
 }
 
 export async function DELETE(request: Request) {

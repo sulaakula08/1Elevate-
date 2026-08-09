@@ -6,7 +6,7 @@ import { SEED_QUESTIONS } from "@/data";
 import type { Difficulty, ExamId, LocalizedText, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
-import { newId } from "@/lib/storage";
+
 import { PeopleManager } from "@/components/PeopleManager";
 import { FeedbackInbox } from "@/components/admin/FeedbackInbox";
 import { UsageStats } from "@/components/admin/UsageStats";
@@ -42,7 +42,9 @@ function formatWhen(at: number): string {
 
 function emptyDraft(): Draft {
   return {
-    id: newId("q"),
+    // Blank on purpose: the server hands out the section number (sat-math-041)
+    // when the question is saved, because only it can see what is already used.
+    id: "",
     exam: "sat",
     subjectId: "sat-rw",
     topic: "",

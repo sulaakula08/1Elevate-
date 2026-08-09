@@ -78,18 +78,36 @@ export function activeDays(attempts: Attempt[]): Set<string> {
   return new Set(attempts.map((a) => dayKey(a.at)));
 }
 
-/** Consecutive days of practice ending today or yesterday. */
+/**
+ * Consecutive days with at least one answer, counting back from today.
+ *
+ * A day that has not started yet does not break the run: if nothing has been
+ * answered today the count begins yesterday, so a streak is only lost by
+ * missing a whole day, not by being asked before you have practised.
+ *
+ * Steps by calendar date rather than by subtracting 86_400_000. A local day is
+ * 23 or 25 hours long when clocks change, so a fixed-millisecond step can land
+ * on the same date twice or skip one entirely, and either would miscount the
+ * run for anyone in a timezone that observes daylight saving.
+ */
 export function streak(attempts: Attempt[], now = Date.now()): number {
   const days = activeDays(attempts);
   if (days.size === 0) return 0;
-  const DAY = 86_400_000;
-  // Allow the streak to still count if today has no activity yet.
-  let cursor = days.has(dayKey(now)) ? now : now - DAY;
-  if (!days.has(dayKey(cursor))) return 0;
+
+  const cursor = new Date(now);
+  cursor.setHours(12, 0, 0, 0);
+  // Midday, not midnight: it keeps the date unambiguous either side of a clock
+  // change, where midnight itself can fail to exist.
+
+  if (!days.has(dayKey(cursor.getTime()))) {
+    cursor.setDate(cursor.getDate() - 1);
+    if (!days.has(dayKey(cursor.getTime()))) return 0;
+  }
+
   let count = 0;
-  while (days.has(dayKey(cursor))) {
+  while (days.has(dayKey(cursor.getTime()))) {
     count += 1;
-    cursor -= DAY;
+    cursor.setDate(cursor.getDate() - 1);
   }
   return count;
 }
