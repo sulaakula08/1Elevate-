@@ -14,8 +14,8 @@ export function ExplanationPostContent({
   return (
     <div className="space-y-2.5">
       <SubjectTopicTag subjectId={data.subjectId} topic={topic} />
-      <p className="text-[16px] font-medium tracking-[-0.01em]">{data.title}</p>
-      <p className="text-[14px] leading-relaxed text-muted">{data.body}</p>
+      <p className="text-body font-medium tracking-[-0.01em]">{data.title}</p>
+      <p className="text-sm leading-relaxed text-muted">{data.body}</p>
     </div>
   );
 }

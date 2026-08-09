@@ -24,7 +24,7 @@ export function Landing({ bank }: { bank: Question[] }) {
   return (
     <div className="max-w-5xl mx-auto" ref={scope}>
       <Hero />
-      <Stats bank={bank} />
+      <Stats />
       <Features />
       <Steps />
       <Subjects bank={bank} />

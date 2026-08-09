@@ -77,10 +77,10 @@ export function NotificationsBell({ className = "" }: { className?: string }) {
       {open && (
         <div className="notif-panel scale-in" role="dialog" aria-label={t("notif.title")}>
           <div className="flex items-center gap-2 px-4 h-11 border-b">
-            <p className="text-[13.5px] font-semibold">{t("notif.title")}</p>
+            <p className="text-sm font-semibold">{t("notif.title")}</p>
             <Link
               href="/settings"
-              className="text-[12px] text-muted ml-auto hover:underline"
+              className="text-micro text-muted ml-auto hover:underline"
               onClick={() => setOpen(false)}
             >
               {t("notif.settings")}
@@ -88,7 +88,7 @@ export function NotificationsBell({ className = "" }: { className?: string }) {
           </div>
 
           {items.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[13.5px] text-muted">{t("notif.empty")}</p>
+            <p className="px-4 py-8 text-center text-sm text-muted">{t("notif.empty")}</p>
           ) : (
             <ul className="max-h-[22rem] overflow-y-auto">
               {items.map((item) => (
@@ -112,13 +112,13 @@ export function NotificationsBell({ className = "" }: { className?: string }) {
                       >
                         {t(`notif.kind.${item.kind}`)}
                       </span>
-                      <span className="text-[12px] text-faint ml-auto shrink-0">
+                      <span className="text-micro text-faint ml-auto shrink-0">
                         {relative(item.at, t)}
                       </span>
                     </div>
-                    <p className="text-[13.5px] mt-1.5">{item.title}</p>
+                    <p className="text-sm mt-1.5">{item.title}</p>
                     {item.body && (
-                      <p className="text-[12.5px] text-muted mt-0.5 line-clamp-2">{item.body}</p>
+                      <p className="text-micro text-muted mt-0.5 line-clamp-2">{item.body}</p>
                     )}
                   </Link>
                 </li>

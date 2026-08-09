@@ -213,7 +213,7 @@ function BankInner() {
     : null;
 
   return (
-    <div className="max-w-4xl mx-auto pb-8">
+    <div className="container-app pb-8">
       <PageTitle sub={t("study.bankSub")}>{t("study.bankTitle")}</PageTitle>
 
       {/* ---------------- filters ---------------- */}
@@ -332,7 +332,7 @@ function BankInner() {
           />
         )}
 
-        <p className="text-[13px] text-muted ml-auto">
+        <p className="text-sm text-muted ml-auto">
           <span className="num font-semibold text-foreground">
             {pluralize(pool.length, NOUNS.question)}
           </span>
@@ -376,8 +376,8 @@ function BankInner() {
                         {subject.glyph}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[16px] font-semibold leading-tight">{name}</h2>
-                        <p className="text-[12.5px] text-muted mt-1">
+                        <h2 className="text-body font-semibold leading-tight">{name}</h2>
+                        <p className="text-micro text-muted mt-1">
                           {pluralize(available.length, NOUNS.question)}
                           {available.length !== subjectTotal && (
                             <span className="text-faint"> / {subjectTotal}</span>
@@ -389,7 +389,7 @@ function BankInner() {
                     {/* Progress, then the level mix — what is left to do, and how
                         hard it gets. */}
                     <div className="space-y-2">
-                      <div className="flex items-baseline gap-2 text-[12.5px] text-muted">
+                      <div className="flex items-baseline gap-2 text-micro text-muted">
                         <span className="num">
                           {solved} / {subjectTotal}
                         </span>
@@ -477,10 +477,10 @@ function BankInner() {
                   >
                     <span className="qb-domain-rule" aria-hidden />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[14.5px] font-semibold truncate">
+                      <span className="block text-sm font-semibold truncate">
                         {domain.key}
                       </span>
-                      <span className="block text-[12px] text-muted mt-0.5">
+                      <span className="block text-micro text-muted mt-0.5">
                         {pluralize(domain.topicList.length, NOUNS.topic)} ·{" "}
                         <span className="num">
                           {domain.solved}/{domain.total}
@@ -501,7 +501,7 @@ function BankInner() {
                       />
                     </span>
                     <span
-                      className="text-faint text-[12px] shrink-0 transition-transform"
+                      className="text-faint text-micro shrink-0 transition-transform"
                       style={{ transform: open ? "rotate(90deg)" : "none" }}
                       aria-hidden
                     >
@@ -514,14 +514,14 @@ function BankInner() {
                       const topicAccuracy = topic.tries ? topic.correct / topic.tries : null;
                       return (
                         <div key={topic.key} className="qb-topic">
-                          <span className="min-w-0 flex-1 text-[13.5px] truncate">
+                          <span className="min-w-0 flex-1 text-sm truncate">
                             {topic.key}
                           </span>
                           <Pips solved={topic.solved} total={topic.total} />
-                          <span className="num text-[12px] text-muted w-14 text-right">
+                          <span className="num text-micro text-muted w-14 text-right">
                             {topic.solved}/{topic.total}
                           </span>
-                          <span className="num text-[12px] text-faint w-10 text-right">
+                          <span className="num text-micro text-faint w-10 text-right">
                             {topicAccuracy === null ? "—" : pct(topicAccuracy)}
                           </span>
                           <button
@@ -619,10 +619,10 @@ function LevelPill({
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
     <div>
-      <p className="num text-[18px] font-medium" style={tone ? { color: tone } : undefined}>
+      <p className="num text-h3 font-medium" style={tone ? { color: tone } : undefined}>
         {value}
       </p>
-      <p className="text-[11.5px] text-muted mt-0.5">{label}</p>
+      <p className="text-micro text-muted mt-0.5">{label}</p>
     </div>
   );
 }
@@ -664,7 +664,7 @@ function CoverageRing({ solved, total }: { solved: number; total: number }) {
           style={{ transition: "stroke-dashoffset 600ms cubic-bezier(0.22,0.61,0.36,1)" }}
         />
       </svg>
-      <span className="absolute inset-0 grid place-items-center num text-[13px] font-semibold">
+      <span className="absolute inset-0 grid place-items-center num text-sm font-semibold">
         {Math.round(ratio * 100)}%
       </span>
     </div>

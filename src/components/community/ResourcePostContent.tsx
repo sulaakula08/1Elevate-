@@ -18,8 +18,8 @@ export function ResourcePostContent({
     <div className="space-y-2.5">
       <p className="label-xs">{t("community.sharedResource")}</p>
       {data.subjectId && <SubjectTopicTag subjectId={data.subjectId} topic={topic} />}
-      <p className="text-[15.5px] font-medium tracking-[-0.01em]">{data.title}</p>
-      {data.note && <p className="text-[14px] leading-relaxed text-muted">{data.note}</p>}
+      <p className="text-body font-medium tracking-[-0.01em]">{data.title}</p>
+      {data.note && <p className="text-sm leading-relaxed text-muted">{data.note}</p>}
     </div>
   );
 }

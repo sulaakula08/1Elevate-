@@ -14,7 +14,7 @@ export function EmptyFeedState({
 }) {
   return (
     <EmptyState>
-      <span className="block text-[14.5px] font-medium text-foreground mb-1.5">{title}</span>
+      <span className="block text-sm font-medium text-foreground mb-1.5">{title}</span>
       {body}
       {action && (
         <span className="block mt-4">

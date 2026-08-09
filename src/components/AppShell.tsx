@@ -22,9 +22,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
    */
   const [collapsed, setCollapsed] = useState(false);
 
+  /**
+   * Tablets get the rail collapsed whether or not the student asked for it.
+   *
+   * Between the `md` breakpoint and `lg` the full 15rem rail was still showing,
+   * which left about 30rem for the content column — stat labels wrapped to three
+   * lines and the subject cards were squeezed to the point where their artwork
+   * ran into the titles. Reusing the collapsed state rather than writing a
+   * tablet-only stylesheet means there is one rail design, not two.
+   */
+  const [tablet, setTablet] = useState(false);
+
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setCollapsed(loadSidebarCollapsed());
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 48rem) and (max-width: 63.999rem)");
+    setTablet(mq.matches);
+    const onChange = (event: MediaQueryListEvent) => setTablet(event.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -40,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-dvh">
         <div className="sidebar hidden md:flex">
           <div className="skeleton h-7 w-28 rounded-lg" />
-          <div className="skeleton h-8 w-full rounded-full mt-3" />
+          <div className="skeleton h-8 w-full rounded-[var(--radius-pill)] mt-3" />
           <div className="skeleton h-8 w-full rounded-lg mt-4" />
           <div className="skeleton h-8 w-full rounded-lg mt-1.5" />
           <div className="skeleton h-8 w-full rounded-lg mt-1.5" />
@@ -60,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <TopBar />
-        <main className="flex-1 w-full max-w-5xl mx-auto px-5">{children}</main>
+        <main className="flex-1 w-full px-5 sm:px-8">{children}</main>
         <Footer />
       </>
     );
@@ -68,7 +87,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh">
-      <Sidebar account={account} collapsed={collapsed} onToggle={toggleSidebar} />
+      <Sidebar
+        account={account}
+        collapsed={collapsed || tablet}
+        onToggle={tablet ? undefined : toggleSidebar}
+      />
       <div className="flex-1 min-w-0 flex flex-col">
         <MobileHeader />
 
@@ -95,12 +118,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           side. Centring inside the remaining space means the content re-centres
           itself whenever the rail changes width, with no width calculation.
         */}
-        {/* The wider desktop gutter is what keeps the floating bell off the
-            content: equal on both sides, so the column stays centred. */}
-        <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-8 md:px-14 py-6 sm:py-8">
-          {children}
-        </main>
-        <Footer />
+        {/*
+          The shell owns the gutter; the page owns its width by picking
+          `container-read` or `container-app`. Before this, nine pages each
+          chose their own `max-w-*` and the column moved on every navigation.
+
+          No footer here. The app has a rail and a tab bar; repeating those
+          links as a marketing footer under a feed added nothing and pushed a
+          "Local build" disclaimer under every screen.
+        */}
+        <main className="flex-1 w-full px-5 sm:px-8 lg:px-10 py-8 sm:py-10">{children}</main>
         <MobileTabs />
       </div>
     </div>

@@ -236,7 +236,7 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-30 flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-full panel text-[13px] transition-colors hover:border-line-strong"
+        className="fixed bottom-5 right-5 z-30 flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-[var(--radius-pill)] panel text-sm transition-colors hover:border-line-strong"
         style={{ boxShadow: "var(--overlay)" }}
       >
         <TutorAvatar mood="idle" size={22} />
@@ -256,8 +256,8 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
       <div className="flex items-center gap-2.5 px-4 py-3 border-b">
         <TutorAvatar mood={mood} size={24} />
         <div className="min-w-0">
-          <p className="text-[14px] font-medium leading-tight">{t("study.tutorName")}</p>
-          <p className="text-[12px] text-faint truncate" aria-live="polite">
+          <p className="text-sm font-medium leading-tight">{t("study.tutorName")}</p>
+          <p className="text-micro text-faint truncate" aria-live="polite">
             {!streaming
               ? t("study.tutorRole")
               : pending?.content
@@ -286,7 +286,7 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
         }}
       >
         {turns.length === 0 && !error && (
-          <p className="text-[13px] leading-relaxed text-muted">{t("study.tutorGreeting")}</p>
+          <p className="text-sm leading-relaxed text-muted">{t("study.tutorGreeting")}</p>
         )}
 
         {turns.map((turn) =>
@@ -300,7 +300,7 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
                 {t("study.tutorName")}
                 {turn.done && turn.content && (
                   <button
-                    className="tutor-copy btn btn-ghost btn-sm ml-auto !py-0 !px-1.5 !text-[11px]"
+                    className="tutor-copy btn btn-ghost btn-sm ml-auto !py-0 !px-1.5 !text-2xs"
                     onClick={() => copy(turn)}
                   >
                     {copied === turn.id ? t("study.tutorCopied") : t("study.tutorCopy")}
@@ -324,7 +324,7 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
 
         {error && (
           <div className="space-y-2">
-            <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--danger)" }}>
+            <p className="text-micro leading-relaxed" style={{ color: "var(--danger)" }}>
               {error}
             </p>
             {lastAsk && (
@@ -364,7 +364,7 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
           }}
         >
           <input
-            className="field text-[13px]"
+            className="field text-sm"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder={t("tutor.placeholder")}

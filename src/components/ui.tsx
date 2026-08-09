@@ -4,14 +4,14 @@ import Link from "next/link";
 import React from "react";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
-import { EmptyLine } from "./illustrations";
+import { EmptyLine, ProgressMark, SuccessTick } from "./illustrations";
 
 export function PageTitle({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
     <div className="pt-8 pb-8">
-      <h1 className="display fade-up text-[2rem] sm:text-[2.5rem]">{children}</h1>
+      <h1 className="display fade-up text-h1 sm:text-display">{children}</h1>
       {sub && (
-        <p className="fade-in mt-3 text-[15px] leading-relaxed text-muted max-w-xl" style={{ animationDelay: "80ms" }}>
+        <p className="fade-in mt-3 text-body leading-relaxed text-muted max-w-xl" style={{ animationDelay: "80ms" }}>
           {sub}
         </p>
       )}
@@ -31,8 +31,8 @@ export function StatCard({
   return (
     <div className="py-5">
       <p className="num text-2xl font-medium">{value}</p>
-      <p className="text-[13px] text-muted mt-1">{label}</p>
-      {hint && <p className="text-[12px] text-faint mt-0.5">{hint}</p>}
+      <p className="text-sm text-muted mt-1">{label}</p>
+      {hint && <p className="text-micro text-faint mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -40,9 +40,9 @@ export function StatCard({
 /** Thin accuracy rule; colour only when the number is genuinely low. */
 export function AccuracyBar({ accuracy }: { accuracy: number }) {
   return (
-    <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "var(--line)" }}>
+    <div className="h-[3px] rounded-[var(--radius-pill)] overflow-hidden" style={{ background: "var(--line)" }}>
       <div
-        className="h-full rounded-full transition-[width] duration-500 ease-out"
+        className="h-full rounded-[var(--radius-pill)] transition-[width] duration-500 ease-out"
         style={{
           width: `${Math.max(1, Math.round(accuracy * 100))}%`,
           background: accuracy < 0.5 ? "var(--danger)" : "var(--foreground)",
@@ -52,11 +52,59 @@ export function AccuracyBar({ accuracy }: { accuracy: number }) {
   );
 }
 
-export function EmptyState({ children }: { children: React.ReactNode }) {
+/**
+ * Empty states carry the product while there is nothing to show, so they are
+ * not all the same shape. `tone` picks the mark: a tick when the empty state is
+ * an achievement (an empty review queue is good news), a progress mark when the
+ * screen is waiting on activity, a neutral rule otherwise. `compact` drops the
+ * mark entirely, for empty states that sit inside a section rather than filling
+ * a page — one page should never show the same mark twice.
+ */
+export function EmptyState({
+  title,
+  children,
+  action,
+  tone = "neutral",
+  compact,
+}: {
+  title?: string;
+  children: React.ReactNode;
+  action?: { href: string; label: string };
+  tone?: "neutral" | "positive" | "progress";
+  compact?: boolean;
+}) {
+  if (compact) {
+    return (
+      <div className="py-6 fade-in">
+        {title && <p className="text-body font-medium">{title}</p>}
+        <p className="text-sm text-muted mt-1 max-w-md">{children}</p>
+        {action && (
+          <Link href={action.href} className="btn btn-sm mt-4">
+            {action.label}
+          </Link>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="py-10 text-center fade-in">
-      <EmptyLine className="w-36 h-auto mx-auto" />
-      <p className="text-[14px] text-muted mt-5 max-w-sm mx-auto leading-relaxed">{children}</p>
+    <div className="py-14 text-center fade-in">
+      {tone === "positive" ? (
+        <SuccessTick className="mx-auto" size={48} />
+      ) : tone === "progress" ? (
+        <span className="inline-block text-faint">
+          <ProgressMark size={48} />
+        </span>
+      ) : (
+        <EmptyLine className="w-28 h-auto mx-auto" />
+      )}
+      {title && <p className="t-h3 mt-6">{title}</p>}
+      <p className="text-sm text-muted mt-2 max-w-sm mx-auto leading-relaxed">{children}</p>
+      {action && (
+        <Link href={action.href} className="btn btn-primary btn-sm mt-6">
+          {action.label}
+        </Link>
+      )}
     </div>
   );
 }
@@ -112,8 +160,8 @@ export function ConfirmDialog({
         aria-label={title}
         className="panel scale-in w-full max-w-sm p-6"
       >
-        <h2 className="text-[17px] font-semibold">{title}</h2>
-        {body && <div className="mt-2 text-[14px] leading-relaxed text-muted">{body}</div>}
+        <h2 className="text-h3 font-semibold">{title}</h2>
+        {body && <div className="mt-2 text-sm leading-relaxed text-muted">{body}</div>}
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className="btn" onClick={onCancel} disabled={busy}>
             {cancelLabel}
@@ -145,7 +193,7 @@ export function RequireAccount({ children }: { children: React.ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="max-w-4xl mx-auto pt-10 space-y-3">
+      <div className="container-app space-y-3">
         <div className="skeleton h-9 w-1/2 rounded-lg" />
         <div className="skeleton h-4 w-2/3 rounded" />
         <div className="skeleton h-20 rounded-xl mt-6" />
@@ -157,7 +205,7 @@ export function RequireAccount({ children }: { children: React.ReactNode }) {
     return (
       <div className="max-w-sm mx-auto py-20 text-center fade-in">
         <EmptyLine className="w-36 h-auto mx-auto" />
-        <p className="text-[15px] mt-6">{t("auth.required")}</p>
+        <p className="text-body mt-6">{t("auth.required")}</p>
         <div className="flex gap-2 justify-center mt-6">
           <Link href="/signup" className="btn btn-primary">
             {t("landing.start")}

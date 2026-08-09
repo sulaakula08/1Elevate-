@@ -220,7 +220,7 @@ function MockInner() {
     const hitGoal = report.result.score >= account!.targetScore;
 
     return (
-      <div className="max-w-3xl mx-auto pt-12 pb-20">
+      <div className="container-read pb-20">
         <div className="text-center fade-in">
           {hitGoal ? (
             <SuccessTick className="mx-auto" size={48} />
@@ -231,14 +231,14 @@ function MockInner() {
           <p className="num mt-3 text-6xl font-medium">
             <CountUp value={report.result.score} />
           </p>
-          <p className="mt-2 text-[14px] text-muted">
+          <p className="mt-2 text-sm text-muted">
             / {maxScore(exam)} · {t("home.targetScore")}{" "}
             <span className="num">{account!.targetScore}</span>
           </p>
           <div className="max-w-xs mx-auto mt-6">
             <ProgressBar value={report.result.score / Math.max(1, account!.targetScore)} />
           </div>
-          <p className="num mt-4 text-[14px] text-faint">
+          <p className="num mt-4 text-sm text-faint">
             {report.result.correct}/{report.result.total} ·{" "}
             {pct(report.result.total ? report.result.correct / report.result.total : 0)}
           </p>
@@ -264,8 +264,8 @@ function MockInner() {
                 >
                   <div className="flex items-center gap-3">
                     {subject && <span className="glyph glyph-sm">{subject.glyph}</span>}
-                    <span className="text-[14.5px] min-w-0 truncate">{label}</span>
-                    <span className="num ml-auto text-[14px] text-muted">
+                    <span className="text-sm min-w-0 truncate">{label}</span>
+                    <span className="num ml-auto text-sm text-muted">
                       {section.correct}/{section.total}
                     </span>
                   </div>
@@ -311,11 +311,11 @@ function MockInner() {
   const generated = generatedIds();
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="container-app">
       <PageTitle sub={t("plan.mockSub")}>{t("plan.mockTitle")}</PageTitle>
 
       {plan.length === 0 ? (
-        <EmptyState>{t("practice.empty")}</EmptyState>
+        <EmptyState title={t("practice.emptyTitle")}>{t("practice.empty")}</EmptyState>
       ) : (
         <>
           {/* What the test is, before what it is made of. */}
@@ -331,7 +331,7 @@ function MockInner() {
               <p className="pl-spec-label">{t("plan.mockDuration")}</p>
               <p className="pl-spec-value">
                 {plan.reduce((sum, s) => sum + s.minutes, 0)}{" "}
-                <span className="text-[13px] font-normal text-muted">{t("common.minutes")}</span>
+                <span className="text-sm font-normal text-muted">{t("common.minutes")}</span>
               </p>
             </div>
             <div className="pl-spec-cell">
@@ -370,7 +370,7 @@ function MockInner() {
               reading this should understand the option, not doubt the product. */}
           <div className="mt-6">
             {complete ? (
-              <p className="text-[13px] text-muted">
+              <p className="text-sm text-muted">
                 ✓ {t("plan.mockReady")}
                 {generated.size > 0 && (
                   <>
@@ -424,18 +424,18 @@ function MockInner() {
       <section className="mt-16 pt-10 border-t">
         <p className="label-xs">{t("mock.history")}</p>
         {data.mocks.length === 0 ? (
-          <EmptyState>{t("mock.noHistory")}</EmptyState>
+          <EmptyState compact title={t("mock.noHistoryTitle")}>{t("mock.noHistory")}</EmptyState>
         ) : (
           <ul className="mt-4 border-t">
             {[...data.mocks].reverse().map((mock) => (
-              <li key={mock.id} className="flex items-baseline gap-4 py-4 border-b text-[14px]">
-                <span className="num text-[11px] text-faint uppercase w-8">{mock.exam}</span>
+              <li key={mock.id} className="flex items-baseline gap-4 py-4 border-b text-sm">
+                <span className="num text-2xs text-faint uppercase w-8">{mock.exam}</span>
                 <span className="text-muted">{new Date(mock.at).toLocaleDateString()}</span>
-                <span className="num ml-auto text-[16px]">
+                <span className="num ml-auto text-body">
                   {mock.score}
-                  <span className="text-faint text-[13px]">/{maxScore(mock.exam)}</span>
+                  <span className="text-faint text-sm">/{maxScore(mock.exam)}</span>
                 </span>
-                <span className="num text-[13px] text-faint w-12 text-right">
+                <span className="num text-sm text-faint w-12 text-right">
                   {mock.correct}/{mock.total}
                 </span>
               </li>

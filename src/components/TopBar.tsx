@@ -19,10 +19,10 @@ import {
 
 /** Primary destinations. `short` is used where space is tight. */
 const LINKS = [
-  { href: "/", key: "nav.home", short: "nav.sHome", Icon: NavHome },
-  { href: "/practice", key: "nav.practice", short: "nav.sPractice", Icon: NavPractice },
-  { href: "/mock", key: "nav.sMock", short: "nav.sMock", Icon: NavMock },
-  { href: "/review", key: "nav.sReview", short: "nav.sReview", Icon: NavReview },
+  { href: "/", key: "nav.home", short: "nav.home", Icon: NavHome },
+  { href: "/practice", key: "nav.practice", short: "nav.practice", Icon: NavPractice },
+  { href: "/mock", key: "nav.mock", short: "nav.mock", Icon: NavMock },
+  { href: "/review", key: "nav.review", short: "nav.review", Icon: NavReview },
   { href: "/progress", key: "nav.progress", short: "nav.progress", Icon: NavProgress },
 ];
 
@@ -76,7 +76,7 @@ export function TopBar() {
           borderBottom: `1px solid ${scrolled ? "var(--line)" : "transparent"}`,
         }}
       >
-        <div className="max-w-5xl mx-auto px-4 sm:px-5 h-14 flex items-center gap-2">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center gap-2">
           <Link href="/" className="shrink-0" aria-label="1Elevate">
             <span className="hidden sm:block">
               <Logo />
@@ -136,7 +136,7 @@ export function TopBar() {
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setMenuOpen((open) => !open)}
-                    className="grid place-items-center w-9 h-9 rounded-full text-[11px] font-semibold transition-opacity duration-200 hover:opacity-85"
+                    className="grid place-items-center w-9 h-9 rounded-[var(--radius-pill)] text-2xs font-semibold transition-opacity duration-200 hover:opacity-85"
                     style={{ background: "var(--ink)", color: "var(--ink-contrast)" }}
                     aria-haspopup="menu"
                     aria-expanded={menuOpen}
@@ -149,9 +149,9 @@ export function TopBar() {
                   {menuOpen && (
                     <div className="menu scale-in" role="menu">
                       <div className="px-2.5 py-2 border-b mb-1">
-                        <p className="text-[13.5px] font-medium truncate">{account.name}</p>
+                        <p className="text-sm font-medium truncate">{account.name}</p>
                         {account.email && (
-                          <p className="text-[12px] text-faint truncate">{account.email}</p>
+                          <p className="text-micro text-faint truncate">{account.email}</p>
                         )}
                       </div>
 
@@ -195,13 +195,23 @@ export function TopBar() {
               ) : (
                 /* Slightly wider gap than the icon controls to its left: these
                    two are one decision, not part of the utility cluster. */
+                /*
+                  The bar never offers the page you are already on. Standing on
+                  /login and being shown a "Sign in" button — with the form for
+                  it directly below — is the kind of detail that makes an
+                  interface feel unproofread.
+                */
                 <div className="flex items-center gap-1 ml-1">
-                  <Link href="/login" className="hidden sm:inline-flex btn btn-ghost btn-sm">
-                    {t("auth.signIn")}
-                  </Link>
-                  <Link href="/signup" className="btn btn-primary btn-sm">
-                    {t("landing.start")}
-                  </Link>
+                  {pathname !== "/login" && (
+                    <Link href="/login" className="hidden sm:inline-flex btn btn-ghost btn-sm">
+                      {t("auth.signIn")}
+                    </Link>
+                  )}
+                  {pathname !== "/signup" && (
+                    <Link href="/signup" className="btn btn-primary btn-sm">
+                      {t("landing.start")}
+                    </Link>
+                  )}
                 </div>
               ))}
           </div>
@@ -258,7 +268,7 @@ export function TopBar() {
                       key={href}
                       href={href}
                       onClick={() => setSheetOpen(false)}
-                      className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-[15px]"
+                      className="flex items-center gap-3 px-3 py-3 rounded-[var(--radius-sm)] text-body"
                       style={{ color: isActive(href) ? "var(--accent)" : "var(--foreground)" }}
                     >
                       <Icon size={19} />
@@ -266,7 +276,7 @@ export function TopBar() {
                     </Link>
                   ))}
                   <button
-                    className="w-full flex items-center gap-3 px-3 py-3 text-[15px]"
+                    className="w-full flex items-center gap-3 px-3 py-3 text-body"
                     style={{ color: "var(--danger)" }}
                     onClick={() => {
                       setSheetOpen(false);

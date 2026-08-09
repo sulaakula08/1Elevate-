@@ -3,6 +3,8 @@
 @layer components {
   /* ---------------- feed ---------------- */
   .cm-post {
+    position: relative;
+    overflow: hidden;
     padding: 1.125rem 1.25rem 1rem;
     /* The card is the unit of attention, so the whole surface responds rather
        than only the buttons inside it. Border, not shadow: the feed is a
@@ -31,12 +33,101 @@
     animation: cm-arrive 340ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   }
 
+  /* The type spine. Help wanted is brand, a win is success, everything else
+     stays neutral — three states, not six, so the feed does not turn into a
+     colour chart. */
+  .cm-post::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: transparent;
+  }
+  .cm-post[data-type="question"]::before {
+    background: var(--brand);
+  }
+  .cm-post[data-type="explanation"]::before,
+  .cm-post[data-type="resource"]::before {
+    background: var(--line-strong);
+  }
+  .cm-post[data-type="progress"]::before,
+  .cm-post[data-type="achievement"]::before,
+  .cm-post[data-type="study-update"]::before {
+    background: var(--success);
+  }
+
+  /* The question itself is the post. It was set at the same size as the meta
+     lines around it, which made the one thing a reader needs the least
+     prominent thing in the card. */
   .cm-quote {
     border-left: 2px solid var(--line-strong);
     padding: 0.5rem 0 0.5rem 0.875rem;
-    font-size: 14.5px;
-    line-height: 1.55;
+    font-size: var(--t-body);
+    line-height: 1.6;
     color: var(--foreground);
+  }
+
+  /* ---------------- composer entry ----------------
+     No panel: the composer is an action, not a post, and giving it the same
+     bordered card as the feed items made it compete with them. */
+  .cm-composer-entry {
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .cm-composer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .cm-composer-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    padding: 0.4375rem 0.8125rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--foreground);
+    font-size: var(--t-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      border-color 150ms ease,
+      background 150ms ease;
+  }
+  .cm-composer-action:hover {
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+  }
+  .cm-composer-more {
+    color: var(--muted);
+  }
+
+  /* ---------------- composer type list ---------------- */
+  .cm-type-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .cm-type-row {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+  .cm-type-row:hover {
+    background: var(--surface-2);
+  }
+  .cm-type-chevron {
+    margin-left: auto;
+    color: var(--faint);
   }
 
   /* ---------------- feed tabs ---------------- */
@@ -61,7 +152,7 @@
     border-radius: var(--radius-pill);
     border: none;
     background: transparent;
-    font-size: 0.8125rem;
+    font-size: var(--t-sm);
     font-weight: 500;
     color: var(--muted);
     cursor: pointer;
@@ -122,7 +213,7 @@
     background: none;
     border: none;
     padding: 0;
-    font-size: 0.8125rem;
+    font-size: var(--t-sm);
     font-weight: 500;
     color: var(--muted);
     cursor: pointer;
@@ -135,7 +226,7 @@
     flex: 1;
     height: 2.125rem;
     padding: 0 0.75rem;
-    font-size: 0.8125rem;
+    font-size: var(--t-sm);
   }
 
   /* ---------------- create-post entry ---------------- */

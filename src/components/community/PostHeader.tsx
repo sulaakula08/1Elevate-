@@ -18,8 +18,8 @@ export function PostHeader({
     <div className="flex items-center gap-2.5">
       <Avatar author={author} size={size} />
       <div className="min-w-0">
-        <p className="text-[13.5px] font-medium truncate">{author.name}</p>
-        <p className="text-[12px] text-faint truncate">
+        <p className="text-sm font-medium truncate">{author.name}</p>
+        <p className="text-micro text-faint truncate">
           {author.context && <span>{author.context} · </span>}
           <span className="num">{timeAgo(createdAt)}</span>
         </p>

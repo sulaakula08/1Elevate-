@@ -19,13 +19,13 @@ export function ProgressPostContent({
       <p className="label-xs">{t("community.scoreGrowth")}</p>
 
       <div className="flex items-baseline gap-2.5 flex-wrap">
-        <span className="num text-[28px] sm:text-[32px] font-semibold tracking-[-0.02em]">
+        <span className="num text-h1 sm:text-h1 font-semibold tracking-[-0.02em]">
           {data.fromScore}
         </span>
-        <span className="text-faint text-[20px]" aria-hidden>
+        <span className="text-faint text-h3" aria-hidden>
           →
         </span>
-        <span className="num text-[28px] sm:text-[32px] font-semibold tracking-[-0.02em]">
+        <span className="num text-h1 sm:text-h1 font-semibold tracking-[-0.02em]">
           {data.toScore}
         </span>
         {delta !== 0 && (
@@ -43,7 +43,7 @@ export function ProgressPostContent({
       </div>
 
       {(data.mathScore || data.readingWritingScore) && (
-        <div className="flex items-center gap-4 text-[13px] text-muted">
+        <div className="flex items-center gap-4 text-sm text-muted">
           {data.mathScore && (
             <span>
               {t("community.composerMathScore")} <strong className="num text-foreground">{data.mathScore}</strong>
@@ -58,8 +58,8 @@ export function ProgressPostContent({
         </div>
       )}
 
-      {text && <p className="text-[13.5px] text-muted">{text}</p>}
-      {data.mockLabel && <p className="text-[12.5px] text-faint">{data.mockLabel}</p>}
+      {text && <p className="text-sm text-muted">{text}</p>}
+      {data.mockLabel && <p className="text-micro text-faint">{data.mockLabel}</p>}
     </div>
   );
 }

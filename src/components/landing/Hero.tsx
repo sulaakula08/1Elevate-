@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { HeroScoreChart } from "../HeroScoreChart";
 import { LogoAnimation } from "../LogoAnimation";
-import { SplitChars } from "../SplitChars";
 
 /**
  * The one thing a visitor sees first: a single headline, one dominant action,
@@ -22,27 +21,23 @@ export function Hero() {
   const accent = t("hero.titleB");
 
   return (
-    <section className="relative pt-10 sm:pt-14 lg:pt-20 pb-14 sm:pb-20" data-motion="hero">
+    <section className="relative pt-10 sm:pt-14 lg:pt-16 pb-12 sm:pb-16" data-motion="hero">
       <div className="glow" aria-hidden />
       <div className="relative grid lg:grid-cols-[1fr_0.85fr] gap-10 sm:gap-12 lg:gap-16 items-center">
         <div className="min-w-0">
-          {/* aria-label holds the real sentence; the per-character spans in
-              SplitChars are aria-hidden. */}
-          <h1
-            className="display split text-[clamp(2.125rem,8.5vw,2.75rem)] sm:text-[3.25rem] lg:text-[3.75rem]"
-            data-motion="headline"
-            aria-label={`${title} ${accent}`}
-          >
-            <SplitChars text={title} />
+          {/*
+            One block, not fifty-two characters.
+
+            The per-character reveal meant the first line spent its opening
+            second as a row of glyphs at different opacities and offsets — the
+            first impression of the product was a headline that looked broken.
+            The line now fades as a unit, fast, and is legible from the first
+            frame it is painted.
+          */}
+          <h1 className="display t-display" data-motion="headline">
+            {title}
             <br />
-            {/* Not split, deliberately. background-clip: text paints in this
-                element's background layer, and a transformed child — which every
-                .ch becomes once GSAP touches it — gets its own layer above that,
-                so a split gradient line renders as invisible glyphs. One
-                transform on the span keeps the gradient and still animates. */}
-            <span className="hero-title-accent inline-block" data-motion="headline-b">
-              {accent}
-            </span>
+            <span className="hero-title-accent inline-block">{accent}</span>
           </h1>
 
           <p className="lede mt-5 max-w-[34rem]" data-motion="lede">
@@ -60,13 +55,13 @@ export function Hero() {
             </Link>
           </div>
 
-          <p className="mt-3.5 text-[13px] text-faint" data-motion="fine-print">
+          <p className="mt-3.5 text-sm text-faint" data-motion="fine-print">
             {t("landing.noCard")}
           </p>
 
-          <div className="fade-in mt-10 pt-7 border-t" style={{ animationDelay: "380ms" }}>
+          <div className="fade-in mt-9 pt-7 border-t" style={{ animationDelay: "380ms" }}>
             <LogoAnimation size="clamp(2rem, 5.5vw, 2.75rem)" />
-            <p className="text-[12px] text-faint mt-2">{t("landing.markCaption")}</p>
+            <p className="text-micro text-faint mt-2">{t("landing.markCaption")}</p>
           </div>
         </div>
 

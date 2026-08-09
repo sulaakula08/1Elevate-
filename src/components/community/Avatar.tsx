@@ -23,7 +23,7 @@ export function Avatar({
 }) {
   return (
     <span
-      className="grid place-items-center rounded-full font-semibold shrink-0 select-none"
+      className="grid place-items-center rounded-[var(--radius-pill)] font-semibold shrink-0 select-none"
       style={{
         width: size,
         height: size,

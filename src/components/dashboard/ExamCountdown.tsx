@@ -23,7 +23,7 @@ import { useI18n } from "@/lib/i18n";
  * config is used only to print the calendar date the way the test centre states
  * it, which is not the same question.
  */
-export function ExamCountdown() {
+export function ExamCountdown({ inline = false }: { inline?: boolean } = {}) {
   const { t } = useI18n();
   const [now, setNow] = useState<number | null>(null);
 
@@ -43,11 +43,36 @@ export function ExamCountdown() {
   const exam = now === null ? null : nextExam(now);
   const left: Countdown | null = exam && now !== null ? countdownTo(exam, now) : null;
 
+  /*
+   * Inline: one line of supporting text under the goal, not a panel of its own.
+   * A single sentence about a date does not need a bordered rectangle, and on
+   * the dashboard it was competing with the goal it belongs to.
+   */
+  if (inline) {
+    if (now !== null && !exam) {
+      return <p className="text-sm text-faint">{t("plan.countdownNone")}</p>;
+    }
+    return (
+      <p className="text-sm text-muted" aria-live="polite">
+        {t("plan.countdownLabel")}:{" "}
+        {left ? (
+          <span className="text-foreground">
+            <span className="num font-medium">{left.days}</span> {t("plan.countdownDays")}
+            {" · "}
+            {exam ? formatExamDate(exam) : null}
+          </span>
+        ) : (
+          <span className="text-faint">—</span>
+        )}
+      </p>
+    );
+  }
+
   if (now !== null && !exam) {
     return (
       <section className="pl-countdown pl-countdown-empty">
         <p className="pl-countdown-label">{t("plan.countdownLabel")}</p>
-        <p className="text-[15px] font-medium text-foreground">{t("plan.countdownNone")}</p>
+        <p className="text-body font-medium text-foreground">{t("plan.countdownNone")}</p>
         <p className="pl-countdown-date">{t("plan.countdownNoneHint")}</p>
       </section>
     );

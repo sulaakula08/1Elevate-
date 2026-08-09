@@ -192,15 +192,15 @@ export function Calculator() {
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-1.5">
         {history.map((row, i) => (
           <div key={i} className="text-right">
-            <p className="num text-[12px] text-faint truncate">{row.expression}</p>
-            <p className="num text-[15px]">{row.result}</p>
+            <p className="num text-micro text-faint truncate">{row.expression}</p>
+            <p className="num text-body">{row.result}</p>
           </div>
         ))}
       </div>
 
       <div className="px-3 pt-2 border-t">
         <input
-          className="field num text-right text-[18px]"
+          className="field num text-right text-h3"
           value={input}
           inputMode="text"
           spellCheck={false}
@@ -214,7 +214,7 @@ export function Calculator() {
             }
           }}
         />
-        <p className="num h-5 mt-1 text-right text-[13px] text-faint">
+        <p className="num h-5 mt-1 text-right text-sm text-faint">
           {preview && preview !== input ? `= ${preview}` : ""}
         </p>
       </div>

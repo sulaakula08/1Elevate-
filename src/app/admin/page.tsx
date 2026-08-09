@@ -245,12 +245,12 @@ function AdminInner() {
                 ? t("admin.editQuestion")
                 : t("admin.newQuestion")}
             </span>
-            <span className="block text-[12.5px] text-muted mt-0.5">
+            <span className="block text-micro text-muted mt-0.5">
               {editorOpen ? t("admin.editorHide") : t("admin.editorShow")}
             </span>
           </span>
           <span
-            className="text-faint text-[12px] ml-auto shrink-0 transition-transform"
+            className="text-faint text-micro ml-auto shrink-0 transition-transform"
             style={{ transform: editorOpen ? "rotate(90deg)" : "none" }}
             aria-hidden
           >
@@ -318,7 +318,7 @@ function AdminInner() {
           {/* The passage goes through the same renderer as the prompt, so it
               takes the same notation — worth saying here, since an author with a
               formula in a stimulus has no reason to assume it. */}
-          <p className="text-[12.5px] text-muted mt-2">{t("admin.mathHintShort")}</p>
+          <p className="text-micro text-muted mt-2">{t("admin.mathHintShort")}</p>
         </div>
 
         <div>
@@ -331,7 +331,7 @@ function AdminInner() {
             onChange={(e) => setText("prompt", e.target.value)}
           />
           {/* Where authors need it: beside the field they are pasting into. */}
-          <p className="text-[12.5px] leading-relaxed text-muted mt-2">
+          <p className="text-micro leading-relaxed text-muted mt-2">
             {t("admin.mathHint")}
           </p>
         </div>
@@ -349,7 +349,7 @@ function AdminInner() {
         */}
         <div>
           <label className="label">{t("admin.choices")}</label>
-          <p className="text-[12.5px] text-muted -mt-1 mb-2.5">{t("admin.markCorrectHint")}</p>
+          <p className="text-micro text-muted -mt-1 mb-2.5">{t("admin.markCorrectHint")}</p>
           <div role="radiogroup" aria-label={t("admin.markCorrect")} className="space-y-2">
             {draft.choices.map((choice, index) => {
               const isAnswer = draft.answer === index;
@@ -401,7 +401,7 @@ function AdminInner() {
         {draft.prompt.en.trim() && (
           <div className="pt-5 border-t">
             <p className="label-xs">{t("admin.preview")}</p>
-            <div className="mt-4 rounded-[10px] border p-4">
+            <div className="mt-4 rounded-[var(--radius-sm)] border p-4">
               <QuestionView
                 question={previewQuestion}
                 selected={previewQuestion.answer}

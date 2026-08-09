@@ -208,7 +208,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
               className="panel scale-in absolute top-full mt-2 left-0 z-30 w-[min(22rem,calc(100vw-2rem))] p-4"
               style={{ boxShadow: "var(--overlay)" }}
             >
-              <p className="text-[13.5px] leading-relaxed text-muted">
+              <p className="text-sm leading-relaxed text-muted">
                 {t("mock.directionsBody")}
               </p>
               <button className="btn btn-sm mt-3 w-full" onClick={() => setDirectionsOpen(false)}>
@@ -228,7 +228,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
           ) : (
             <>
               <span
-                className="num text-[22px] font-medium tabular-nums leading-none"
+                className="num text-h2 font-medium tabular-nums leading-none"
                 style={{ color: lowTime ? "var(--danger)" : "var(--foreground)" }}
                 role="timer"
               >
@@ -291,7 +291,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
         {tool && (
           <aside className="test-pane fade-in">
             <div className="flex items-center gap-2 px-3 h-11 border-b">
-              <p className="text-[13.5px] font-medium">
+              <p className="text-sm font-medium">
                 {tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
               </p>
               <button
@@ -323,7 +323,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
             </button>
 
             <span className="ml-auto flex items-center gap-2">
-              <span className="text-[12.5px] text-muted truncate">
+              <span className="text-micro text-muted truncate">
                 <span className="num text-faint mr-1.5">
                   {sectionIndex + 1}/{sections.length}
                 </span>
@@ -351,10 +351,10 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
             </p>
           )}
 
-          {timedOut && <p className="mt-3 text-[13px] text-warning">{t("mock.timeUp")}</p>}
+          {timedOut && <p className="mt-3 text-sm text-warning">{t("mock.timeUp")}</p>}
 
           {highlightMode && (
-            <p className="mt-3 text-[12px] text-faint fade-in">
+            <p className="mt-3 text-micro text-faint fade-in">
               {t("ptool.highlightHint")}{" "}
               {highlighter.count > 0 && (
                 <button className="underline" onClick={highlighter.clear}>
@@ -389,7 +389,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
 
       {/* ---------------- footer ---------------- */}
       <footer className="test-foot">
-        <span className="num hidden sm:block text-[13px] text-muted">
+        <span className="num hidden sm:block text-sm text-muted">
           {answeredInSection}/{section.questions.length}
         </span>
 

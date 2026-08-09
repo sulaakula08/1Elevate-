@@ -59,11 +59,11 @@ function Profile() {
   const gap = standing ? account!.targetScore - standing.latest : null;
 
   return (
-    <div className="max-w-2xl mx-auto pt-10 pb-20">
+    <div className="container-read pb-20">
       {/* ---------------- identity ---------------- */}
       <header className="flex items-start gap-4 fade-up">
         <span
-          className="grid place-items-center shrink-0 w-16 h-16 rounded-full text-[20px] font-semibold"
+          className="grid place-items-center shrink-0 w-16 h-16 rounded-[var(--radius-pill)] text-h3 font-semibold"
           style={{
             background: "var(--brand-soft)",
             color: "var(--brand)",
@@ -74,8 +74,8 @@ function Profile() {
           {initials(account!.name)}
         </span>
         <div className="min-w-0 pt-1">
-          <h1 className="display text-[1.75rem] leading-tight truncate">{account!.name}</h1>
-          <p className="mt-1 text-[14px] text-muted truncate">{account!.email || "—"}</p>
+          <h1 className="display text-h1 leading-tight truncate">{account!.name}</h1>
+          <p className="mt-1 text-sm text-muted truncate">{account!.email || "—"}</p>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <span
               className="chip"
@@ -95,7 +95,7 @@ function Profile() {
                 🔥 <span className="num">{days}</span>
               </span>
             )}
-            <span className="text-[12px] text-faint">
+            <span className="text-micro text-faint">
               {t("account.memberSince")}{" "}
               {new Date(account!.createdAt).toLocaleDateString(undefined, {
                 month: "long",
@@ -121,7 +121,7 @@ function Profile() {
             <dd className="num text-2xl font-medium">
               <CountUp value={stat.value} suffix={stat.suffix} />
             </dd>
-            <dt className="text-[12px] text-muted mt-1">{stat.label}</dt>
+            <dt className="text-micro text-muted mt-1">{stat.label}</dt>
           </div>
         ))}
       </dl>
@@ -174,21 +174,21 @@ function Profile() {
               />
             )}
             {pace !== null && (
-              <div className="rounded-[10px] border p-4">
+              <div className="rounded-[var(--radius-sm)] border p-4">
                 <p className="label-xs">{t("progress.pace")}</p>
-                <p className="num mt-2 text-[22px] font-medium">
+                <p className="num mt-2 text-h2 font-medium">
                   {pace}
-                  <span className="text-faint text-[14px]">s</span>
+                  <span className="text-faint text-sm">s</span>
                 </p>
-                <p className="text-[11.5px] text-faint mt-0.5">{t("progress.paceHint")}</p>
+                <p className="text-micro text-faint mt-0.5">{t("progress.paceHint")}</p>
               </div>
             )}
             <Link
               href="/progress"
-              className="rounded-[10px] border p-4 card-hover flex flex-col justify-center"
+              className="rounded-[var(--radius-sm)] border p-4 card-hover flex flex-col justify-center"
             >
-              <p className="text-[14px]">{t("nav.progress")}</p>
-              <p className="text-[12px] text-muted mt-1">{t("account.keepGoing")} →</p>
+              <p className="text-sm">{t("nav.progress")}</p>
+              <p className="text-micro text-muted mt-1">{t("account.keepGoing")} →</p>
             </Link>
           </div>
         </section>
@@ -200,7 +200,7 @@ function Profile() {
           <label className="label mb-0" htmlFor="target">
             {t("account.goal")}
           </label>
-          <span className="num ml-auto text-[13px] text-faint">
+          <span className="num ml-auto text-sm text-faint">
             {SAT.minScore}–{SAT.maxScore}
           </span>
         </div>
@@ -226,7 +226,7 @@ function Profile() {
 
         {standing ? (
           <>
-            <div className="mt-5 flex items-baseline gap-3 text-[13px]">
+            <div className="mt-5 flex items-baseline gap-3 text-sm">
               <span className="text-muted">{t("progress.latestMock")}</span>
               <span className="num ml-auto font-medium">{standing.latest}</span>
             </div>
@@ -235,7 +235,7 @@ function Profile() {
               tone={standing.latest >= target ? "accent" : "ink"}
               className="mt-2"
             />
-            <p className="mt-3 text-[13px] text-muted">
+            <p className="mt-3 text-sm text-muted">
               {gap !== null && gap > 0 ? (
                 <>
                   <span className="num font-medium text-foreground">{gap}</span>{" "}
@@ -247,31 +247,31 @@ function Profile() {
             </p>
           </>
         ) : (
-          <p className="mt-5 text-[13px] text-muted">{t("account.goalNoMock")}</p>
+          <p className="mt-5 text-sm text-muted">{t("account.goalNoMock")}</p>
         )}
 
-        <p className="mt-4 text-[12.5px] leading-relaxed text-faint">{t("account.goalHint")}</p>
+        <p className="mt-4 text-micro leading-relaxed text-faint">{t("account.goalHint")}</p>
       </section>
 
       {/* ---------------- study details ---------------- */}
-      <dl className="mt-10 pt-8 border-t space-y-4 text-[14.5px]">
+      <dl className="mt-10 pt-8 border-t space-y-4 text-sm">
         <div className="flex items-baseline gap-4">
-          <dt className="text-muted w-32 shrink-0 text-[13px]">{t("admin.exam")}</dt>
+          <dt className="text-muted w-32 shrink-0 text-sm">{t("admin.exam")}</dt>
           <dd>{tx(SAT.name)}</dd>
         </div>
         {account!.grade && (
           <div className="flex items-baseline gap-4">
-            <dt className="text-muted w-32 shrink-0 text-[13px]">{t("signup.grade")}</dt>
+            <dt className="text-muted w-32 shrink-0 text-sm">{t("signup.grade")}</dt>
             <dd>{account!.grade === "grad" ? t("signup.graduate") : account!.grade}</dd>
           </div>
         )}
         <div className="flex items-baseline gap-4">
-          <dt className="text-muted w-32 shrink-0 text-[13px]">{t("progress.streak")}</dt>
+          <dt className="text-muted w-32 shrink-0 text-sm">{t("progress.streak")}</dt>
           <dd className="num">{days}</dd>
         </div>
       </dl>
 
-      <p className="mt-10 text-[13px] leading-relaxed text-faint">{t("account.cloudNotice")}</p>
+      <p className="mt-10 text-sm leading-relaxed text-faint">{t("account.cloudNotice")}</p>
 
       <div className="mt-8 flex gap-2">
         <button className="btn" onClick={() => router.push("/")}>
@@ -312,9 +312,9 @@ function SubjectCard({
       }}
     >
       <p className="label-xs">{label}</p>
-      <p className="text-[14.5px] mt-2 truncate">{name}</p>
+      <p className="text-sm mt-2 truncate">{name}</p>
       <div className="flex items-baseline gap-2 mt-1">
-        <span className="num text-[18px] font-medium">{pct(accuracy)}</span>
+        <span className="num text-h3 font-medium">{pct(accuracy)}</span>
       </div>
       <ProgressBar
         value={accuracy}

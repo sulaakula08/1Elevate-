@@ -142,14 +142,14 @@ export function QuestionView({
       </div>
 
       {live && !revealed && settings.showHints && (
-        <p className="text-[12px] text-faint">{t("study.keyHint")}</p>
+        <p className="text-micro text-faint">{t("study.keyHint")}</p>
       )}
 
       {revealed && (
         <div className="fade-up pt-5 border-t">
           <p className="label-xs">{t("quiz.explanation")}</p>
           <RichText
-            className="mt-2.5 text-[15px] text-muted"
+            className="mt-2.5 text-body text-muted"
             text={tx(question.explanation)}
             block
           />

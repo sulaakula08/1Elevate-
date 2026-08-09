@@ -21,12 +21,16 @@ import {
   NavSettings,
 } from "./NavIcons";
 
+/**
+ * Same keys the rail uses. A destination that is "Question Bank" on a laptop and
+ * "Practice" on a phone is two products; these are one.
+ */
 const TABS = [
-  { href: "/", short: "nav.sHome", Icon: NavHome },
-  { href: "/practice", short: "nav.sPractice", Icon: NavPractice },
-  { href: "/mock", short: "nav.sMock", Icon: NavMock },
-  { href: "/review", short: "nav.sReview", Icon: NavReview },
-  { href: "/community", short: "nav.sCommunity", Icon: NavCommunity },
+  { href: "/", short: "nav.home", Icon: NavHome },
+  { href: "/practice", short: "nav.practice", Icon: NavPractice },
+  { href: "/mock", short: "nav.mock", Icon: NavMock },
+  { href: "/review", short: "nav.review", Icon: NavReview },
+  { href: "/community", short: "nav.community", Icon: NavCommunity },
 ];
 
 /** Compact header for signed-in phones — the sidebar's job is done by the tabs. */
@@ -61,7 +65,7 @@ export function MobileHeader() {
 
           <Link
             href="/account"
-            className="grid place-items-center w-8 h-8 rounded-full text-[11px] font-semibold shrink-0"
+            className="grid place-items-center w-8 h-8 rounded-[var(--radius-pill)] text-2xs font-semibold shrink-0"
             style={{ background: "var(--ink)", color: "var(--ink-contrast)" }}
             aria-label={account?.name}
           >
@@ -130,7 +134,7 @@ export function MobileTabs() {
                   key={href}
                   href={href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-[15px]"
+                  className="flex items-center gap-3 px-3 py-3 rounded-[var(--radius-sm)] text-body"
                   style={{ color: isActive(href) ? "var(--accent)" : "var(--foreground)" }}
                 >
                   <Icon size={19} />
@@ -138,7 +142,7 @@ export function MobileTabs() {
                 </Link>
               ))}
               <button
-                className="w-full flex items-center gap-3 px-3 py-3 text-[15px]"
+                className="w-full flex items-center gap-3 px-3 py-3 text-body"
                 style={{ color: "var(--danger)" }}
                 onClick={() => {
                   setOpen(false);

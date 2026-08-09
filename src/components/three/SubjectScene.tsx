@@ -129,7 +129,10 @@ export function SubjectScene({
     //
     // Pointer events only — touch dragging the card should scroll the page, not
     // steer the scene, so no touchmove handler and nothing calls preventDefault.
-    const surfaceHost = container.parentElement ?? container;
+    // The whole card, not just the art column the scene now lives in — the
+    // parallax should answer to the pointer anywhere on the card.
+    const surfaceHost: HTMLElement =
+      container.closest<HTMLElement>(".bank-card") ?? container.parentElement ?? container;
     surfaceHost.addEventListener("pointermove", onPointerMove);
     surfaceHost.addEventListener("pointerleave", onPointerLeave);
 

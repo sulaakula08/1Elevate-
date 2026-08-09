@@ -9,9 +9,9 @@ export function Closing() {
   const { t } = useI18n();
 
   return (
-    <section className="py-24 border-t text-center">
+    <section className="py-20 border-t text-center">
       <Reveal>
-        <h2 className="display mx-auto max-w-xl text-3xl sm:text-[2.5rem]">
+        <h2 className="display mx-auto max-w-xl text-3xl sm:text-display">
           {t("landing.ctaTitle")}
         </h2>
         <p className="lede mt-5 mx-auto max-w-md">{t("landing.ctaText")}</p>

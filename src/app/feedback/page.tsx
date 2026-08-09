@@ -77,7 +77,7 @@ function FeedbackInner() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto pb-16">
+    <div className="container-read pb-16">
       <PageTitle sub={t("feedback.sub")}>{t("feedback.title")}</PageTitle>
 
       <form onSubmit={submit} className="panel p-6 space-y-5">
@@ -113,7 +113,7 @@ function FeedbackInner() {
               setSent(false);
             }}
           />
-          <p className="num text-[11.5px] text-faint mt-1.5">{message.trim().length} / 4000</p>
+          <p className="num text-micro text-faint mt-1.5">{message.trim().length} / 4000</p>
         </div>
 
         {error && (
@@ -127,7 +127,7 @@ function FeedbackInner() {
           <button className="btn btn-primary" disabled={sending || !message.trim()}>
             {sending ? t("feedback.sending") : t("feedback.send")}
           </button>
-          <p className="text-[12.5px] text-muted">{t("feedback.privacy")}</p>
+          <p className="text-micro text-muted">{t("feedback.privacy")}</p>
         </div>
       </form>
 
@@ -141,7 +141,7 @@ function FeedbackInner() {
               <li key={item.id} className="py-4 border-b">
                 <div className="flex items-center gap-2.5">
                   <span className="chip">{t(`feedback.cat.${item.category}`)}</span>
-                  <span className="text-[12px] text-faint">
+                  <span className="text-micro text-faint">
                     {new Date(item.at).toLocaleDateString()}
                   </span>
                   {/* Being told it was read is most of what sending feedback is for. */}
@@ -154,7 +154,7 @@ function FeedbackInner() {
                     </span>
                   )}
                 </div>
-                <p className="mt-2 text-[14px] leading-relaxed whitespace-pre-wrap">
+                <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">
                   {item.message}
                 </p>
               </li>

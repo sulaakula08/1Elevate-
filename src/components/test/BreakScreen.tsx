@@ -83,8 +83,8 @@ export function BreakScreen({
         </p>
       </div>
 
-      <p className="display mt-9 text-[24px]">{t("mock.breakTitle")}</p>
-      <p className="mt-2.5 max-w-sm text-[14px] leading-relaxed text-muted">
+      <p className="display mt-9 text-h2">{t("mock.breakTitle")}</p>
+      <p className="mt-2.5 max-w-sm text-sm leading-relaxed text-muted">
         {t("mock.breakBody")}
       </p>
 
@@ -101,7 +101,7 @@ export function BreakScreen({
         <button className="btn btn-primary btn-lg" onClick={onDone}>
           {t("mock.breakSkip")}
         </button>
-        <p className="text-[12.5px] text-faint">
+        <p className="text-micro text-faint">
           {t("mock.breakNext")}: {nextSectionName}
         </p>
       </div>

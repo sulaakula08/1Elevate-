@@ -55,10 +55,10 @@ export function ActivityHeatmap({ attempts }: { attempts: Attempt[] }) {
   return (
     <section className="py-12 border-t">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-[17px] font-medium">
+        <h2 className="text-h3 font-medium">
           {total} {t("progress.heatTitle")}
         </h2>
-        <p className="text-[13px] text-muted">
+        <p className="text-sm text-muted">
           {activeDays} {t("progress.heatActiveDays")}
         </p>
       </div>
@@ -112,7 +112,7 @@ export function ActivityHeatmap({ attempts }: { attempts: Attempt[] }) {
         </table>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 text-[12px] text-faint">
+      <div className="mt-3 flex items-center gap-2 text-micro text-faint">
         <span>{t("progress.heatLess")}</span>
         {[0, 1, 2, 3, 4].map((level) => (
           <span key={level} className="heat-cell heat-key" data-level={level} />

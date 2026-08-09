@@ -70,7 +70,7 @@ export function UsageStats() {
   if (state === "failed") {
     return (
       <section className="mt-14">
-        <h2 className="display text-[22px]">{t("stats.title")}</h2>
+        <h2 className="display text-h2">{t("stats.title")}</h2>
         <p className="notice notice-error mt-4">{t("stats.failed")}</p>
       </section>
     );
@@ -78,7 +78,7 @@ export function UsageStats() {
   if (state === "loading" || !stats) {
     return (
       <section className="mt-14">
-        <h2 className="display text-[22px]">{t("stats.title")}</h2>
+        <h2 className="display text-h2">{t("stats.title")}</h2>
         <div className="grid sm:grid-cols-4 gap-3 mt-5">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="skeleton h-20 rounded-xl" />
@@ -113,8 +113,8 @@ export function UsageStats() {
   return (
     <section className="mt-14">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="display text-[22px]">{t("stats.title")}</h2>
-        <p className="text-[13px] text-muted">{t("stats.sub")}</p>
+        <h2 className="display text-h2">{t("stats.title")}</h2>
+        <p className="text-sm text-muted">{t("stats.sub")}</p>
       </div>
 
       {/* ---------------- people ---------------- */}
@@ -154,15 +154,15 @@ export function UsageStats() {
             ] as const
           ).map(([key, count]) => (
             <div key={key} className="flex items-center gap-3">
-              <span className="text-[13.5px] w-24 shrink-0">{t(`progress.mode.${key}`)}</span>
+              <span className="text-sm w-24 shrink-0">{t(`progress.mode.${key}`)}</span>
               <span
-                className="h-2 rounded-full min-w-[2px]"
+                className="h-2 rounded-[var(--radius-pill)] min-w-[2px]"
                 style={{
                   width: `${modeTotal ? Math.max(1, (count / modeTotal) * 100) : 0}%`,
                   background: "var(--brand)",
                 }}
               />
-              <span className="num text-[12.5px] text-muted ml-auto">
+              <span className="num text-micro text-muted ml-auto">
                 {count}
                 {modeTotal > 0 && (
                   <span className="text-faint"> · {Math.round((count / modeTotal) * 100)}%</span>
@@ -181,7 +181,7 @@ export function UsageStats() {
         <Figure label={t("stats.bankSize")} value={stats.bank.questions} />
       </dl>
 
-      <p className="mt-5 text-[13px] leading-relaxed text-faint">
+      <p className="mt-5 text-sm leading-relaxed text-faint">
         {t("stats.rolesLine")}: {stats.users.roles.student ?? 0} · {stats.users.roles.admin ?? 0}{" "}
         · {stats.users.roles.owner ?? 0}. {t("stats.authorsLine")}: {stats.bank.authors}.
       </p>
@@ -193,10 +193,10 @@ export function UsageStats() {
           not touch. */}
       {account?.role === "owner" && (
         <div className="mt-10 pt-6 border-t">
-          <p className="text-[13px] font-semibold" style={{ color: "var(--danger)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
             {t("stats.resetTitle")}
           </p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-muted max-w-xl">
+          <p className="mt-1.5 text-sm leading-relaxed text-muted max-w-xl">
             {t("stats.resetBody")}
           </p>
           {resetNote && <p className="notice mt-3">{resetNote}</p>}
@@ -226,8 +226,8 @@ export function UsageStats() {
       {/* ---------------- the whole run ---------------- */}
       <div className="mt-12 pt-8 border-t">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="display text-[19px]">{t("stats.historyTitle")}</h3>
-          <p className="text-[13px] text-muted">{t("stats.historySub")}</p>
+          <h3 className="display text-h3">{t("stats.historyTitle")}</h3>
+          <p className="text-sm text-muted">{t("stats.historySub")}</p>
         </div>
         <History
           rows={stats.history}
@@ -261,7 +261,7 @@ function Figure({
       >
         <CountUp value={value} />
       </dd>
-      <dt className="text-[12.5px] text-muted mt-1">{label}</dt>
+      <dt className="text-micro text-muted mt-1">{label}</dt>
     </div>
   );
 }
@@ -297,12 +297,12 @@ function Series({
     <div>
       <div className="flex items-baseline gap-2">
         <p className="label-xs">{label}</p>
-        <span className="num text-[12px] text-faint ml-auto">{total}</span>
+        <span className="num text-micro text-faint ml-auto">{total}</span>
       </div>
 
       {/* The peak, on its own line above the bars. Reserved even when every day
           is empty, so two charts side by side keep their baselines aligned. */}
-      <p className="num text-[11px] text-faint mt-3 h-4">
+      <p className="num text-2xs text-faint mt-3 h-4">
         {peakIndex === -1 ? "" : `${peakLabel} ${peak}`}
       </p>
 
@@ -331,14 +331,14 @@ function Series({
         {days.map((day) => (
           <span
             key={day.day}
-            className="num flex-1 text-center text-[10px] text-faint tabular-nums"
+            className="num flex-1 text-center text-2xs text-faint tabular-nums"
           >
             {day.count > 0 ? day.count : "·"}
           </span>
         ))}
       </div>
 
-      {note && <p className="text-[11.5px] text-faint mt-2">{note}</p>}
+      {note && <p className="text-micro text-faint mt-2">{note}</p>}
     </div>
   );
 }
@@ -356,7 +356,7 @@ function History({
   labels: { month: string; answers: string; mocks: string; joins: string; empty: string };
 }) {
   if (rows.length === 0) {
-    return <p className="text-[14px] text-muted mt-4">{labels.empty}</p>;
+    return <p className="text-sm text-muted mt-4">{labels.empty}</p>;
   }
 
   const peak = Math.max(1, ...rows.map((r) => r.answers));
@@ -371,7 +371,7 @@ function History({
 
   return (
     <div className="mt-5 overflow-x-auto">
-      <table className="w-full text-[13px] border-collapse">
+      <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="text-left">
             <th className="label-xs font-normal py-2">{labels.month}</th>
@@ -388,14 +388,14 @@ function History({
                 <span className="flex items-center gap-2">
                   {/* The bar is the comparison, the number is the fact. */}
                   <span
-                    className="h-1.5 rounded-full shrink-0"
+                    className="h-1.5 rounded-[var(--radius-pill)] shrink-0"
                     style={{
                       width: `${(row.answers / peak) * 100}%`,
                       minWidth: row.answers > 0 ? "2px" : "0",
                       background: "var(--brand)",
                     }}
                   />
-                  <span className="num text-[12.5px] text-muted">{row.answers}</span>
+                  <span className="num text-micro text-muted">{row.answers}</span>
                 </span>
               </td>
               <td className="num py-2.5 text-right text-muted">{row.mocks}</td>

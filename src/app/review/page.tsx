@@ -38,11 +38,17 @@ function ReviewInner() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="container-app">
       <PageTitle sub={t("review.desc")}>{t("review.title")}</PageTitle>
 
       {queue.length === 0 ? (
-        <EmptyState>{t("review.empty")}</EmptyState>
+        <EmptyState
+          tone="positive"
+          title={t("review.emptyTitle")}
+          action={{ href: "/practice", label: t("nav.practice") }}
+        >
+          {t("review.empty")}
+        </EmptyState>
       ) : (
         <>
           <button className="btn btn-primary" onClick={() => setRunning(true)}>
@@ -56,16 +62,16 @@ function ReviewInner() {
                 <Reveal as="li" key={question.id} delay={Math.min(i, 8) * 40}>
                   <div className="py-4 border-b">
                     <div className="flex items-baseline gap-3">
-                      <span className="text-[14px]">{question.topic}</span>
+                      <span className="text-sm">{question.topic}</span>
                       {subject && (
-                        <span className="text-[12px] text-faint">{tx(subject.name)}</span>
+                        <span className="text-micro text-faint">{tx(subject.name)}</span>
                       )}
-                      <span className="num ml-auto text-[11px] text-faint uppercase">
+                      <span className="num ml-auto text-2xs text-faint uppercase">
                         {question.exam}
                       </span>
                     </div>
                     <RichText
-                      className="mt-1.5 block text-[14px] text-muted line-clamp-2 leading-relaxed"
+                      className="mt-1.5 block text-sm text-muted line-clamp-2 leading-relaxed"
                       text={tx(question.prompt)}
                     />
                   </div>

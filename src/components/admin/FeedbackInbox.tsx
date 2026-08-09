@@ -83,8 +83,8 @@ export function FeedbackInbox() {
   return (
     <section className="mt-14">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="display text-[22px]">{t("feedback.inbox")}</h2>
-        <p className="text-[13px] text-muted">
+        <h2 className="display text-h2">{t("feedback.inbox")}</h2>
+        <p className="text-sm text-muted">
           {items.length} {t("feedback.received")} · {open} {t("feedback.openCount")}
         </p>
         <div className="ml-auto flex gap-2">
@@ -108,7 +108,7 @@ export function FeedbackInbox() {
       )}
 
       {loading ? (
-        <p className="text-muted mt-6 text-[14px]">{t("common.loading")}</p>
+        <p className="text-muted mt-6 text-sm">{t("common.loading")}</p>
       ) : shown.length === 0 ? (
         <EmptyState>
           {filter === "open" ? t("feedback.allHandled") : t("feedback.noneYet")}
@@ -120,13 +120,13 @@ export function FeedbackInbox() {
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="chip">{t(`feedback.cat.${item.category}`)}</span>
                 {/* Who wrote it, so a reply is possible at all. */}
-                <span className="text-[13px] min-w-0 truncate">
+                <span className="text-sm min-w-0 truncate">
                   {item.authorName || t("feedback.someone")}
                   {item.authorEmail && (
                     <span className="text-faint"> · {item.authorEmail}</span>
                   )}
                 </span>
-                <span className="text-[12px] text-faint">
+                <span className="text-micro text-faint">
                   {new Date(item.at).toLocaleDateString()}
                 </span>
                 <button
@@ -142,7 +142,7 @@ export function FeedbackInbox() {
                 </button>
               </div>
               <p
-                className="mt-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap"
+                className="mt-2.5 text-sm leading-relaxed whitespace-pre-wrap"
                 style={item.handled ? { opacity: 0.55 } : undefined}
               >
                 {item.message}

@@ -45,7 +45,7 @@ export default function ResetPage() {
     <div className="max-w-md mx-auto py-12 sm:py-16">
       <div className="panel p-7 sm:p-8">
         <Logo />
-        <h1 className="display mt-6 text-[26px]">{t("auth.resetTitle")}</h1>
+        <h1 className="display mt-6 text-h2">{t("auth.resetTitle")}</h1>
 
         {done ? (
           <p className="notice notice-ok mt-5">{t("auth.resetDone")}</p>

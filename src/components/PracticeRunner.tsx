@@ -178,7 +178,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
           {correctCount}
           <span className="text-faint">/{attempted}</span>
         </p>
-        <p className="mt-2 text-[14px] text-muted">
+        <p className="mt-2 text-sm text-muted">
           {pct(accuracy)} {t("practice.accuracy")} · <span className="num">{clock(elapsed)}</span>
         </p>
         <div className="flex gap-2 justify-center mt-8">
@@ -219,7 +219,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
               className="panel scale-in absolute top-full mt-2 left-0 z-30 w-[min(22rem,calc(100vw-2rem))] p-4"
               style={{ boxShadow: "var(--overlay)" }}
             >
-              <p className="text-[13.5px] leading-relaxed text-muted">
+              <p className="text-sm leading-relaxed text-muted">
                 {t("ptool.directionsBody")}
               </p>
               <button className="btn btn-sm mt-3 w-full" onClick={() => setDirectionsOpen(false)}>
@@ -236,7 +236,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
             </button>
           ) : (
             <>
-              <span className="num text-[22px] font-medium tabular-nums leading-none">
+              <span className="num text-h2 font-medium tabular-nums leading-none">
                 {clock(elapsed)}
               </span>
               <span className="flex items-center gap-1.5">
@@ -299,7 +299,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
         {tool && (
           <aside className="test-pane fade-in">
             <div className="flex items-center gap-2 px-3 h-11 border-b">
-              <p className="text-[13.5px] font-medium">
+              <p className="text-sm font-medium">
                 {tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
               </p>
               <button
@@ -353,18 +353,18 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
           <div className="flex items-center gap-2.5 mt-2 flex-wrap">
             <span className="label-xs">{question.topic}</span>
-            {question.domain && <span className="text-[11px] text-faint">{question.domain}</span>}
+            {question.domain && <span className="text-2xs text-faint">{question.domain}</span>}
             {/* A student is entitled to know which questions a model wrote. */}
             {generatedIds().has(question.id) && (
               <span className="pl-ai-badge" title={t("plan.aiBadgeTitle")}>
                 {t("plan.aiBadge")}
               </span>
             )}
-            {streak >= 3 && <span className="ml-auto num text-[12px] text-muted">↑ {streak}</span>}
+            {streak >= 3 && <span className="ml-auto num text-micro text-muted">↑ {streak}</span>}
           </div>
 
           {highlightMode && (
-            <p className="mt-3 text-[12px] text-faint fade-in">
+            <p className="mt-3 text-micro text-faint fade-in">
               {t("ptool.highlightHint")}{" "}
               {highlighter.count > 0 && (
                 <button className="underline" onClick={highlighter.clear}>
@@ -399,7 +399,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
           {isRevealed && (
             <p
-              className="fade-in mt-6 text-[14px]"
+              className="fade-in mt-6 text-sm"
               style={{ color: selected === question.answer ? "var(--success)" : "var(--danger)" }}
             >
               {selected === question.answer ? t("quiz.correct") : t("quiz.incorrect")}
@@ -410,7 +410,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
       {/* ---------------- footer ---------------- */}
       <footer className="test-foot">
-        <span className="hidden sm:block text-[13px] text-muted truncate max-w-[12rem]">
+        <span className="hidden sm:block text-sm text-muted truncate max-w-[12rem]">
           {title}
         </span>
 

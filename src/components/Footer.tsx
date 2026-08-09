@@ -19,7 +19,7 @@ export function Footer() {
           huddled against the brand block with a gulf to their right. The brand
           column takes the slack, so the links stay ruled to the right edge. */}
       <footer className="app-footer mt-20 border-t">
-        <div className="max-w-5xl mx-auto px-5 py-12 grid gap-x-10 gap-y-9 text-[13px] sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-12 grid gap-x-10 gap-y-9 text-sm sm:grid-cols-[minmax(0,1fr)_auto_auto]">
           <div className="max-w-[22rem]">
             <Logo />
             <p className="text-muted mt-3.5 leading-relaxed">{t("common.footer")}</p>
@@ -56,7 +56,7 @@ export function Footer() {
 
       <Modal open={confirming} onClose={() => setConfirming(false)}>
         <div className="panel p-6" style={{ boxShadow: "var(--overlay)" }}>
-          <p className="text-[15px] leading-relaxed">{t("common.resetConfirm")}</p>
+          <p className="text-body leading-relaxed">{t("common.resetConfirm")}</p>
           <div className="flex gap-2 mt-6">
             <button className="btn flex-1" onClick={() => setConfirming(false)}>
               {t("admin.cancel")}

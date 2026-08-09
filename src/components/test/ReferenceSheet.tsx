@@ -201,7 +201,7 @@ export function ReferenceSheet() {
     <div className="h-full overflow-y-auto p-4">
       <div className="grid grid-cols-2 gap-2">
         {FIGURES.map((figure) => (
-          <div key={figure.title} className="rounded-[10px] border p-3">
+          <div key={figure.title} className="rounded-[var(--radius-sm)] border p-3">
             <svg
               viewBox="0 0 100 70"
               className="w-full h-auto text-muted"
@@ -212,7 +212,7 @@ export function ReferenceSheet() {
             </svg>
             <p className="label-xs mt-2">{figure.title}</p>
             {figure.lines.map((line) => (
-              <p key={line} className="num mt-1 text-[13.5px]">
+              <p key={line} className="num mt-1 text-sm">
                 {line}
               </p>
             ))}
@@ -222,7 +222,7 @@ export function ReferenceSheet() {
 
       <ul className="mt-4 space-y-2">
         {FACTS.map((fact) => (
-          <li key={fact} className="text-[13px] leading-relaxed text-muted">
+          <li key={fact} className="text-sm leading-relaxed text-muted">
             {fact}
           </li>
         ))}

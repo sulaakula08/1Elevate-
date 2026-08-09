@@ -69,8 +69,8 @@ export function MockLoader({ onReady }: { onReady: () => void }) {
           />
         </svg>
 
-        <p className="display mt-7 text-[22px]">{t("mock.loadTitle")}</p>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{t("mock.loadSub")}</p>
+        <p className="display mt-7 text-h2">{t("mock.loadTitle")}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{t("mock.loadSub")}</p>
 
         <div className="mk-steps">
           {STEPS.map((key, i) => (

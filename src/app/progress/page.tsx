@@ -59,15 +59,21 @@ function ProgressInner() {
 
   if (stats.total === 0 && data.mocks.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="container-app">
         <PageTitle>{t("progress.title")}</PageTitle>
-        <EmptyState>{t("progress.noData")}</EmptyState>
+        <EmptyState
+          tone="progress"
+          title={t("progress.noDataTitle")}
+          action={{ href: "/practice", label: t("nav.practice") }}
+        >
+          {t("progress.noData")}
+        </EmptyState>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="container-app">
       <PageTitle>{t("progress.title")}</PageTitle>
 
       {/* ---------------- where you stand ----------------
@@ -82,7 +88,7 @@ function ProgressInner() {
               target={account!.targetScore}
               max={standing.max}
             />
-            <dl className="grid grid-cols-2 gap-x-10 gap-y-5 text-[13px]">
+            <dl className="grid grid-cols-2 gap-x-10 gap-y-5 text-sm">
               <Figure label={t("progress.bestMock")} value={standing.best} />
               <Figure
                 label={standing.toTarget > 0 ? t("progress.toTarget") : t("progress.onTarget")}
@@ -115,7 +121,7 @@ function ProgressInner() {
           </div>
         ) : (
           <div className="mt-4">
-            <p className="text-[14px] leading-relaxed text-muted">{t("progress.noMockYet")}</p>
+            <p className="text-sm leading-relaxed text-muted">{t("progress.noMockYet")}</p>
             <Link href="/mock" className="btn btn-primary btn-sm mt-4">
               {t("progress.takeMock")}
             </Link>
@@ -179,9 +185,9 @@ function ProgressInner() {
             <dd className="num text-2xl font-medium">
               <CountUp value={stat.value} suffix={stat.suffix} />
             </dd>
-            <dt className="text-[13px] text-muted mt-1">{stat.label}</dt>
+            <dt className="text-sm text-muted mt-1">{stat.label}</dt>
             {stat.foot && (
-              <p className="num text-[11.5px] mt-1.5" style={{ color: stat.footTone }}>
+              <p className="num text-micro mt-1.5" style={{ color: stat.footTone }}>
                 {stat.foot}
               </p>
             )}
@@ -195,19 +201,19 @@ function ProgressInner() {
       {weak.length > 0 && (
         <section className="py-12">
           <p className="label-xs">{t("progress.focusNow")}</p>
-          <p className="mt-2 text-[13px] text-muted">{t("progress.focusHint")}</p>
+          <p className="mt-2 text-sm text-muted">{t("progress.focusHint")}</p>
           <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
             {weak.map((bucket, i) => (
               <Reveal key={bucket.key} delay={i * 60}>
                 <div className="card-tone p-4" style={{ ["--tone" as string]: "var(--danger)" }}>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[14px] min-w-0 truncate">{bucket.key}</span>
-                    <span className="num ml-auto text-[14px] font-medium text-danger">
+                    <span className="text-sm min-w-0 truncate">{bucket.key}</span>
+                    <span className="num ml-auto text-sm font-medium text-danger">
                       {pct(bucket.accuracy)}
                     </span>
                   </div>
                   <ProgressBar value={bucket.accuracy} tone="danger" className="mt-2.5" />
-                  <p className="num text-[11.5px] text-faint mt-2">
+                  <p className="num text-micro text-faint mt-2">
                     {bucket.correct}/{bucket.total}
                   </p>
                 </div>
@@ -249,10 +255,10 @@ function ProgressInner() {
           <ul className="mt-5 grid gap-3 sm:grid-cols-3">
             {modes.map((bucket, i) => (
               <Reveal as="li" key={bucket.key} delay={i * 60}>
-                <div className="py-4 px-4 rounded-[10px] border">
+                <div className="py-4 px-4 rounded-[var(--radius-sm)] border">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[13.5px]">{modeLabel(t, bucket.key)}</span>
-                    <span className="num ml-auto text-[14px] font-medium">
+                    <span className="text-sm">{modeLabel(t, bucket.key)}</span>
+                    <span className="num ml-auto text-sm font-medium">
                       {pct(bucket.accuracy)}
                     </span>
                   </div>
@@ -261,7 +267,7 @@ function ProgressInner() {
                     tone={bucket.accuracy < 0.5 ? "danger" : "ink"}
                     className="mt-2.5"
                   />
-                  <p className="num text-[11.5px] text-faint mt-2">
+                  <p className="num text-micro text-faint mt-2">
                     {bucket.correct}/{bucket.total}
                   </p>
                 </div>
@@ -289,11 +295,11 @@ function ProgressInner() {
                   >
                     <div className="flex items-baseline gap-2">
                       <span className="badge">{t(`diff.${level}`)}</span>
-                      <span className="num ml-auto text-[15px] font-medium">
+                      <span className="num ml-auto text-body font-medium">
                         {pct(bucket.accuracy)}
                       </span>
                     </div>
-                    <p className="num text-[12px] text-faint mt-2">
+                    <p className="num text-micro text-faint mt-2">
                       {bucket.correct}/{bucket.total}
                     </p>
                     <ProgressBar
@@ -319,13 +325,13 @@ function ProgressInner() {
               <Reveal as="li" key={bucket.key} delay={i * 50}>
                 <div className="py-4 border-t first:border-t-0">
                   <div className="flex items-baseline gap-3">
-                    <span className="text-[15px]">
+                    <span className="text-body">
                       {subject ? tx(subject.name) : bucket.key}
                     </span>
-                    <span className="num ml-auto text-[14px] text-muted">
+                    <span className="num ml-auto text-sm text-muted">
                       {pct(bucket.accuracy)}
                     </span>
-                    <span className="num text-[13px] text-faint w-12 text-right">
+                    <span className="num text-sm text-faint w-12 text-right">
                       {bucket.correct}/{bucket.total}
                     </span>
                   </div>
@@ -347,17 +353,17 @@ function ProgressInner() {
         <ul className="mt-5">
           {topics.map((bucket) => (
             <li key={bucket.key} className="flex items-center gap-4 py-3 border-t first:border-t-0">
-              <span className="text-[14px] flex-1 truncate">{bucket.key}</span>
+              <span className="text-sm flex-1 truncate">{bucket.key}</span>
               <div className="w-24 shrink-0">
                 <ProgressBar
                   value={bucket.accuracy}
                   tone={bucket.accuracy < 0.5 ? "danger" : "ink"}
                 />
               </div>
-              <span className="num text-[13px] text-muted w-10 text-right">
+              <span className="num text-sm text-muted w-10 text-right">
                 {pct(bucket.accuracy)}
               </span>
-              <span className="num text-[12px] text-faint w-12 text-right">
+              <span className="num text-micro text-faint w-12 text-right">
                 {bucket.correct}/{bucket.total}
               </span>
             </li>
@@ -386,13 +392,13 @@ function Figure({
 }) {
   return (
     <div>
-      <dd className="num text-[22px] font-medium" style={tone ? { color: tone } : undefined}>
+      <dd className="num text-h2 font-medium" style={tone ? { color: tone } : undefined}>
         {signed && value > 0 ? "+" : ""}
         {value}
         {suffix}
       </dd>
-      <dt className="text-[12.5px] text-muted mt-0.5">{label}</dt>
-      {hint && <p className="text-[11px] text-faint">{hint}</p>}
+      <dt className="text-micro text-muted mt-0.5">{label}</dt>
+      {hint && <p className="text-2xs text-faint">{hint}</p>}
     </div>
   );
 }
@@ -456,10 +462,10 @@ function ScoreDial({ score, target, max }: { score: number; target: number; max:
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
-        <p className="num text-[34px] font-medium leading-none">
+        <p className="num text-h1 font-medium leading-none">
           <CountUp value={score} />
         </p>
-        <p className="num text-[11.5px] text-faint mt-1.5">
+        <p className="num text-micro text-faint mt-1.5">
           / {max} · {target}
         </p>
       </div>

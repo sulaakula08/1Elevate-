@@ -22,7 +22,7 @@ function SettingsInner() {
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div className="max-w-3xl mx-auto pb-16">
+    <div className="container-read pb-16">
       <PageTitle sub={t("settings.sub")}>{t("settings.title")}</PageTitle>
 
       {/* ---------------- appearance ---------------- */}
@@ -86,10 +86,10 @@ function SettingsInner() {
         </div>
 
         <div className="mt-8 pt-6 border-t">
-          <p className="text-[13px] font-semibold" style={{ color: "var(--danger)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
             {t("settings.dangerTitle")}
           </p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-muted max-w-lg">
+          <p className="mt-1.5 text-sm leading-relaxed text-muted max-w-lg">
             {t("settings.dangerBody")}
           </p>
           <button
@@ -153,8 +153,8 @@ function Row({
       className="w-full flex items-start gap-4 py-4 border-b text-left hover:bg-surface-2 transition-colors px-1"
     >
       <span className="min-w-0 flex-1">
-        <span className="block text-[14.5px] font-medium">{title}</span>
-        <span className="block text-[13px] text-muted mt-0.5 leading-relaxed">{body}</span>
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="block text-sm text-muted mt-0.5 leading-relaxed">{body}</span>
       </span>
       <span className={`sw ${on ? "sw-on" : ""}`} aria-hidden>
         <span className="sw-knob" />

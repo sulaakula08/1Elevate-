@@ -34,10 +34,10 @@ function PreviewCard({ post }: { post: CommunityPostView }) {
     <Link href="/community" className="card card-hover cm-preview-card">
       <div className="flex items-center gap-2">
         <Avatar author={post.author} size={26} />
-        <span className="text-[13px] font-medium truncate">{post.author.name}</span>
-        <span className="num text-[11.5px] text-faint ml-auto shrink-0">{timeAgo(post.createdAt)}</span>
+        <span className="text-sm font-medium truncate">{post.author.name}</span>
+        <span className="num text-micro text-faint ml-auto shrink-0">{timeAgo(post.createdAt)}</span>
       </div>
-      <p className="text-[13.5px] text-muted mt-2 leading-snug cm-preview-clamp">{summarize(post)}</p>
+      <p className="text-sm text-muted mt-2 leading-snug cm-preview-clamp">{summarize(post)}</p>
     </Link>
   );
 }
@@ -57,7 +57,7 @@ export function CommunityPreview() {
   return (
     <section>
       <div className="flex items-center gap-2.5">
-        <h2 className="text-[19px] sm:text-[21px] font-semibold tracking-[-0.02em]">
+        <h2 className="text-h3 sm:text-h3 font-semibold tracking-[-0.02em]">
           {t("community.homeTitle")}
         </h2>
         <Link href="/community" className="btn btn-sm ml-auto shrink-0">

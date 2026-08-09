@@ -14,20 +14,20 @@ export function Steps() {
   ];
 
   return (
-    <section className="py-20 border-t">
+    <section className="py-16 sm:py-20 border-t">
       <Reveal className="max-w-xl">
-        <p className="label-xs">{t("landing.howEyebrow")}</p>
-        <h2 className="display mt-4 text-3xl sm:text-[2.5rem]">{t("landing.howTitle")}</h2>
+        <p className="t-label">{t("landing.howEyebrow")}</p>
+        <h2 className="t-h1 mt-3">{t("landing.howTitle")}</h2>
       </Reveal>
 
-      <ol className="mt-12">
+      <ol className="mt-10">
         {steps.map((step, i) => (
           <Reveal as="li" key={step.title} delay={i * 80}>
             <div className="grid sm:grid-cols-[3rem_1fr] gap-x-6 gap-y-2 py-7 border-t">
-              <span className="num text-[15px] text-faint">0{i + 1}</span>
+              <span className="num text-body text-faint">0{i + 1}</span>
               <div className="max-w-xl">
-                <h3 className="text-[17px] font-medium">{step.title}</h3>
-                <p className="mt-1.5 text-[15px] leading-relaxed text-muted">{step.text}</p>
+                <h3 className="text-h3 font-medium">{step.title}</h3>
+                <p className="mt-1.5 text-body leading-relaxed text-muted">{step.text}</p>
               </div>
             </div>
           </Reveal>

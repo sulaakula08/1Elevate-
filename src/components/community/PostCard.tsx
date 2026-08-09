@@ -49,7 +49,14 @@ export function PostCard({ post }: { post: CommunityPostView }) {
   const reactionKind = REACTION_BY_TYPE[post.type];
 
   return (
-    <article className="card cm-post">
+    /*
+     * `data-type` drives a coloured spine on the left edge — one mechanism,
+     * applied consistently, so a question reads as something to answer and a win
+     * reads as something to celebrate before you have read a word of either.
+     * Every other property of the card stays identical, which is what keeps a
+     * mixed feed calm.
+     */
+    <article className="card cm-post" data-type={post.type}>
       <PostHeader author={post.author} createdAt={post.createdAt} />
       <div className="mt-3">
         <PostBody post={post} />

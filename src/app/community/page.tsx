@@ -52,11 +52,11 @@ function CommunityInner() {
           challenge and a trending list — all three were fixed demo content with
           no feature behind them, so they promised things the product does not
           do. With them gone the feed gets the whole width. */}
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="container-read">
         <div className="min-w-0">
           <div className="pt-8 pb-5">
-            <h1 className="display fade-up text-[1.75rem] sm:text-[2.1rem]">{t("community.title")}</h1>
-            <p className="fade-in mt-2 text-[14.5px] text-muted">{t("community.subtitle")}</p>
+            <h1 className="display fade-up text-h1 sm:text-h1">{t("community.title")}</h1>
+            <p className="fade-in mt-2 text-sm text-muted">{t("community.subtitle")}</p>
           </div>
 
           <FeedTabs active={tab} onChange={setTab} />

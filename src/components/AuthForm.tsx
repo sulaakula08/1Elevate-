@@ -90,8 +90,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
     return (
       <div className="panel p-8 text-center">
         <h1 className="display text-2xl">{t("auth.checkEmailTitle")}</h1>
-        <p className="lede mt-3 text-[15px]">{t("auth.checkEmailBody")}</p>
-        <p className="num mt-4 text-[14px] font-medium">{email.trim().toLowerCase()}</p>
+        <p className="lede mt-3 text-body">{t("auth.checkEmailBody")}</p>
+        <p className="num mt-4 text-sm font-medium">{email.trim().toLowerCase()}</p>
         <Link href="/login" className="btn btn-primary mt-7">
           {t("auth.signIn")}
         </Link>
@@ -103,10 +103,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
     <div className="panel p-7 sm:p-8">
       <Logo />
 
-      <h1 className="display mt-6 text-[26px] sm:text-[30px]">
+      <h1 className="display mt-6 text-h2 sm:text-h1">
         {t(isSignUp ? "auth.signUpTitle" : "auth.signInTitle")}
       </h1>
-      <p className="text-muted mt-2 text-[14.5px]">
+      <p className="text-muted mt-2 text-sm">
         {t(isSignUp ? "auth.signUpSub" : "auth.signInSub")}
       </p>
 
@@ -150,7 +150,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             {t("auth.password")}
             <button
               type="button"
-              className="text-[12.5px] text-muted hover:text-foreground"
+              className="text-micro text-muted hover:text-foreground"
               onClick={() => setShowPassword((v) => !v)}
             >
               {t(showPassword ? "auth.hide" : "auth.show")}
@@ -172,7 +172,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <div className="strength-track" aria-hidden>
               <div className="strength-fill" data-level={strength} />
             </div>
-            <span className="text-[12.5px] text-muted">
+            <span className="text-micro text-muted">
               {t(
                 strength <= 1
                   ? "auth.pwWeak"
@@ -207,7 +207,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </button>
       </form>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-[13.5px]">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm">
         <Link href={isSignUp ? "/login" : "/signup"} className="text-muted hover:text-foreground">
           {t(isSignUp ? "auth.haveAccount" : "auth.noAccount")}
         </Link>

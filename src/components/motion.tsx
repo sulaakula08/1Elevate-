@@ -209,11 +209,11 @@ export function ProgressBar({
     tone === "accent" ? "var(--accent)" : tone === "danger" ? "var(--danger)" : "var(--foreground)";
   return (
     <div
-      className={`h-[3px] rounded-full overflow-hidden ${className}`}
+      className={`h-[3px] rounded-[var(--radius-pill)] overflow-hidden ${className}`}
       style={{ background: "var(--line)" }}
     >
       <div
-        className="h-full rounded-full transition-[width] duration-500 ease-out"
+        className="h-full rounded-[var(--radius-pill)] transition-[width] duration-500 ease-out"
         style={{ width: `${Math.max(1, Math.min(100, value * 100))}%`, background: color }}
       />
     </div>

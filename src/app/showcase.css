@@ -38,8 +38,8 @@
     place-items: center;
     width: 2rem;
     height: 2rem;
-    border-radius: 0.625rem;
-    font-size: 1.0625rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--t-h3);
     line-height: 1;
     background: rgba(255, 255, 255, 0.16);
     border: 1px solid rgba(255, 255, 255, 0.24);
@@ -48,7 +48,7 @@
   .sc-name {
     display: block;
     margin-top: 0.875rem;
-    font-size: 1.375rem;
+    font-size: var(--t-h2);
     font-weight: 600;
     letter-spacing: -0.025em;
     line-height: 1.15;
@@ -60,7 +60,7 @@
     display: block;
     margin-top: 0.5rem;
     max-width: 32ch;
-    font-size: 0.875rem;
+    font-size: var(--t-sm);
     line-height: 1.55;
     color: rgba(255, 255, 255, 0.82);
   }
@@ -71,7 +71,7 @@
     margin-top: 1.0625rem;
     padding-top: 0.75rem;
     border-top: 1px solid rgba(255, 255, 255, 0.22);
-    font-size: 0.75rem;
+    font-size: var(--t-micro);
     color: rgba(255, 255, 255, 0.88);
   }
 
@@ -87,7 +87,133 @@
       padding: 1.25rem;
     }
     .sc-name {
-      font-size: 1.25rem;
+      font-size: var(--t-h3);
     }
+  }
+}
+
+@layer components {
+  /* ================= landing: lead feature =================
+     Asymmetric on purpose. The copy column is the narrower of the two so the
+     visual carries the section, and the whole thing is one surface rather than
+     the four equal cards this replaced. */
+  .lp-lead {
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  @media (min-width: 56rem) {
+    .lp-lead {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    }
+  }
+  .lp-lead-copy {
+    padding: 1.75rem;
+  }
+  @media (min-width: 56rem) {
+    .lp-lead-copy {
+      padding: 2.5rem;
+    }
+  }
+  .lp-lead-tick {
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0.1875rem;
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    /* A tick drawn in the mask, so it takes the brand colour without an svg. */
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 9.4l2.6 2.6L13.2 6.4' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 9.4l2.6 2.6L13.2 6.4' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    background: var(--brand);
+  }
+
+  /* The visual half sits on the recessed surface so the two columns read as one
+     object with a working area, not as two cards pushed together. */
+  .lp-lead-visual {
+    padding: 1.75rem;
+    background: var(--surface-2);
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 56rem) {
+    .lp-lead-visual {
+      padding: 2.5rem;
+      border-top: none;
+      border-left: 1px solid var(--line);
+    }
+  }
+  .lp-q-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8125rem 0.9375rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  .lp-q-dot {
+    flex-shrink: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: var(--radius-pill);
+    background: var(--lvl-1);
+  }
+  .lp-q-dot[data-level="2"] {
+    background: var(--lvl-2);
+  }
+  .lp-q-dot[data-level="3"] {
+    background: var(--lvl-3);
+  }
+  .lp-q-topic {
+    min-width: 0;
+    flex: 1;
+    font-size: var(--t-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lp-q-status {
+    flex-shrink: 0;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+  .lp-q-status-missed {
+    color: var(--accent);
+  }
+
+  /* ================= landing: three supporting features =================
+     Vertical hairlines, no boxes — visibly a different treatment from both the
+     lead surface above and the numbered steps below. */
+  .lp-support {
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 48rem) {
+    .lp-support {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .lp-support-item {
+    padding: 1.5rem 1.5rem 1.5rem 0;
+  }
+  .lp-support-item + .lp-support-item {
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 48rem) {
+    .lp-support-item + .lp-support-item {
+      border-top: none;
+      border-left: 1px solid var(--line);
+      padding-left: 1.5rem;
+    }
+  }
+  .lp-support-icon {
+    display: inline-flex;
+    color: var(--brand);
   }
 }

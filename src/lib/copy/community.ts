@@ -15,7 +15,11 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.tabQuestions": { en: "Questions" },
   "community.tabWins": { en: "Wins" },
 
-  "community.composerPrompt": { en: "Share something with the community…" },
+  "community.composerPrompt": { en: "What are you working on?" },
+  "community.quickAsk": { en: "Ask a question" },
+  "community.quickProgress": { en: "Share progress" },
+  "community.quickExplain": { en: "Explain something" },
+  "community.quickMore": { en: "More…" },
 
   "community.postTypeQuestion": { en: "Ask a Question" },
   "community.postTypeProgress": { en: "Share Progress" },

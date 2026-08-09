@@ -96,8 +96,8 @@ export function PeopleManager() {
   return (
     <section className="mt-14">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="display text-[22px]">People</h2>
-        <p className="text-[13px] text-muted">
+        <h2 className="display text-h2">People</h2>
+        <p className="text-sm text-muted">
           {people.length} signed up · {admins} with content access
         </p>
       </div>
@@ -122,9 +122,9 @@ export function PeopleManager() {
       />
 
       {loading ? (
-        <p className="text-muted mt-6 text-[14px]">Loading…</p>
+        <p className="text-muted mt-6 text-sm">Loading…</p>
       ) : shown.length === 0 ? (
-        <p className="text-muted mt-6 text-[14px]">Nobody matches that.</p>
+        <p className="text-muted mt-6 text-sm">Nobody matches that.</p>
       ) : (
         <ul className="mt-5 border-t">
           {shown.map((person) => {
@@ -139,11 +139,11 @@ export function PeopleManager() {
                 className="flex flex-wrap items-center gap-3 py-3.5 border-b"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-medium truncate">
+                  <p className="text-body font-medium truncate">
                     {person.name || "—"}
                     {isSelf && <span className="text-faint font-normal"> (you)</span>}
                   </p>
-                  <p className="text-[13px] text-muted truncate">{person.email}</p>
+                  <p className="text-sm text-muted truncate">{person.email}</p>
                 </div>
 
                 <span
@@ -185,7 +185,7 @@ export function PeopleManager() {
         </ul>
       )}
 
-      <p className="mt-5 text-[13px] leading-relaxed text-faint">
+      <p className="mt-5 text-sm leading-relaxed text-faint">
         An admin can write and delete questions in the shared bank that every student
         practises from. Removing someone&apos;s admin role leaves their questions in place.
         Owners are set in the Supabase SQL editor only, so nobody can appoint themselves.

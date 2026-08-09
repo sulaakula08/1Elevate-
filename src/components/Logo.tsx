@@ -38,7 +38,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
         // link already win the name computation; this is for the ones that don't.
         <span className="sr-only">1Elevate</span>
       ) : (
-        <span className="text-[16.5px] font-semibold tracking-[-0.035em] leading-none">
+        <span className="text-body font-semibold tracking-[-0.035em] leading-none">
           1Elevate
         </span>
       )}

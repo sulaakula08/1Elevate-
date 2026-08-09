@@ -203,7 +203,7 @@ export function ComposerModal({
               <span aria-hidden>←</span>
             </button>
           )}
-          <h2 id="composer-title" className="text-[16px] font-semibold flex-1 min-w-0 truncate">
+          <h2 id="composer-title" className="text-body font-semibold flex-1 min-w-0 truncate">
             {type ? t(TYPE_OPTIONS.find((o) => o.id === type)!.labelKey) : t("community.composerChooseType")}
           </h2>
           <button type="button" className="bar-btn" onClick={onClose} aria-label={t("community.composerCancel")}>
@@ -213,25 +213,38 @@ export function ComposerModal({
 
         <div className="cm-composer-body px-5 pb-5">
           {!type ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            /*
+             * A list, not a 3×2 grid of icon cards. The grid was the third place
+             * in the product using the same icon-tile / bold-title / grey-line
+             * card, and six equally sized cards say the six choices are equally
+             * likely — they are not. A row per option scans in one pass and the
+             * descriptions no longer wrap to ragged heights.
+             */
+            <ul className="cm-type-list">
               {TYPE_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className="cm-type-btn"
-                  onClick={() => setType(option.id)}
-                >
-                  <span className="cm-type-icon" aria-hidden>
-                    {(() => {
-                      const Icon = POST_TYPE_ICON[option.id];
-                      return <Icon size={22} />;
-                    })()}
-                  </span>
-                  <span className="text-[13px] font-medium">{t(option.labelKey)}</span>
-                  <span className="text-[11.5px] text-faint leading-snug">{t(option.hintKey)}</span>
-                </button>
+                <li key={option.id}>
+                  <button
+                    type="button"
+                    className="cm-type-row"
+                    onClick={() => setType(option.id)}
+                  >
+                    <span className="cm-type-icon" aria-hidden>
+                      {(() => {
+                        const Icon = POST_TYPE_ICON[option.id];
+                        return <Icon size={18} />;
+                      })()}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium">{t(option.labelKey)}</span>
+                      <span className="block text-micro text-faint">{t(option.hintKey)}</span>
+                    </span>
+                    <span className="cm-type-chevron" aria-hidden>
+                      ›
+                    </span>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <div className="space-y-3.5">
               {SUBJECT_TYPES.includes(type) && (

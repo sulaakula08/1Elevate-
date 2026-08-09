@@ -7,13 +7,14 @@
      colour on purpose: the metrics differ in what they measure, not in kind,
      and four hues would only make the eye look for a meaning that isn't there.
      Hierarchy comes from size and weight. */
+  /* No container. Four numbers under a heading, separated by the rules they
+     already had — the card around them added a fifth rectangle to a page that
+     had too many and gave the metrics the same visual weight as the goal panel,
+     which is an object you act on. A top rule anchors the row to the section. */
   .pl-metrics {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface);
-    overflow: hidden;
+    border-top: 1px solid var(--line);
   }
   @media (min-width: 48rem) {
     .pl-metrics {
@@ -21,16 +22,18 @@
     }
   }
   .pl-metric {
-    padding: 1.125rem 1.25rem 1.25rem;
+    padding: 1.125rem 1.25rem 1.25rem 0;
     min-width: 0;
-  }
-  .pl-metric + .pl-metric {
-    border-left: 1px solid var(--line);
   }
   /* The third cell opens a new row at two columns, so its left rule has to go
      and a top rule has to appear — and both revert at four columns. */
+  .pl-metric + .pl-metric {
+    border-left: 1px solid var(--line);
+    padding-left: 1.25rem;
+  }
   .pl-metric:nth-child(odd) {
     border-left: none;
+    padding-left: 0;
   }
   .pl-metric:nth-child(n + 3) {
     border-top: 1px solid var(--line);
@@ -38,23 +41,121 @@
   @media (min-width: 48rem) {
     .pl-metric:nth-child(odd) {
       border-left: 1px solid var(--line);
+      padding-left: 1.25rem;
     }
     .pl-metric:first-child {
       border-left: none;
+      padding-left: 0;
     }
     .pl-metric:nth-child(n + 3) {
       border-top: none;
     }
   }
 
+  /* ================= the one next action =================
+     The dashboard's job is to answer "what do I do now", so exactly one block
+     answers it and nothing else on the page is allowed to look like this. Ink,
+     not brand: the primary button inside it is the brand colour, and a brand
+     panel holding a brand button cancels itself out. */
+  .pl-next {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1.5rem 2rem;
+    padding: 1.75rem;
+    border-radius: var(--radius-lg);
+    background: var(--ink);
+    color: var(--ink-contrast);
+  }
+  @media (min-width: 40rem) {
+    .pl-next {
+      padding: 2.25rem 2.5rem;
+    }
+  }
+  /* One soft light from the top right, in the brand hue. The only decoration on
+     the block, and it is what keeps a flat ink rectangle from looking unfinished. */
+  .pl-next::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      90% 120% at 100% 0%,
+      color-mix(in srgb, var(--brand) 55%, transparent) 0%,
+      transparent 62%
+    );
+  }
+  .pl-next > * {
+    position: relative;
+  }
+  .pl-next-copy {
+    flex: 1 1 20rem;
+    min-width: 0;
+  }
+  .pl-next-label {
+    font-size: var(--t-micro);
+    letter-spacing: var(--tr-label);
+    text-transform: uppercase;
+    font-weight: 500;
+    opacity: 0.62;
+  }
+  .pl-next-title {
+    margin-top: 0.625rem;
+    font-size: clamp(1.5rem, 1.15rem + 1.5vw, 2rem);
+    line-height: 1.12;
+    letter-spacing: var(--tr-h1);
+    font-weight: 600;
+  }
+  .pl-next-meta {
+    margin-top: 0.625rem;
+    font-size: var(--t-sm);
+    line-height: 1.55;
+    opacity: 0.7;
+    max-width: 34ch;
+  }
+  /* Inverted button: on ink, the brand fill loses its contrast, so the action
+     becomes the lightest thing on the block instead. */
+  .pl-next-cta {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.375rem;
+    border-radius: var(--radius-sm);
+    background: var(--ink-contrast);
+    color: var(--ink);
+    font-size: var(--t-sm);
+    font-weight: 600;
+    transition:
+      transform 160ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      opacity 160ms ease;
+  }
+  .pl-next-cta:hover {
+    transform: translateY(-1px);
+    opacity: 0.92;
+  }
+
+  /* ================= activity =================
+     A section, not a panel. Fresh accounts used to get a 370px empty white box
+     containing one sentence; now they get a heading, a rule and two lines. */
+  .pl-section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding-bottom: 0.625rem;
+    border-bottom: 1px solid var(--line);
+  }
+
   .pl-metric-label {
-    font-size: 0.75rem;
+    font-size: var(--t-micro);
     color: var(--muted);
   }
   .pl-metric-value {
     margin-top: 0.375rem;
-    font-size: 1.875rem;
-    font-weight: 650;
+    font-size: var(--t-h1);
+    font-weight: 600;
     line-height: 1.05;
     letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
@@ -66,7 +167,7 @@
   }
   .pl-metric-hint {
     margin-top: 0.3125rem;
-    font-size: 0.6875rem;
+    font-size: var(--t-2xs);
     color: var(--faint);
   }
   .pl-metric-rule {
@@ -86,7 +187,7 @@
     background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   }
   .pl-countdown-label {
-    font-size: 0.6875rem;
+    font-size: var(--t-2xs);
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -103,18 +204,18 @@
     gap: 0.25rem;
   }
   .pl-countdown-n {
-    font-size: 1.75rem;
-    font-weight: 650;
+    font-size: var(--t-h1);
+    font-weight: 600;
     letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
   .pl-countdown-u {
-    font-size: 0.75rem;
+    font-size: var(--t-micro);
     opacity: 0.78;
   }
   .pl-countdown-date {
-    font-size: 0.75rem;
+    font-size: var(--t-micro);
     opacity: 0.85;
   }
   /* Nothing configured: the same block, without the brand fill, so the layout
@@ -138,13 +239,13 @@
     background: var(--surface);
   }
   .pl-spec-label {
-    font-size: 0.6875rem;
+    font-size: var(--t-2xs);
     color: var(--faint);
   }
   .pl-spec-value {
     margin-top: 0.25rem;
-    font-size: 1.0625rem;
-    font-weight: 650;
+    font-size: var(--t-h3);
+    font-weight: 600;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
   }
@@ -162,7 +263,7 @@
     background: var(--surface);
   }
   .pl-module-name {
-    font-size: 0.9375rem;
+    font-size: var(--t-body);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -171,7 +272,7 @@
   .pl-module-meta {
     margin-left: auto;
     flex-shrink: 0;
-    font-size: 0.8125rem;
+    font-size: var(--t-sm);
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
@@ -188,12 +289,12 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9375rem;
+    font-size: var(--t-body);
     font-weight: 600;
   }
   .pl-notice-body {
     margin-top: 0.5rem;
-    font-size: 0.8125rem;
+    font-size: var(--t-sm);
     line-height: 1.6;
     color: var(--muted);
   }
@@ -214,8 +315,8 @@
     border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
     background: var(--brand-soft);
     color: var(--accent);
-    font-size: 0.625rem;
-    font-weight: 650;
+    font-size: var(--t-2xs);
+    font-weight: 600;
     letter-spacing: 0.04em;
   }
 

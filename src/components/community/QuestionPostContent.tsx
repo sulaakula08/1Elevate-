@@ -21,11 +21,11 @@ export function QuestionPostContent({
     <div className="space-y-3">
       <SubjectTopicTag subjectId={data.subjectId} topic={topic} />
       {/* The composer collects one field for both — skip the duplicate line when they match. */}
-      {text && text !== data.prompt && <p className="text-[14.5px] leading-relaxed">{text}</p>}
+      {text && text !== data.prompt && <p className="text-sm leading-relaxed">{text}</p>}
       <blockquote className="cm-quote">{data.prompt}</blockquote>
 
       {(data.myAnswer || data.correctAnswer) && (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
           {data.myAnswer && (
             <span className="text-muted">
               {t("community.myAnswerLabel")}: <strong className="text-foreground">{data.myAnswer}</strong>
@@ -41,7 +41,7 @@ export function QuestionPostContent({
       )}
 
       {data.explanationCount > 0 && (
-        <p className="text-[12.5px] text-faint">
+        <p className="text-micro text-faint">
           {pluralize(data.explanationCount, NOUNS.explanation)}
         </p>
       )}

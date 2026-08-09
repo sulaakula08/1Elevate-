@@ -43,11 +43,9 @@ export function useLandingMotion(scope: RefObject<HTMLElement | null>) {
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const q = gsap.utils.selector(root);
 
-      const chars = q(".ch");
       // Outer wrapper takes the scroll parallax, inner takes the intro rise.
       const heroCard = q("[data-motion='hero-card']");
       const heroCardIn = q("[data-motion='hero-card-in']");
-      const featureSection = q("[data-motion='features']")[0];
 
       /* ---------------- 1. the master intro timeline ---------------- */
 
@@ -57,33 +55,15 @@ export function useLandingMotion(scope: RefObject<HTMLElement | null>) {
       });
       master.timeScale(MOTION.rate);
 
-      if (chars.length) {
-        master.from(chars, {
-          opacity: 0,
-          yPercent: 60,
-          rotateX: MOTION.headline.rotateX,
-          duration: MOTION.headline.duration,
-          stagger: MOTION.headline.stagger,
-          ease: MOTION.headline.ease,
-        });
-      }
-
+      /*
+       * The headline is not animated at all any more — neither per-character nor
+       * as a block. It is the first and most important thing on the page, and
+       * anything that fades it in makes it unreadable for as long as the fade
+       * lasts. Twice during this work a screenshot caught it mid-tween, which is
+       * exactly what a visitor on a slow first paint sees. It now renders at full
+       * opacity in the first painted frame, and the intro starts below it.
+       */
       master
-        // fromTo, not from: from() takes the element's current state as its
-        // destination, and this one is pre-hidden by CSS and re-created when the
-        // effect is double-invoked — so it would read 0 as the value to land on
-        // and animate 0 → 0. Both ends are stated here so it cannot happen.
-        .fromTo(
-          q("[data-motion='headline-b']"),
-          { opacity: 0, y: MOTION.headlineB.y },
-          {
-            opacity: 1,
-            y: 0,
-            duration: MOTION.headlineB.duration,
-            ease: MOTION.headlineB.ease,
-          },
-          MOTION.headlineB.overlap,
-        )
         .from(
           q("[data-motion='lede']"),
           {
@@ -154,55 +134,25 @@ export function useLandingMotion(scope: RefObject<HTMLElement | null>) {
             })
           : null;
 
-      /* ---------------- 3. pinned features section ---------------- */
+      /* ---------------- 3. (removed) the pinned features section ----------------
+       *
+       * The features section used to pin for a full viewport height and scrub
+       * its cards in one at a time. Two things were wrong with it. A visitor
+       * scrolling at any normal speed met a section that held the page still and
+       * then revealed four cards of plain text — motion gating content rather
+       * than explaining it. And `pinSpacing` added a screen's worth of document
+       * height, which is where a good part of the landing page's dead space came
+       * from. The section is ordinary flow now, and reads immediately.
+       */
 
-      let featuresTl: gsap.core.Timeline | null = null;
-
-      if (featureSection) {
-        const cards = q("[data-motion='feature-card']");
-        const heading = q("[data-motion='features-heading']");
-
-        featuresTl = gsap.timeline({
-          scrollTrigger: {
-            trigger: featureSection,
-            start: "center center",
-            end: () => `+=${window.innerHeight * MOTION.features.pinHold}`,
-            pin: true,
-            pinSpacing: true,
-            scrub: MOTION.features.scrub,
-            // Pinning changes document height; recalculate on resize so the
-            // trigger points stay correct after an orientation change.
-            invalidateOnRefresh: true,
-          },
-        });
-
-        featuresTl
-          .from(heading, {
-            opacity: 0,
-            y: MOTION.features.heading.y,
-            duration: MOTION.features.heading.duration,
-            ease: MOTION.features.heading.ease,
-          })
-          .from(cards, {
-            opacity: 0,
-            y: MOTION.features.card.y,
-            scale: MOTION.features.card.scale,
-            duration: MOTION.features.card.duration,
-            stagger: MOTION.features.card.stagger,
-            ease: MOTION.features.card.ease,
-          });
-      }
-
-      // The pin is measured from layout, which settles a tick after hydration.
-      // One refresh avoids a pin whose start point was computed too early.
+      // Layout settles a tick after hydration; one refresh keeps the parallax
+      // trigger points honest.
       const refresh = requestAnimationFrame(() => ScrollTrigger.refresh());
 
       return () => {
         cancelAnimationFrame(refresh);
         parallax?.scrollTrigger?.kill();
         parallax?.kill();
-        featuresTl?.scrollTrigger?.kill();
-        featuresTl?.kill();
         master.kill();
       };
     });

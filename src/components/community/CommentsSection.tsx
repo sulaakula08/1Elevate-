@@ -16,11 +16,11 @@ function CommentRow({ comment }: { comment: CommunityComment }) {
     <div className="flex items-start gap-2.5">
       <Avatar author={comment.author} size={26} />
       <div className="min-w-0">
-        <p className="text-[13px]">
+        <p className="text-sm">
           <span className="font-medium">{comment.author.name}</span>{" "}
           <span className="text-muted">{comment.text}</span>
         </p>
-        <p className="text-[11px] text-faint mt-0.5">{timeAgo(comment.createdAt)}</p>
+        <p className="text-2xs text-faint mt-0.5">{timeAgo(comment.createdAt)}</p>
       </div>
     </div>
   );
@@ -67,7 +67,7 @@ export function CommentsSection({
       ))}
 
       {comments.length === 0 && open && (
-        <p className="text-[13px] text-faint">{t("community.noComments")}</p>
+        <p className="text-sm text-faint">{t("community.noComments")}</p>
       )}
 
       {!open && remaining > 0 && (

@@ -23,15 +23,15 @@ export function Subjects({ bank }: { bank: Question[] }) {
   const stats = bankStats(bank);
 
   return (
-    <section className="py-20 border-t">
+    <section className="py-16 sm:py-20 border-t">
       <Reveal>
-        <p className="label-xs">{t("landing.subjectsTitle")}</p>
-        <h2 className="display mt-4 max-w-xl text-3xl sm:text-[2.5rem]">
+        <p className="t-label">{t("landing.subjectsTitle")}</p>
+        <h2 className="t-h1 mt-3 max-w-2xl">
           {t("landing.subjectsHeadline")}
         </h2>
       </Reveal>
 
-      <div className="mt-10 grid sm:grid-cols-2 gap-4">
+      <div className="mt-9 grid sm:grid-cols-2 gap-4">
         {SUBJECTS.map((subject, i) => {
           const isMath = subject.id === "sat-math";
           const subjectStats = statsFor(stats, subject.id);

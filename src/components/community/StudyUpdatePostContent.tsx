@@ -25,20 +25,20 @@ export function StudyUpdatePostContent({
   return (
     <div className="space-y-3">
       <p className="label-xs">{t("community.studySessionResults")}</p>
-      <p className="text-[15px]">
+      <p className="text-body">
         <strong className="num">{pluralize(data.questionsCompleted, NOUNS.question)}</strong>
         {subject && <span className="text-muted"> · {tx(subject.name)}</span>}
       </p>
-      {text && <p className="text-[13.5px] text-muted">{text}</p>}
+      {text && <p className="text-sm text-muted">{text}</p>}
       <div className="max-w-[220px]">
-        <div className="flex items-baseline justify-between text-[13px] mb-1.5">
+        <div className="flex items-baseline justify-between text-sm mb-1.5">
           <span className="text-muted">{t("community.accuracyLabel")}</span>
           <span className="num font-medium">{pct(data.accuracy)}</span>
         </div>
         <ProgressBar value={data.accuracy} tone="accent" />
       </div>
       {data.accuracyDelta !== undefined && data.accuracyDelta !== 0 && (
-        <p className="text-[12.5px] text-faint">
+        <p className="text-micro text-faint">
           {data.accuracyDelta > 0 ? "+" : ""}
           {Math.round(data.accuracyDelta * 100)}% vs last session
         </p>

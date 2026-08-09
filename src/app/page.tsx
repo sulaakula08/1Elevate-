@@ -11,7 +11,7 @@ export default function HomePage() {
   // avoids flashing the marketing page at a signed-in student.
   if (!ready) {
     return (
-      <div className="max-w-4xl mx-auto pt-12 space-y-4">
+      <div className="container-app space-y-4">
         <div className="skeleton h-4 w-24 rounded" />
         <div className="skeleton h-10 w-2/3 rounded-lg" />
         <div className="skeleton h-3 w-full max-w-md rounded mt-8" />

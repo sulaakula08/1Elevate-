@@ -17,17 +17,17 @@ export function AchievementPostContent({ data }: { data: AchievementPostData }) 
 
   return (
     <div className="space-y-2.5">
-      <p className="flex items-center gap-2.5 text-[19px] font-semibold tracking-[-0.02em]">
+      <p className="flex items-center gap-2.5 text-h3 font-semibold tracking-[-0.02em]">
         <span className="cm-badge-mark" aria-hidden>
           <IconAchievement size={18} filled />
         </span>
         {data.title}
       </p>
 
-      {data.detail && <p className="text-[14px] text-muted">{data.detail}</p>}
+      {data.detail && <p className="text-sm text-muted">{data.detail}</p>}
 
       {hasClimb && (
-        <div className="flex items-center gap-4 text-[13px] text-muted pt-0.5">
+        <div className="flex items-center gap-4 text-sm text-muted pt-0.5">
           <span className="num">
             {data.startScore} → <strong className="text-foreground">{data.currentScore}</strong>
           </span>

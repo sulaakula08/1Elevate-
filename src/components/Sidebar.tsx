@@ -24,7 +24,7 @@ type Item = { href: string; key: string; Icon: (p: { size?: number }) => React.R
 const TOP: Item[] = [{ href: "/", key: "nav.home", Icon: NavHome }];
 
 const PRACTICE: Item[] = [
-  { href: "/practice", key: "nav.bank", Icon: NavPractice },
+  { href: "/practice", key: "nav.practice", Icon: NavPractice },
   { href: "/mock", key: "nav.mock", Icon: NavMock },
   { href: "/review", key: "nav.review", Icon: NavReview },
 ];
@@ -76,12 +76,12 @@ export function Sidebar({
 
   return (
     <aside className={`sidebar hidden md:flex ${collapsed ? "sidebar-tight" : ""}`}>
-      <div className="side-head">
-        {!collapsed && (
-          <Link href="/" className="min-w-0" aria-label="1Elevate">
-            <Logo />
-          </Link>
-        )}
+      <div className={`side-head ${collapsed ? "side-head-tight" : ""}`}>
+        {/* The mark stays when the rail collapses. Losing it left a 4rem column
+            of anonymous icons with nothing saying whose product this is. */}
+        <Link href="/" className="min-w-0" aria-label="1Elevate">
+          <Logo compact={collapsed} />
+        </Link>
         {onToggle && (
           <button
             type="button"
@@ -116,19 +116,16 @@ export function Sidebar({
         )}
       </div>
 
-      {/* the one exam, and where the student stands on its scale */}
-      {collapsed ? (
-        <div
-          className="side-exam-tight"
-          title={`${tx(SAT.name)} · ${account.targetScore} / ${SAT.maxScore}`}
-        >
-          <span className="num">{account.targetScore}</span>
-        </div>
-      ) : (
+      {/* The exam and where the student stands on its scale. Nothing at all when
+          the rail is collapsed: 4rem fits the number but not the label, and
+          "1400" on its own says nothing. The target lives on /account and in the
+          dashboard goal panel, both of which explain it. */}
+      {!collapsed && (
         <div className="px-1.5 pb-3 mb-1 border-b">
-          <p className="text-[13px] font-medium">{tx(SAT.name)}</p>
-          <p className="num text-[11px] text-faint mt-0.5">
-            {t("home.targetScore")} {account.targetScore} / {SAT.maxScore}
+          <p className="text-sm font-medium">{tx(SAT.name)}</p>
+          <p className="text-2xs text-faint mt-0.5">
+            {t("home.targetScore")} <span className="num">{account.targetScore}</span> /{" "}
+            <span className="num">{SAT.maxScore}</span>
           </p>
         </div>
       )}
@@ -157,15 +154,15 @@ export function Sidebar({
           title={collapsed ? account.name : undefined}
         >
           <span
-            className="grid place-items-center w-8 h-8 rounded-full text-[11px] font-semibold shrink-0"
+            className="grid place-items-center w-8 h-8 rounded-[var(--radius-pill)] text-2xs font-semibold shrink-0"
             style={{ background: "var(--ink)", color: "var(--ink-contrast)" }}
           >
             {account.name.slice(0, 2).toUpperCase()}
           </span>
           {!collapsed && (
             <span className="min-w-0">
-              <span className="block text-[13px] font-medium truncate">{account.name}</span>
-              <span className="block text-[11px] text-faint">
+              <span className="block text-sm font-medium truncate">{account.name}</span>
+              <span className="block text-2xs text-faint">
                 {days > 0 ? `🔥 ${days}` : (account.email || "SAT")}
               </span>
             </span>

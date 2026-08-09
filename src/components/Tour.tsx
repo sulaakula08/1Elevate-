@@ -152,23 +152,23 @@ export function Tour() {
             <TutorAvatar mood="talking" size={22} />
           ) : (
             <span
-              className="num text-[11px] px-2 py-0.5 rounded-full"
+              className="num text-2xs px-2 py-0.5 rounded-[var(--radius-pill)]"
               style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
             >
               {step + 1}/{STEPS.length}
             </span>
           )}
-          <p className="text-[15px] font-semibold">{t(current.titleKey)}</p>
+          <p className="text-body font-semibold">{t(current.titleKey)}</p>
         </div>
 
-        <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted">{t(current.bodyKey)}</p>
+        <p className="mt-2.5 text-sm leading-relaxed text-muted">{t(current.bodyKey)}</p>
 
         <div className="mt-5 flex items-center gap-2">
           <div className="flex gap-1.5 mr-auto">
             {STEPS.map((_, i) => (
               <span
                 key={i}
-                className="w-1.5 h-1.5 rounded-full transition-colors"
+                className="w-1.5 h-1.5 rounded-[var(--radius-pill)] transition-colors"
                 style={{ background: i === step ? "var(--accent)" : "var(--line-strong)" }}
               />
             ))}

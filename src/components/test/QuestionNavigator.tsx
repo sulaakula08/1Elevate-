@@ -44,9 +44,9 @@ export function QuestionNavigator({ total, current, answered, marked, onGo, onCl
       className="panel scale-in absolute bottom-full mb-2 left-0 w-[min(24rem,calc(100vw-2rem))] p-4"
       style={{ boxShadow: "var(--overlay)" }}
     >
-      <p className="text-[13.5px] font-medium text-center">{t("ptool.navTitle")}</p>
+      <p className="text-sm font-medium text-center">{t("ptool.navTitle")}</p>
 
-      <div className="flex items-center justify-center gap-4 mt-3 pb-3 border-b text-[11.5px] text-muted">
+      <div className="flex items-center justify-center gap-4 mt-3 pb-3 border-b text-micro text-muted">
         <span className="flex items-center gap-1.5">
           <span className="nav-key nav-key-current" aria-hidden />
           {t("ptool.navCurrent")}
