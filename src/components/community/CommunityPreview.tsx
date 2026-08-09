@@ -29,16 +29,26 @@ function summarize(post: CommunityPostView): string {
   }
 }
 
-function PreviewCard({ post }: { post: CommunityPostView }) {
+/**
+ * A row, not a card.
+ *
+ * On the dashboard this is a glance at other people studying, not a feed item,
+ * and a bordered rounded rectangle gave it the same standing as the score block
+ * above it. Hairlines and the author's name carrying the weight say "there are
+ * people here" in a third of the space.
+ */
+function PreviewRow({ post }: { post: CommunityPostView }) {
   return (
-    <Link href="/community" className="card card-hover cm-preview-card">
-      <div className="flex items-center gap-2">
-        <Avatar author={post.author} size={26} />
-        <span className="text-sm font-medium truncate">{post.author.name}</span>
-        <span className="num text-micro text-faint ml-auto shrink-0">{timeAgo(post.createdAt)}</span>
-      </div>
-      <p className="text-sm text-muted mt-2 leading-snug cm-preview-clamp">{summarize(post)}</p>
-    </Link>
+    <li>
+      <Link href="/community" className="cm-preview-row">
+        <Avatar author={post.author} size={30} />
+        <span className="min-w-0">
+          <span className="cm-preview-name">{post.author.name}</span>
+          <span className="cm-preview-text">{summarize(post)}</span>
+        </span>
+        <span className="num cm-preview-time">{timeAgo(post.createdAt)}</span>
+      </Link>
+    </li>
   );
 }
 
@@ -55,20 +65,18 @@ export function CommunityPreview() {
   const preview = chosen.length >= 2 ? chosen.slice(0, 2) : posts.slice(0, 2);
 
   return (
-    <section>
-      <div className="flex items-center gap-2.5">
-        <h2 className="text-h3 sm:text-h3 font-semibold tracking-[-0.02em]">
-          {t("community.homeTitle")}
-        </h2>
-        <Link href="/community" className="btn btn-sm ml-auto shrink-0">
+    <section className="dash-section">
+      <div className="dash-head">
+        <p className="t-label">{t("community.homeTitle")}</p>
+        <Link href="/community" className="dash-more">
           {t("community.homeSeeAll")} <span aria-hidden>›</span>
         </Link>
       </div>
-      <div className="mt-4 grid sm:grid-cols-2 gap-3">
+      <ul className="cm-preview-list">
         {preview.map((post) => (
-          <PreviewCard key={post.id} post={post} />
+          <PreviewRow key={post.id} post={post} />
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

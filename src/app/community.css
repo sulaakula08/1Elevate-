@@ -332,15 +332,52 @@
     color: var(--s-amber);
   }
 
-  /* ---------------- Home preview ---------------- */
-  .cm-preview-card {
-    display: block;
-    padding: 0.875rem 1rem;
+  /* ---------------- Home preview ----------------
+     Hairline rows. The two bordered cards this replaces sat at the bottom of the
+     dashboard looking like two more widgets; the point of the section is that
+     other people are working right now, which is a human signal, not a panel. */
+  .cm-preview-list {
+    display: flex;
+    flex-direction: column;
+    /* A one-line post stretched across the full workspace width put the
+       timestamp a thousand pixels from the name it belongs to. Capped to the
+       reading measure, the row reads as one thing. */
+    max-width: var(--w-read);
   }
-  .cm-preview-clamp {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+  .cm-preview-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.5rem 0.75rem 0;
+    border-top: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    transition: background 150ms ease;
+  }
+  .cm-preview-list li:last-child .cm-preview-row {
+    border-bottom: 1px solid var(--line);
+  }
+  .cm-preview-row:hover {
+    background: var(--surface-hover);
+  }
+  .cm-preview-name {
+    display: block;
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .cm-preview-text {
+    display: block;
+    margin-top: 0.0625rem;
+    font-size: var(--t-sm);
+    color: var(--muted);
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cm-preview-time {
+    margin-left: auto;
+    flex-shrink: 0;
+    align-self: flex-start;
+    font-size: var(--t-micro);
+    color: var(--faint);
   }
 }
