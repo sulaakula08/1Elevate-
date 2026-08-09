@@ -32,11 +32,16 @@ function CommentRow({ comment }: { comment: CommunityComment }) {
  * per AGENTS §8 ("do not build an enormous comment system in Milestone 1").
  */
 export function CommentsSection({
+  isQuestion = false,
   postId,
   comments,
   open,
   onExpand,
 }: {
+  /* A reply to a question is an explanation everywhere else in the post — the
+     action, the count and the empty state all say so — so the composer that
+     writes one has to agree. Same data, same component, one word. */
+  isQuestion?: boolean;
   postId: string;
   comments: CommunityComment[];
   open: boolean;
@@ -67,7 +72,7 @@ export function CommentsSection({
       ))}
 
       {comments.length === 0 && open && (
-        <p className="text-sm text-faint">{t("community.noComments")}</p>
+        <p className="text-sm text-faint">{t(isQuestion ? "community.noExplanations" : "community.noComments")}</p>
       )}
 
       {!open && remaining > 0 && (
@@ -87,10 +92,10 @@ export function CommentsSection({
           <input
             type="text"
             className="field cm-comment-field"
-            placeholder={t("community.commentPlaceholder")}
+            placeholder={t(isQuestion ? "community.explanationPlaceholder" : "community.commentPlaceholder")}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            aria-label={t("community.commentPlaceholder")}
+            aria-label={t(isQuestion ? "community.explanationPlaceholder" : "community.commentPlaceholder")}
           />
           <button
             type="submit"

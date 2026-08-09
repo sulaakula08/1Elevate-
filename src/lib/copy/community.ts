@@ -78,6 +78,8 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.hideComments": { en: "Hide comments" },
   "community.commentPlaceholder": { en: "Write a comment…" },
   "community.commentSend": { en: "Send" },
+  "community.noExplanations": { en: "No explanations yet." },
+  "community.explanationPlaceholder": { en: "Explain how to solve it…" },
   "community.noComments": { en: "No comments yet." },
 
   "community.myAnswerLabel": { en: "My answer" },

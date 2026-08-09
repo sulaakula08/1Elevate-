@@ -74,6 +74,7 @@ export function PostCard({ post }: { post: CommunityPostView }) {
         onToggleSave={() => toggleSave(post.id)}
       />
       <CommentsSection
+        isQuestion={post.type === "question"}
         postId={post.id}
         comments={post.comments}
         open={commentsOpen}
