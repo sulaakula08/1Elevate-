@@ -20,6 +20,7 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.quickExplain": { en: "Explain something" },
   "community.quickMore": { en: "More…" },
 
+  "community.composerOrShare": { en: "Or share something" },
   "community.postTypeQuestion": { en: "Ask a Question" },
   "community.postTypeProgress": { en: "Share Progress" },
   "community.postTypeAchievement": { en: "Achievement" },
@@ -37,6 +38,7 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.composerChooseType": { en: "What would you like to share?" },
   "community.composerSubject": { en: "Subject" },
   "community.composerTopic": { en: "Topic (optional)" },
+  "community.composerQuestionBody": { en: "Your question" },
   "community.composerBody": { en: "Details" },
   "community.composerMyAnswer": { en: "My answer" },
   /* Both answer fields take a letter for a multiple-choice item or a written
@@ -63,6 +65,11 @@ export const COMMUNITY_COPY: CopyDict = {
 
   "community.reactionHelpful": { en: "Helpful" },
   "community.reactionCongrats": { en: "Congrats" },
+  "community.actionExplain": { en: "Explain" },
+  "community.actionExplanation": { en: "explanation" },
+  "community.actionExplanations": { en: "explanations" },
+  "community.actionCommentOne": { en: "comment" },
+  "community.actionCommentMany": { en: "comments" },
   "community.actionComment": { en: "Comment" },
   "community.actionSave": { en: "Save" },
   "community.actionSaved": { en: "Saved" },
@@ -71,12 +78,15 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.hideComments": { en: "Hide comments" },
   "community.commentPlaceholder": { en: "Write a comment…" },
   "community.commentSend": { en: "Send" },
+  "community.noExplanations": { en: "No explanations yet." },
+  "community.explanationPlaceholder": { en: "Explain how to solve it…" },
   "community.noComments": { en: "No comments yet." },
 
   "community.myAnswerLabel": { en: "My answer" },
   "community.correctAnswerLabel": { en: "Correct answer" },
   "community.scoreGrowth": { en: "SAT score growth" },
   "community.studySessionResults": { en: "Session results" },
+  "community.sessionQuestions": { en: "questions" },
   "community.accuracyLabel": { en: "Accuracy" },
   "community.sharedResource": { en: "Resource" },
   "community.sharedExplanation": { en: "Explanation" },

@@ -54,18 +54,20 @@ function CommunityInner() {
           do. With them gone the feed gets the whole width. */}
       <div className="container-read">
         <div className="min-w-0">
-          <div className="pt-8 pb-5">
-            <h1 className="display fade-up text-h1 sm:text-h1">{t("community.title")}</h1>
-            <p className="fade-in mt-2 text-sm text-muted">{t("community.subtitle")}</p>
+          {/* A compact entry. A display-sized title over "Learn together.
+              Improve together." spent the first 140px of the page on a slogan
+              before any student's work appeared; the title now sits on the same
+              line as the tabs on desktop, and the feed starts near the top. */}
+          <div className="cm-head">
+            <h1 className="t-h2 shrink-0">{t("community.title")}</h1>
+            <FeedTabs active={tab} onChange={setTab} />
           </div>
-
-          <FeedTabs active={tab} onChange={setTab} />
 
           <div className="mt-4">
             <CreatePostCard onOpen={openComposer} />
           </div>
 
-          <div className="mt-4 space-y-4 pb-16">
+          <div className="cm-feed mt-2 pb-16">
             {!ready ? (
               <>
                 <div className="skeleton h-44 rounded-xl" />

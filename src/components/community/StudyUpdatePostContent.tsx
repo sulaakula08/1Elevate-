@@ -3,14 +3,20 @@
 import { getSubject } from "@/data/exams";
 import type { StudyUpdatePostData } from "@/data/community";
 import { useI18n } from "@/lib/i18n";
-import { NOUNS, pluralize } from "@/lib/plural";
 import { pct } from "@/lib/stats";
-import { ProgressBar } from "@/components/motion";
 
 /**
- * Auto-summary of a practice session. Deliberately label-led rather than a
- * narrative sentence ("completed 25 questions") — it reads faster and matches
- * the data-first caption style the rest of the app uses for stats.
+ * A finished practice session, stated in one line.
+ *
+ * This used to be a full-height post: an uppercase eyebrow, a bold count, a
+ * labelled accuracy bar and a delta caption — the same visual weight as a
+ * student asking for help with a problem they are stuck on. Measured, it came
+ * out at 249px, identical to an achievement. It is the lightest thing in the
+ * feed and now reads as one: subject, count, accuracy and the change since last
+ * time, on a single line that scans in about a second.
+ *
+ * No progress bar. A bar repeats what the percentage already says, and at this
+ * weight the row does not need two ways of stating one number.
  */
 export function StudyUpdatePostContent({
   data,
@@ -21,28 +27,26 @@ export function StudyUpdatePostContent({
 }) {
   const { t, tx } = useI18n();
   const subject = getSubject(data.subjectId);
+  const delta = data.accuracyDelta;
 
   return (
-    <div className="space-y-3">
-      <p className="label-xs">{t("community.studySessionResults")}</p>
-      <p className="text-body">
-        <strong className="num">{pluralize(data.questionsCompleted, NOUNS.question)}</strong>
-        {subject && <span className="text-muted"> · {tx(subject.name)}</span>}
+    <div>
+      <p className="cm-session">
+        <span className="num cm-session-n">{data.questionsCompleted}</span>
+        <span className="cm-session-unit">{t("community.sessionQuestions")}</span>
+        {subject && <span className="cm-session-sep">{tx(subject.name)}</span>}
+        <span className="cm-session-sep">
+          <span className="num cm-session-acc">{pct(data.accuracy)}</span>{" "}
+          {t("community.accuracyLabel").toLowerCase()}
+        </span>
+        {delta !== undefined && delta !== 0 && (
+          <span className={`cm-session-delta ${delta > 0 ? "is-up" : "is-down"}`}>
+            {delta > 0 ? "+" : ""}
+            {Math.round(delta * 100)}%
+          </span>
+        )}
       </p>
-      {text && <p className="text-sm text-muted">{text}</p>}
-      <div className="max-w-[220px]">
-        <div className="flex items-baseline justify-between text-sm mb-1.5">
-          <span className="text-muted">{t("community.accuracyLabel")}</span>
-          <span className="num font-medium">{pct(data.accuracy)}</span>
-        </div>
-        <ProgressBar value={data.accuracy} tone="accent" />
-      </div>
-      {data.accuracyDelta !== undefined && data.accuracyDelta !== 0 && (
-        <p className="text-micro text-faint">
-          {data.accuracyDelta > 0 ? "+" : ""}
-          {Math.round(data.accuracyDelta * 100)}% vs last session
-        </p>
-      )}
+      {text && <p className="text-sm text-muted mt-1.5">{text}</p>}
     </div>
   );
 }
