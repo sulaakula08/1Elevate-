@@ -161,15 +161,15 @@ export function Dashboard({ account }: { account: Account }) {
                   {/* Text zone. The card is a grid, so nothing here can be
                       reached by the artwork beside it. */}
                   <span className="block min-w-0">
-                    <span className="block text-h3 font-semibold tracking-[-0.02em]">
-                      {tx(subject.name)}
-                    </span>
+                    <span className="block bank-title">{tx(subject.name)}</span>
 
-                    <span className="mt-2.5 flex items-baseline gap-2 text-sm opacity-90">
-                      <span className="num">
+                    {/* Each group stays on one line: at tablet widths the row
+                        was breaking inside "0 of 0" and stacking the words. */}
+                    <span className="bank-stats">
+                      <span className="num whitespace-nowrap">
                         {solved} {t("bank.of")} {total}
                       </span>
-                      <span>{t("bank.solved")}</span>
+                      <span className="whitespace-nowrap">{t("bank.solved")}</span>
                       <span className="num ml-auto font-semibold">{pct(share)}</span>
                     </span>
 

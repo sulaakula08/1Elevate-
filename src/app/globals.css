@@ -538,8 +538,18 @@ p {
   /* Numerals are data, so they get the mono face: a score, a streak and a
      percentage line up in a column and stop shifting width as they count up.
      This is the only place Mono is used. */
+  /*
+   * Numerals are data: a score, a streak and a percentage line up in a column
+   * and stop changing width as they count up.
+   *
+   * Sans, not Mono. Mono was the first choice, but Geist Mono's slashed zero is
+   * its default glyph rather than an OpenType alternate — no feature turns it
+   * off — and "16Ø0" reads as a code sample on the one number this whole product
+   * is aimed at. Geist Sans's tabular figures measure the same advance width as
+   * Mono's, so the alignment is identical and only the terminal character is
+   * gone. Mono is still loaded, for the code and formula blocks in a question.
+   */
   .num {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
   }
@@ -1566,6 +1576,23 @@ p {
     overflow: hidden;
     pointer-events: none;
   }
+  .bank-title {
+    display: block;
+    font-size: var(--t-h3);
+    line-height: 1.2;
+    letter-spacing: var(--tr-h3);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+  .bank-stats {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-top: 0.625rem;
+    font-size: var(--t-sm);
+    opacity: 0.9;
+  }
+
   /* Under roughly 19rem of card the art column would be a sliver, and a sliver
      of a lit 3D scene reads as a rendering fault. Below that the text takes the
      whole card. */
@@ -1575,6 +1602,17 @@ p {
     }
     .bank-art {
       display: none;
+    }
+  }
+  /* Narrow card, whatever the viewport is doing. "Reading & Writing" at 20px in
+     a 180px column breaks into three lines and drags the card's height with it;
+     one step down fits it in two. */
+  @container (max-width: 24rem) {
+    .bank-card {
+      padding: 1rem;
+    }
+    .bank-title {
+      font-size: var(--t-body);
     }
   }
 
