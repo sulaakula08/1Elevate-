@@ -21,17 +21,28 @@ import {
 
 type Item = { href: string; key: string; Icon: (p: { size?: number }) => React.ReactElement };
 
-const TOP: Item[] = [{ href: "/", key: "nav.home", Icon: NavHome }];
+/*
+ * Three clusters, no headings.
+ *
+ * The rail carried five uppercase group labels — PRACTICE, COMMUNITY, PROGRESS,
+ * LEARN, MANAGE — for eight destinations, two of those groups holding a single
+ * link each. That is more label than navigation, and "LEARN" sat above
+ * Feedback, which is not learning. Eight items in three spaced clusters are
+ * read in one pass without a single word of chrome; the last cluster is ruled
+ * off because it is tools rather than study.
+ */
+const HOME: Item[] = [{ href: "/", key: "nav.home", Icon: NavHome }];
 
-const PRACTICE: Item[] = [
+const STUDY: Item[] = [
   { href: "/practice", key: "nav.practice", Icon: NavPractice },
   { href: "/mock", key: "nav.mock", Icon: NavMock },
   { href: "/review", key: "nav.review", Icon: NavReview },
 ];
 
-const SOCIAL: Item[] = [{ href: "/community", key: "nav.community", Icon: NavCommunity }];
-const PROGRESS: Item[] = [{ href: "/progress", key: "nav.progress", Icon: NavProgress }];
-const LEARN: Item[] = [{ href: "/feedback", key: "nav.feedback", Icon: NavFeedback }];
+const TRACK: Item[] = [
+  { href: "/community", key: "nav.community", Icon: NavCommunity },
+  { href: "/progress", key: "nav.progress", Icon: NavProgress },
+];
 
 /**
  * Desktop navigation rail: brand, exam switcher, grouped links, account row.
@@ -57,22 +68,19 @@ export function Sidebar({
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
-  const renderGroup = (label: string | null, items: Item[]) => (
-    <>
-      {label && !collapsed && <p className="side-group">{label}</p>}
-      {items.map(({ href, key, Icon }) => (
-        <Link
-          key={href}
-          href={href}
-          className={`side-link ${isActive(href) ? "side-link-on" : ""}`}
-          title={collapsed ? t(key) : undefined}
-        >
-          <Icon size={18} />
-          {!collapsed && <span className="truncate">{t(key)}</span>}
-        </Link>
-      ))}
-    </>
-  );
+  const renderGroup = (items: Item[]) =>
+    items.map(({ href, key, Icon }) => (
+      <Link
+        key={href}
+        href={href}
+        className={`side-link ${isActive(href) ? "side-link-on" : ""}`}
+        title={collapsed ? t(key) : undefined}
+        aria-current={isActive(href) ? "page" : undefined}
+      >
+        <Icon size={18} />
+        {!collapsed && <span className="truncate">{t(key)}</span>}
+      </Link>
+    ));
 
   return (
     <aside className={`sidebar hidden md:flex ${collapsed ? "sidebar-tight" : ""}`}>
@@ -130,14 +138,18 @@ export function Sidebar({
         </div>
       )}
 
-      <nav className="flex flex-col gap-0.5">
-        {renderGroup(null, TOP)}
-        {renderGroup(t("side.practice"), PRACTICE)}
-        {renderGroup(t("side.social"), SOCIAL)}
-        {renderGroup(t("side.progress"), PROGRESS)}
-        {renderGroup(t("side.learn"), LEARN)}
-        {account.role !== "student" &&
-          renderGroup(t("side.manage"), [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }])}
+      <nav className="side-nav">
+        <div className="side-cluster">{renderGroup(HOME)}</div>
+        <div className="side-cluster">{renderGroup(STUDY)}</div>
+        <div className="side-cluster">{renderGroup(TRACK)}</div>
+        <div className="side-cluster side-cluster-tools">
+          {renderGroup([
+            { href: "/feedback", key: "nav.feedback", Icon: NavFeedback },
+            ...(account.role !== "student"
+              ? [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }]
+              : []),
+          ])}
+        </div>
       </nav>
 
       {/* account row */}

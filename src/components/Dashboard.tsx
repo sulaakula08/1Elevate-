@@ -11,7 +11,6 @@ import {
   maxScore,
   overall,
   pct,
-  recentActivity,
   reviewQueue,
   streak,
   weakTopics,
@@ -19,7 +18,7 @@ import {
 import { SubjectScene } from "./three/SubjectScene";
 import { CountUp, ProgressBar, Reveal } from "./motion";
 import { ExamCountdown } from "./dashboard/ExamCountdown";
-import { IconRule, IconTrend } from "./illustrations";
+import { StudyActivity } from "./dashboard/StudyActivity";
 import { CommunityPreview } from "./community/CommunityPreview";
 
 /** Slightly darker second stop, so each card is a gradient of its own hue. */
@@ -34,8 +33,6 @@ export function Dashboard({ account }: { account: Account }) {
   const queue = reviewQueue(data, bank);
   const weak = weakTopics(examAttempts, 2, 3);
   const lastMock = [...data.mocks].reverse().find((m) => m.exam === exam);
-  const activity = recentActivity(data.attempts);
-  const peak = Math.max(1, ...activity.map((d) => d.count));
   const days = streak(data.attempts);
   const fresh = stats.total === 0;
 
@@ -121,32 +118,45 @@ export function Dashboard({ account }: { account: Account }) {
             };
 
   return (
-    <div className="container-app space-y-12 sm:space-y-14">
-      {/* ---------------- the one next action ---------------- */}
-      <section className="pl-next">
-        <div className="pl-next-copy">
-          <p className="pl-next-label">{t("home.nextUp")}</p>
-          <h1 className="pl-next-title">{next.title}</h1>
-          <p className="pl-next-meta">{next.meta}</p>
+    /*
+     * Five sections, each opened by a small uppercase label and nothing else.
+     *
+     * The page used to run h2 + a brand-coloured icon + a button on every
+     * section, which gave four different regions the same shout and left the
+     * primary action competing with a heading that said "Question Bank". The
+     * labels are now the quietest type on the page and the content is the
+     * loudest, so hierarchy comes from what is in a section rather than from the
+     * furniture around it.
+     */
+    <div className="container-app dash">
+      {/* ---------------- level 1: what do I do now ---------------- */}
+      <section className="dash-section">
+        <p className="t-label">{t("home.today")}</p>
+        <div className="pl-next">
+          <div className="pl-next-copy">
+            <h1 className="pl-next-title">{next.title}</h1>
+            <p className="pl-next-meta">{next.meta}</p>
+          </div>
+          <Link href={next.href} className="pl-next-cta">
+            {next.cta} <span aria-hidden>›</span>
+          </Link>
         </div>
-        <Link href={next.href} className="pl-next-cta">
-          {next.cta} <span aria-hidden>›</span>
-        </Link>
       </section>
 
-      {/* ---------------- question bank ---------------- */}
-      <section>
-        <div className="flex items-center gap-2.5">
-          <span style={{ color: "var(--brand)" }}>
-            <IconRule size={20} />
-          </span>
-          <h2 className="t-h2">{t("bank.title")}</h2>
-          <Link href="/practice" className="btn btn-sm ml-auto shrink-0">
-            {t("bank.allSubjects")}
+      {/* ---------------- subjects: the other way in ---------------- */}
+      <section className="dash-section">
+        <div className="dash-head">
+          <p className="t-label">{t("home.subjects")}</p>
+          <Link href="/practice" className="dash-more">
+            {t("bank.allSubjects")} <span aria-hidden>›</span>
           </Link>
         </div>
 
-        <div className="mt-5 grid sm:grid-cols-2 gap-4">
+        {/* Two up only from lg. Between 640 and 1024 two columns gave each card
+            about 310px — narrower than the same card on a phone, so a tablet
+            showed less than a handset. One full-width card per row keeps the
+            scene and the title on every screen that is not a desktop. */}
+        <div className="grid lg:grid-cols-2 gap-3">
           {subjectsFor(exam).map((subject, i) => {
             const total = statsFor(totals, subject.id).total;
             const solved = solvedBySubject.get(subject.id) ?? 0;
@@ -163,25 +173,30 @@ export function Dashboard({ account }: { account: Account }) {
                   <span className="block min-w-0">
                     <span className="block bank-title">{tx(subject.name)}</span>
 
-                    {/* Each group stays on one line: at tablet widths the row
-                        was breaking inside "0 of 0" and stacking the words. */}
+                    {/*
+                      One statement of progress, not three.
+
+                      The card used to print "0 of 0", "0%" and a filled bar —
+                      the same fact three ways — and then an "Open ›" pill on a
+                      surface that is already entirely a link. The count is the
+                      honest figure when a bank is empty (a percentage of nothing
+                      is not information), and the bar carries the proportion.
+
+                      Each group stays on one line: at tablet widths the row was
+                      breaking inside "0 of 0" and stacking the words.
+                    */}
                     <span className="bank-stats">
                       <span className="num whitespace-nowrap">
                         {solved} {t("bank.of")} {total}
                       </span>
                       <span className="whitespace-nowrap">{t("bank.solved")}</span>
-                      <span className="num ml-auto font-semibold">{pct(share)}</span>
+                      {total > 0 && (
+                        <span className="num ml-auto font-semibold">{pct(share)}</span>
+                      )}
                     </span>
 
-                    <span className="block bank-track mt-2">
+                    <span className="block bank-track mt-2.5">
                       <span className="block bank-fill" style={{ width: `${share * 100}%` }} />
-                    </span>
-
-                    <span
-                      className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-[var(--radius-pill)] text-sm font-medium"
-                      style={{ background: "rgba(255,255,255,0.22)" }}
-                    >
-                      {t("bank.open")} <span aria-hidden>›</span>
                     </span>
                   </span>
 
@@ -198,128 +213,119 @@ export function Dashboard({ account }: { account: Account }) {
         </div>
       </section>
 
-      {/* ---------------- community, promoted above the analytics ---------------- */}
-      <CommunityPreview />
-
-      {/* ---------------- progress ---------------- */}
-      <section>
-        <div className="flex items-center gap-2.5">
-          <span style={{ color: "var(--brand)" }}>
-            <IconTrend size={20} />
-          </span>
-          <h2 className="t-h2">{t("plan.overview")}</h2>
-          <Link href="/progress" className="btn btn-sm ml-auto shrink-0">
+      {/* ---------------- level 2 + 3: where am I, and am I consistent ----------------
+          The score, the four supporting figures and the activity strip were
+          three separate regions — a four-cell stat row, a bordered goal panel
+          and a heading with one line of text under it. They answer one question
+          between them, so they are one section: the score leads at display size,
+          the figures sit beside it as a ruled list rather than as four equal
+          columns, and the quarter of activity closes it. */}
+      <section className="dash-section">
+        <div className="dash-head">
+          <p className="t-label">{t("home.progress")}</p>
+          <Link href="/progress" className="dash-more">
             {t("an.viewAll")} <span aria-hidden>›</span>
           </Link>
         </div>
 
-        {fresh && <p className="mt-3 text-sm text-muted max-w-lg">{t("plan.startHere")}</p>}
+        <div className="dash-progress">
+          {/*
+            With no mock sat, there is no score — and a display-sized em dash
+            where the number goes reads as a rendering fault, not as "not
+            measured yet". So the target becomes the figure until there is a real
+            one to replace it. The target is the student's own number, so nothing
+            here is invented; only the label changes.
+          */}
+          <div className="dash-score">
+            <p className="dash-score-row">
+              <span className="num dash-score-value" data-zero={!lastMock}>
+                {lastMock ? lastMock.score : account.targetScore}
+              </span>
+              <span className="dash-score-target">
+                {lastMock ? (
+                  <>
+                    <span className="num">{account.targetScore}</span> {t("home.ofTarget")}
+                  </>
+                ) : (
+                  t("home.targetLabel")
+                )}
+              </span>
+            </p>
 
-        <dl className="pl-metrics mt-5">
-          {metrics.map((metric) => (
-            <div key={metric.label} className="pl-metric">
-              <dt className="pl-metric-label">{metric.label}</dt>
-              <dd>
-                <p className="pl-metric-value" data-zero={metric.value === 0}>
+            <ProgressBar
+              value={lastMock ? Math.min(1, lastMock.score / account.targetScore) : 0}
+              tone="accent"
+              className="mt-4"
+            />
+
+            <p className="dash-score-note">
+              {lastMock ? t("home.bestMock") : t("home.noMockYet")} · {tx(SAT.name)}{" "}
+              {t("common.total")} <span className="num">{maxScore(exam)}</span>
+            </p>
+
+            <div className="dash-score-foot">
+              <ExamCountdown inline />
+              <Link href="/mock" className="btn btn-primary btn-sm">
+                {t("home.startMock")}
+              </Link>
+            </div>
+
+            {/* Activity lives in this column rather than below the grid. As its
+                own row it left the score column ending early and the metrics
+                column running on, with about 200px of nothing between them —
+                consistency is part of "where am I", so it sits with it. */}
+            <div className="dash-activity">
+              <div className="dash-head dash-head-tight">
+                <p className="t-label">{t("home.activity")}</p>
+                <span className="text-micro text-faint">{t("home.actQuarter")}</span>
+              </div>
+              <StudyActivity attempts={data.attempts} />
+            </div>
+          </div>
+
+          {/* A ruled list, label left and figure right. Four equal columns each
+              with a big number made every metric look like a headline; a
+              student reads these as supporting facts, so they are set as one. */}
+          <dl className="dash-metrics">
+            {metrics.map((metric) => (
+              <div key={metric.label} className="dash-metric">
+                <dt>
+                  <span className="dash-metric-label">{metric.label}</span>
+                  {metric.hint && <span className="dash-metric-hint">{metric.hint}</span>}
+                </dt>
+                <dd className="num dash-metric-value" data-zero={metric.value === 0}>
                   <CountUp value={metric.value} suffix={metric.suffix} />
-                </p>
-                {metric.rule !== null && metric.rule !== undefined && (
-                  <ProgressBar value={metric.rule} tone="accent" className="pl-metric-rule" />
-                )}
-                {metric.hint && <p className="pl-metric-hint">{metric.hint}</p>}
-                {metric.action && (
-                  <Link href={metric.action.href} className="btn btn-sm mt-2.5">
-                    {metric.action.label}
-                  </Link>
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      {/* ---------------- activity, goal ----------------
-          Activity is a section ruled off by a heading; the goal is a panel,
-          because it is the one thing here you can act on. */}
-      <section className="grid lg:grid-cols-[1.35fr_1fr] gap-8 lg:gap-10 items-start">
-        <div>
-          <div className="pl-section-head">
-            <h3 className="t-label">{t("home.activity")}</h3>
-            <span className="text-micro text-faint ml-auto">{t("an.last14")}</span>
-          </div>
-
-          {fresh ? (
-            <p className="text-sm text-muted mt-4">{t("an.noActivity")}</p>
-          ) : (
-            <div className="mt-5 flex items-end gap-1.5 h-28">
-              {activity.map((day) => (
-                <div key={day.day} className="flex-1 flex flex-col items-center gap-2 h-full">
-                  <div className="flex-1 w-full flex items-end">
-                    <div
-                      className="w-full rounded-t-[3px] transition-[height] duration-500"
-                      style={{
-                        height: `${Math.max(day.count ? 8 : 3, (day.count / peak) * 100)}%`,
-                        background: day.count ? "var(--brand)" : "var(--line)",
-                      }}
-                      title={`${day.day}: ${day.count}`}
-                    />
-                  </div>
-                  <span className="num text-2xs text-faint">{day.day.slice(-2)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* The goal stays an object: it holds a target you set, a measurement
-            against it and the action that moves it. The exam date is supporting
-            information inside it rather than a card of its own. */}
-        <div className="panel p-5 sm:p-6 flex flex-col">
-          <h3 className="t-label">{t("home.goal")}</h3>
-          <p className="mt-3 flex items-baseline gap-1.5">
-            <span className="num text-h1 font-semibold">{lastMock?.score ?? 0}</span>
-            <span className="num text-h3 text-faint">/ {account.targetScore}</span>
-          </p>
-          <ProgressBar
-            value={lastMock ? Math.min(1, lastMock.score / account.targetScore) : 0}
-            tone="accent"
-            className="mt-4"
-          />
-          <p className="text-sm text-muted mt-3">
-            {tx(SAT.name)} · {t("common.total")} <span className="num">{maxScore(exam)}</span>
-          </p>
-
-          <div className="mt-4 pt-4 border-t">
-            <ExamCountdown inline />
-          </div>
-
-          <Link href="/mock" className="btn btn-primary btn-sm mt-5 self-start">
-            {t("home.startMock")}
-          </Link>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
-      {/* ---------------- weak topics ---------------- */}
+      {/* ---------------- level 4: what should I work on ---------------- */}
       {weak.length > 0 && (
-        <section>
-          <h3 className="t-h3">{t("home.weakest")}</h3>
-          <ul className="mt-4 grid sm:grid-cols-3 gap-3">
-            {weak.map((bucket, i) => (
-              <Reveal as="li" key={bucket.key} delay={i * 60}>
-                <Link href="/practice" className="card-tone p-4 block h-full">
-                  <p className="text-sm truncate">{bucket.key}</p>
-                  <p className="num text-h3 font-semibold mt-1">{pct(bucket.accuracy)}</p>
+        <section className="dash-section">
+          <p className="t-label">{t("home.focus")}</p>
+          <ul className="dash-focus">
+            {weak.map((bucket) => (
+              <li key={bucket.key}>
+                <Link href="/practice" className="dash-focus-row">
+                  <span className="dash-focus-name">{bucket.key}</span>
+                  <span className="num dash-focus-pct">{pct(bucket.accuracy)}</span>
                   <ProgressBar
                     value={bucket.accuracy}
                     tone={bucket.accuracy < 0.5 ? "danger" : "accent"}
-                    className="mt-2.5"
+                    className="dash-focus-rule"
                   />
                 </Link>
-              </Reveal>
+              </li>
             ))}
           </ul>
         </section>
       )}
+
+      {/* ---------------- level 5: social signal ---------------- */}
+      <CommunityPreview />
     </div>
   );
 }

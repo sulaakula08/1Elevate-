@@ -66,12 +66,12 @@
     gap: 1.5rem 2rem;
     padding: 1.75rem;
     border-radius: var(--radius-lg);
-    background: var(--ink);
-    color: var(--ink-contrast);
+    background: var(--next-surface);
+    color: var(--next-fg);
   }
   @media (min-width: 40rem) {
     .pl-next {
-      padding: 2.25rem 2.5rem;
+      padding: 1.75rem 2rem;
     }
   }
   /* One soft light from the top right, in the brand hue. The only decoration on
@@ -124,8 +124,9 @@
     gap: 0.5rem;
     padding: 0.75rem 1.375rem;
     border-radius: var(--radius-sm);
-    background: var(--ink-contrast);
-    color: var(--ink);
+    /* Light on the dark slab in both themes, for the same reason. */
+    background: #ffffff;
+    color: #131316;
     font-size: var(--t-sm);
     font-weight: 600;
     transition:
@@ -324,5 +325,247 @@
     .pl-spec {
       grid-template-columns: 1fr;
     }
+  }
+}
+
+@layer components {
+  /* ================= dashboard rhythm =================
+     One spacing rule between sections, and a label-to-content step that is the
+     same everywhere. The page used to set its own margin at every heading. */
+  .dash-section + .dash-section {
+    margin-top: 3.25rem;
+  }
+  @media (min-width: 48rem) {
+    .dash-section + .dash-section {
+      margin-top: 4rem;
+    }
+  }
+  .dash-section > .t-label {
+    margin-bottom: 1rem;
+  }
+  .dash-head {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .dash-head-tight {
+    margin-bottom: 0.75rem;
+  }
+  .dash-head > .t-label {
+    margin-bottom: 0;
+  }
+  /* A text link, not a bordered button. Four outlined buttons scattered down
+     the right-hand side gave secondary navigation the weight of an action. */
+  .dash-more {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: var(--t-sm);
+    font-weight: 500;
+    color: var(--muted);
+    transition: color 150ms ease;
+  }
+  .dash-more:hover {
+    color: var(--foreground);
+  }
+
+  /* ================= score + supporting figures ================= */
+  .dash-progress {
+    display: grid;
+    gap: 2rem;
+    align-items: start;
+  }
+  @media (min-width: 60rem) {
+    .dash-progress {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 19rem);
+      gap: 3.5rem;
+    }
+  }
+  .dash-score-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.875rem;
+  }
+  /* The one display number on the page. */
+  .dash-score-value {
+    font-size: clamp(3rem, 2.2rem + 3vw, 4.25rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    font-weight: 600;
+  }
+  .dash-score-value[data-zero="true"] {
+    color: var(--faint);
+  }
+  .dash-score-target {
+    font-size: var(--t-body);
+    color: var(--muted);
+  }
+  .dash-score-note {
+    margin-top: 0.875rem;
+    font-size: var(--t-sm);
+    color: var(--muted);
+  }
+  .dash-score-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+  }
+
+  /* Label left, figure right, one hairline per row. Not four columns of
+     headline-sized numbers competing with the score. */
+  .dash-metrics {
+    display: flex;
+    flex-direction: column;
+  }
+  .dash-metric {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .dash-metric:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+  .dash-metric-label {
+    display: block;
+    font-size: var(--t-sm);
+    color: var(--foreground);
+  }
+  .dash-metric-hint {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: var(--t-micro);
+    color: var(--faint);
+  }
+  .dash-metric-value {
+    margin-left: auto;
+    font-size: var(--t-h3);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .dash-metric-value[data-zero="true"] {
+    color: var(--faint);
+  }
+
+  .dash-activity {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+
+  /* ================= focus areas =================
+     A ranked list. Three tinted cards in a grid made three topics look like
+     three features; a list makes them look like a queue, which is what they
+     are. */
+  .dash-focus {
+    display: flex;
+    flex-direction: column;
+  }
+  .dash-focus-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.375rem 1rem;
+    padding: 0.875rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .dash-focus li:last-child .dash-focus-row {
+    border-bottom: 1px solid var(--line);
+  }
+  .dash-focus-row:hover .dash-focus-name {
+    color: var(--brand);
+  }
+  .dash-focus-name {
+    font-size: var(--t-body);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 150ms ease;
+  }
+  .dash-focus-pct {
+    font-size: var(--t-sm);
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .dash-focus-rule {
+    grid-column: 1 / -1;
+  }
+
+  /* ================= activity strip ================= */
+  .act-lede {
+    font-size: var(--t-sm);
+    color: var(--foreground);
+  }
+  .act-streak {
+    font-size: var(--t-h3);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .act-grid {
+    margin-top: 0.875rem;
+    /* 13 columns of 13px plus gaps — fits every width the app supports, so
+       nothing ever scrolls sideways. */
+    width: max-content;
+  }
+  /* Fixed cells, not fractional columns. Sized in fr against a 26rem box the
+     squares came out at 32px each, which is a wall of tiles rather than a
+     glance at a quarter. */
+  .act-months {
+    display: grid;
+    grid-template-columns: repeat(13, 13px);
+    gap: 4px;
+    margin-bottom: 0.375rem;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+  .act-months span {
+    /* The label is wider than its column and must not widen it. */
+    width: 0;
+    white-space: nowrap;
+  }
+  .act-cells {
+    display: grid;
+    grid-template-columns: repeat(13, 13px);
+    gap: 4px;
+  }
+  .act-col {
+    display: grid;
+    grid-template-rows: repeat(7, 13px);
+    gap: 4px;
+  }
+  /* --surface-2 is a 2% step off the page background, so an empty quarter read
+     as nothing at all. The empty cell is the line colour: visible enough to
+     show the grid, quiet enough that one practised day still stands out. */
+  .act-cell {
+    border-radius: 3px;
+    background: var(--line);
+  }
+  .act-cell-pad {
+    background: transparent;
+  }
+  .act-cell[data-level="1"] {
+    background: color-mix(in srgb, var(--brand) 26%, var(--surface));
+  }
+  .act-cell[data-level="2"] {
+    background: color-mix(in srgb, var(--brand) 48%, var(--surface));
+  }
+  .act-cell[data-level="3"] {
+    background: color-mix(in srgb, var(--brand) 72%, var(--surface));
+  }
+  .act-cell[data-level="4"] {
+    background: var(--brand);
+  }
+  .act-foot {
+    margin-top: 0.75rem;
+    font-size: var(--t-micro);
+    color: var(--faint);
   }
 }

@@ -5,7 +5,6 @@ import type { CopyDict } from "./index";
 export const COMMUNITY_COPY: CopyDict = {
   "nav.community": { en: "Community" },
   "nav.sCommunity": { en: "Feed" },
-  "side.social": { en: "Community" },
 
   "community.title": { en: "Community" },
   "community.subtitle": { en: "Learn together. Improve together." },
