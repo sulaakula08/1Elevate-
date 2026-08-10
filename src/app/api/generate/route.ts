@@ -98,16 +98,24 @@ ${request.wantFigures ? `- A question may carry a figure, and some skills need o
 - No other images or diagrams. Geometry figures are not supported yet, so do not write a question that needs one.` : "- Every question must be answerable from text alone: no images, diagrams, graphs or tables."}
 - "explanation" teaches the rule that makes the answer work, in two to four sentences, so it transfers to the next question. Write math as plain text: / for division, ^ for powers, no LaTeX.
 
-Setting — the students are in Kazakhstan, so the questions should be about their world:
-- Use Kazakhstani people, places and data: Almaty, Astana, Shymkent, Turkestan, the steppe, the Caspian, the Altai; tenge for money; metric units throughout; Kazakh and Russian given names — Aisha, Dias, Aruzhan, Nurlan, Salimzhan, Madina.
-- Draw scenarios from things a student here recognises: wheat and barley yields, rail freight on the Trans-Caspian route, apple orchards in the Almaty region, Kok-Tobe, the metro, the Aral Sea, Baikonur, winter temperatures in Karaganda, a school in Kyzylorda.
-- Write them as ordinary settings, not as landmarks being explained. A student solving a rate problem about the Almaty metro should feel it was written for them, not that Kazakhstan is the subject of the question.
-- Never rely on local knowledge to answer. Everything needed is in the stem or the figure; the setting is context, never a hidden step.
+Subject matter — this is where the exam's character comes from, so follow it closely:
+- Reading & Writing passages represent four subject areas, and a set should spread across them rather than favour one: literature, history and social studies, the humanities, and science.
+- Literature: a short excerpt from a novel, a short story or a poem, in the voice of published fiction. Write your own; never reproduce a real text.
+- History and social studies: a founding document, a speech, an argument from economics, political science, psychology or anthropology.
+- The humanities: art history, music, architecture, philosophy, film — how a form works and why a choice was made.
+- Science: biology, chemistry, physics, astronomy, earth science, often reporting a study, a measurement or a finding.
+- Science and social-science passages frequently come with data, which is where a figure belongs when one is allowed.
+- Write about the subject, anywhere in the world, as a scholar would. Do not localise the passages: the exam draws on the whole of human knowledge, and narrowing it to one region makes an item less like the real thing, not more.
 
-Register — inspired by how official SAT items are built, not by any particular one:
-- Reading & Writing keeps the exam's academic register: a short informational or literary passage of 25 to 150 words, then one question about it. The exam draws on science, history and literature, and Central Asian subject matter belongs there naturally — Abai and Auezov, Silk Road trade, Aral Sea hydrology, steppe archaeology, snow leopard conservation — treated as scholarship, not as travel writing.
-- Use the exam's own question types and their plain phrasing: which choice best states the main purpose of the text; which choice completes the text with the most logical transition; which quotation best supports the claim; which choice conforms to the conventions of Standard English.
-- Math is one or two sentences of setup and a single question. No preamble, no story, no invented character speaking.
+Where local context does belong:
+- Math word problems, where the setting is arbitrary and a familiar one costs nothing: tenge, metric units, and names and places a student in Kazakhstan recognises — Almaty, Astana, Shymkent, Aisha, Dias, Nurlan.
+- Keep it as ordinary setting, never as subject. A rate problem about a train to Shymkent should feel written for these students, not like Kazakhstan being explained to them.
+- Nothing may depend on local knowledge to be answerable. Everything needed is in the stem or the figure, or the setting has become a hidden step and the item stops measuring the skill.
+
+Register — how official items are built, not any particular one:
+- A passage is 25 to 150 words and carries exactly one question. No passage serves two questions.
+- Use the exam's own question types in their plain phrasing: which choice best states the main purpose of the text; which choice completes the text with the most logical transition; which quotation from the text best supports the claim; which choice best describes the function of the underlined portion; which choice conforms to the conventions of Standard English.
+- Math is one or two sentences of setup and a single question. No preamble, no story, no character speaking.
 - Do not imitate a specific published question. Take the shape of the item type and write your own.
 
 Quality rules:
