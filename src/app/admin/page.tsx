@@ -188,6 +188,10 @@ function AdminInner() {
       choices: choices.map(clean),
       answer: Math.min(draft.answer, choices.length - 1),
       explanation: clean(draft.explanation),
+      // Provenance survives an edit. The editor rebuilds a question from its own
+      // fields, so without this, correcting a typo in a drafted item would quietly
+      // reclassify it as hand-written.
+      generatedBy: customQuestions.find((q) => q.id === draft.id)?.generatedBy,
       custom: true,
     };
 
@@ -541,6 +545,20 @@ function AdminInner() {
                       · {question.topic}
                       {question.skill && <> · {question.skill}</>}
                     </p>
+                    {/* Provenance, stated rather than implied. An author reviewing
+                        the bank needs to know which items came from a model, both
+                        to spot-check them and to know what the bank is made of. */}
+                    {question.generatedBy && (
+                      <span className="q-ai" title={`Drafted by ${question.generatedBy}`}>
+                        <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden>
+                          <path
+                            d="M12 3.5l1.9 4.9 4.9 1.9-4.9 1.9L12 17.1l-1.9-4.9-4.9-1.9 4.9-1.9L12 3.5Z"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        AI draft
+                      </span>
+                    )}
                     {/* Rendered, not raw: a list of "$rac{3}{8}$" tells an
                         author nothing about the item they are looking for. */}
                     <RichText className="text-sm truncate block" text={tx(question.prompt)} />

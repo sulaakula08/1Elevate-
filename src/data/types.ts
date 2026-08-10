@@ -27,6 +27,12 @@ export type Question = {
    * question is usable without one, and the bank predates the field.
    */
   skill?: string;
+  /**
+   * The model that drafted this question, when one did. Absent for anything a
+   * person wrote, which is the useful default: provenance is only interesting
+   * where it is not a human, and an absent field cannot be mistaken for a claim.
+   */
+  generatedBy?: string;
   difficulty: Difficulty;
   /** Optional reading passage / shared stimulus shown above the prompt. */
   passage?: LocalizedText;

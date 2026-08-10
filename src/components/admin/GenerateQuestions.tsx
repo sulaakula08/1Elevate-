@@ -47,6 +47,8 @@ export function GenerateQuestions() {
   const [note, setNote] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
+  /** Recorded on each kept draft, so the bank shows where a question came from. */
+  const [model, setModel] = useState<string | null>(null);
 
   /**
    * Measured accuracy per question, for the questions that have been answered
@@ -113,6 +115,7 @@ export function GenerateQuestions() {
         return;
       }
       const produced = payload.questions ?? [];
+      setModel(payload.model ?? null);
       setDrafts(produced.map((q) => ({ ...q, keep: true })));
       setNote(
         `${produced.length} drafted${payload.rejected ? `, ${payload.rejected} discarded as invalid or duplicate` : ""}` +
@@ -130,7 +133,12 @@ export function GenerateQuestions() {
     setError(null);
     // Blank id: the server numbers it like any hand-written question, so a
     // generated item is not filed differently from an authored one.
-    const outcome = await saveQuestion({ ...draft, id: "", custom: true });
+    const outcome = await saveQuestion({
+      ...draft,
+      id: "",
+      custom: true,
+      generatedBy: model ?? "ai",
+    });
     setSavingId(null);
     if (!outcome.ok) {
       setError(outcome.error);

@@ -63,6 +63,7 @@ function toRow(question: Question, authorId: string) {
       // here means the field works without a migration — the same reason the
       // prompt and the choices live in jsonb.
       skill: question.skill ?? null,
+      generatedBy: question.generatedBy ?? null,
     },
     created_by: authorId,
   };
@@ -82,6 +83,7 @@ type Row = {
     choices: Question["choices"];
     explanation: Question["explanation"];
     skill?: string | null;
+    generatedBy?: string | null;
   };
   created_at?: string | null;
   /**
@@ -112,6 +114,7 @@ function toQuestion(row: Row): Question {
     answer: row.answer,
     explanation: row.payload?.explanation,
     skill: row.payload?.skill ?? undefined,
+    generatedBy: row.payload?.generatedBy ?? undefined,
     custom: true,
     authorEmail: authorEmail(row.author),
     createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined,
