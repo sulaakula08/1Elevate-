@@ -9,11 +9,14 @@ import { PracticeRunner } from "@/components/PracticeRunner";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { RichText } from "@/lib/math/markdown";
 import { Reveal } from "@/components/motion";
+import { SectionGate } from "@/components/SectionGate";
 
 export default function ReviewPage() {
   return (
     <RequireAccount>
-      <ReviewInner />
+      <SectionGate section="review">
+        <ReviewInner />
+      </SectionGate>
     </RequireAccount>
   );
 }

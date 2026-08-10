@@ -17,6 +17,7 @@ import {
 import { PracticeRunner } from "@/components/PracticeRunner";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { ProgressBar, Reveal } from "@/components/motion";
+import { SectionGate } from "@/components/SectionGate";
 
 const SESSION_SIZE = 10;
 const LEVELS: Difficulty[] = [1, 2, 3];
@@ -32,7 +33,9 @@ type Record_ = { tries: number; wrong: number; correct: number };
 export default function PracticePage() {
   return (
     <RequireAccount>
-      <BankInner />
+      <SectionGate section="practice">
+        <BankInner />
+      </SectionGate>
     </RequireAccount>
   );
 }

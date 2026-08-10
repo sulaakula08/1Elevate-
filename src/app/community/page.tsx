@@ -10,11 +10,14 @@ import { CreatePostCard } from "@/components/community/CreatePostCard";
 import { ComposerModal } from "@/components/community/ComposerModal";
 import { PostCard } from "@/components/community/PostCard";
 import { EmptyFeedState } from "@/components/community/EmptyFeedState";
+import { SectionGate } from "@/components/SectionGate";
 
 export default function CommunityPage() {
   return (
     <RequireAccount>
-      <CommunityInner />
+      <SectionGate section="community">
+        <CommunityInner />
+      </SectionGate>
     </RequireAccount>
   );
 }

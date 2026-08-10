@@ -23,6 +23,7 @@ import {
 } from "@/lib/stats";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { CountUp, ProgressBar, Reveal } from "@/components/motion";
+import { SectionGate } from "@/components/SectionGate";
 
 /**
  * `t()` falls back to the key itself, which would surface as
@@ -38,7 +39,9 @@ function modeLabel(t: (key: string) => string, mode: string): string {
 export default function ProgressPage() {
   return (
     <RequireAccount>
-      <ProgressInner />
+      <SectionGate section="progress">
+        <ProgressInner />
+      </SectionGate>
     </RequireAccount>
   );
 }

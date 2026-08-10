@@ -17,11 +17,14 @@ import { QuestionView } from "@/components/QuestionView";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { CountUp, ProgressBar, Reveal } from "@/components/motion";
 import { ProgressMark, SuccessTick } from "@/components/illustrations";
+import { SectionGate } from "@/components/SectionGate";
 
 export default function MockPage() {
   return (
     <RequireAccount>
-      <MockInner />
+      <SectionGate section="mock">
+        <MockInner />
+      </SectionGate>
     </RequireAccount>
   );
 }

@@ -2200,3 +2200,16 @@ body[data-exam] .notif-dock {
     background: var(--surface-2);
   }
 }
+
+/* The mark on the "temporarily unavailable" screen. Amber, not red: the section
+   is coming back, and red would read as an error the student caused. */
+.closed-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-pill);
+  background: var(--warning-soft);
+  color: var(--warning);
+}

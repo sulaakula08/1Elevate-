@@ -597,3 +597,40 @@ $$;
 
 revoke all on function public.reset_statistics() from public;
 grant execute on function public.reset_statistics() to authenticated;
+
+-- ==================================================== service sections ==
+-- Lets the owner close part of the product while it is being worked on, so a
+-- broken section shows a written explanation instead of a broken screen.
+--
+-- One row per section, created on demand — a missing row means open, so a
+-- section nobody has ever touched needs no row and a new section added to the
+-- app is open by default rather than invisible.
+
+create table if not exists public.service_sections (
+  -- The section's route key: community, practice, mock, review, progress.
+  key        text primary key,
+  closed     boolean not null default false,
+  -- Shown to students in place of the section. Optional: there is a sensible
+  -- default in the UI, and an owner closing something in a hurry should not
+  -- have to write copy first.
+  message    text,
+  updated_by uuid references public.profiles (id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.service_sections enable row level security;
+
+-- Everyone signed in reads it: the app has to know what is closed in order to
+-- say so, and that is not privileged information.
+drop policy if exists "sections: read signed in" on public.service_sections;
+create policy "sections: read signed in"
+  on public.service_sections for select to authenticated using (true);
+
+-- Writing is the owner's alone. Not is_admin(): closing the product for every
+-- student is a different kind of decision from writing a question, and the
+-- people who do the latter should not be able to do the former by accident.
+drop policy if exists "sections: write owner" on public.service_sections;
+create policy "sections: write owner"
+  on public.service_sections for all
+  using (public.is_owner())
+  with check (public.is_owner());
