@@ -1070,3 +1070,71 @@ body[data-exam] .test-foot {
   border-top-color: currentColor;
   border-top-width: max(1px, 0.055em);
 }
+
+/* ---------------- charts in questions ----------------
+   Series tones are read from variables so a figure follows the theme, and they
+   are four distinguishable hues rather than a ramp — a chart's series are not
+   ordered, so a gradient would imply a sequence that is not there. Shape and
+   dash carry the distinction as well, so the figure survives being printed or
+   read by someone who cannot separate the colours. */
+:root {
+  --chart-0: #4f46e5;
+  --chart-1: #0d9488;
+  --chart-2: #b45309;
+  --chart-3: #be123c;
+}
+:root[data-theme="dark"] {
+  --chart-0: #9d97ff;
+  --chart-1: #2dd4bf;
+  --chart-2: #fbbf24;
+  --chart-3: #fb7185;
+}
+
+.mdx-chart {
+  margin: 1rem 0;
+  max-width: 32rem;
+}
+.mdx-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.ch-title {
+  fill: var(--foreground);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.ch-tick {
+  fill: var(--muted);
+  font-size: 10.5px;
+}
+.ch-axis-label {
+  fill: var(--foreground);
+  font-size: 11px;
+  font-weight: 500;
+}
+.ch-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.ch-axis {
+  stroke: var(--line-strong);
+  stroke-width: 1.2;
+}
+.ch-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  margin-top: 0.5rem;
+  padding-left: 3.25rem;
+}
+.ch-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.ch-legend-name {
+  color: var(--muted);
+  font-size: 12px;
+}
