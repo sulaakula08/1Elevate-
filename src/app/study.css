@@ -1155,3 +1155,45 @@ body[data-exam] .test-foot {
   font-weight: 600;
   letter-spacing: 0.01em;
 }
+
+/* ---------------- draggable draft card ----------------
+   Review by gesture: right keeps, left discards. The wrapper holds the verdict
+   wash and never moves; the card inside is what the pointer drags, so the two
+   transforms never fight over one element. */
+@layer components {
+  .draft-card-wrap {
+    border-radius: var(--radius);
+    /* The wash is painted by the wrapper and must not bleed past the corners
+       while the card is pulled clear of it. */
+    overflow: hidden;
+  }
+  .draft-card {
+    position: relative;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    /* Without this the browser claims the horizontal gesture for scrolling on a
+       touchscreen and the drag never starts. */
+    touch-action: pan-y;
+    cursor: grab;
+  }
+  .draft-card:active {
+    cursor: grabbing;
+  }
+  .draft-verdict {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2rem;
+    height: 2rem;
+    pointer-events: none;
+  }
+  /* The gesture is a pointer affordance; a keyboard user has the buttons, and
+     someone who asked for less motion should not be invited to fling things. */
+  @media (prefers-reduced-motion: reduce) {
+    .draft-card {
+      cursor: default;
+    }
+  }
+}
