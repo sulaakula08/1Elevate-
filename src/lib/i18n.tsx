@@ -583,6 +583,7 @@ const D: Dict = {
   "admin.exam": { en: "Exam" },
   "admin.subject": { en: "Subject" },
   "admin.topic": { en: "Topic" },
+  "admin.domain": { en: "Domain" },
   "admin.skill": { en: "Skill" },
   "admin.skillHint": { en: "e.g. solving by substitution" },
   "admin.passage": { en: "Passage (optional)" },

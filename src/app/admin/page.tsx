@@ -7,6 +7,7 @@ import type { Difficulty, ExamId, LocalizedText, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 
+import { domainsFor, skillsFor } from "@/data/taxonomy";
 import { PeopleManager } from "@/components/PeopleManager";
 import { SectionControls } from "@/components/admin/SectionControls";
 import { GenerateQuestions } from "@/components/admin/GenerateQuestions";
@@ -21,6 +22,7 @@ type Draft = {
   exam: ExamId;
   subjectId: string;
   topic: string;
+  domain: string;
   skill: string;
   difficulty: Difficulty;
   passage: LocalizedText;
@@ -43,6 +45,9 @@ function formatWhen(at: number): string {
   });
 }
 
+/** Reading & Writing is the default section, so its first domain seeds a draft. */
+const RW_FIRST = domainsFor("sat-rw")[0];
+
 function emptyDraft(): Draft {
   return {
     // Blank on purpose: the server hands out the section number (sat-math-041)
@@ -51,7 +56,8 @@ function emptyDraft(): Draft {
     exam: "sat",
     subjectId: "sat-rw",
     topic: "",
-    skill: "",
+    domain: RW_FIRST.name,
+    skill: RW_FIRST.skills[0],
     difficulty: 1,
     passage: { ...EMPTY_TEXT },
     prompt: { ...EMPTY_TEXT },
@@ -67,6 +73,7 @@ function toDraft(question: Question): Draft {
     exam: question.exam,
     subjectId: question.subjectId,
     topic: question.topic,
+    domain: question.domain ?? domainsFor(question.subjectId)[0].name,
     skill: question.skill ?? "",
     difficulty: question.difficulty,
     passage: { ...EMPTY_TEXT, ...(question.passage ?? {}) },
@@ -121,8 +128,11 @@ function AdminInner() {
     id: draft.id,
     exam: draft.exam,
     subjectId: draft.subjectId,
-    topic: draft.topic.trim() || tx(getSubject(draft.subjectId)?.name),
-    skill: draft.skill.trim() || undefined,
+    // The skill IS the topic. Keeping a separate free-text topic gave two names
+    // for one thing and let reports group by a typo.
+    topic: draft.skill || tx(getSubject(draft.subjectId)?.name),
+    domain: draft.domain || undefined,
+    skill: draft.skill || undefined,
     difficulty: draft.difficulty,
     passage: draft.passage.en.trim() ? draft.passage : undefined,
     prompt: draft.prompt,
@@ -167,8 +177,11 @@ function AdminInner() {
       id: draft.id,
       exam: draft.exam,
       subjectId: draft.subjectId,
-      topic: draft.topic.trim() || tx(getSubject(draft.subjectId)?.name),
-    skill: draft.skill.trim() || undefined,
+      // The skill IS the topic. Keeping a separate free-text topic gave two names
+    // for one thing and let reports group by a typo.
+    topic: draft.skill || tx(getSubject(draft.subjectId)?.name),
+    domain: draft.domain || undefined,
+    skill: draft.skill || undefined,
       difficulty: draft.difficulty,
       passage: draft.passage.en.trim() ? clean(draft.passage) : undefined,
       prompt: clean(draft.prompt),
@@ -288,7 +301,20 @@ function AdminInner() {
             <select
               className="field"
               value={draft.subjectId}
-              onChange={(e) => setDraft((prev) => ({ ...prev, subjectId: e.target.value }))}
+              onChange={(e) =>
+                setDraft((prev) => {
+                  // The two sections share no domains, so the pair has to be
+                  // reseeded — otherwise a Math item keeps a Reading & Writing
+                  // skill and every report files it under the wrong section.
+                  const first = domainsFor(e.target.value)[0];
+                  return {
+                    ...prev,
+                    subjectId: e.target.value,
+                    domain: first.name,
+                    skill: first.skills[0],
+                  };
+                })
+              }
             >
               {subjectOptions.map((subject) => (
                 <option key={subject.id} value={subject.id}>
@@ -298,21 +324,40 @@ function AdminInner() {
             </select>
           </div>
           <div>
-            <label className="label">{t("admin.topic")}</label>
-            <input
+            <label className="label">{t("admin.domain")}</label>
+            <select
               className="field"
-              value={draft.topic}
-              onChange={(e) => setDraft((prev) => ({ ...prev, topic: e.target.value }))}
-            />
+              value={draft.domain}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  domain: e.target.value,
+                  // A skill belongs to one domain, so changing the domain has to
+                  // move the skill with it or the pair becomes nonsense.
+                  skill: skillsFor(prev.subjectId, e.target.value)[0] ?? "",
+                }))
+              }
+            >
+              {domainsFor(draft.subjectId).map((d) => (
+                <option key={d.name} value={d.name}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="label">{t("admin.skill")}</label>
-            <input
+            <select
               className="field"
               value={draft.skill}
-              placeholder={t("admin.skillHint")}
               onChange={(e) => setDraft((prev) => ({ ...prev, skill: e.target.value }))}
-            />
+            >
+              {skillsFor(draft.subjectId, draft.domain).map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="label">{t("quiz.difficulty")}</label>

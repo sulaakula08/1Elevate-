@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { subjectsFor } from "@/data/exams";
+import { domainsFor, skillsFor } from "@/data/taxonomy";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { apiFetch } from "@/lib/supabase/client";
@@ -37,7 +38,8 @@ export function GenerateQuestions() {
   const subjects = subjectsFor("sat");
 
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "sat-rw");
-  const [topic, setTopic] = useState("");
+  const [domain, setDomain] = useState(domainsFor("sat-rw")[0].name);
+  const [skill, setSkill] = useState(domainsFor("sat-rw")[0].skills[0]);
   const [counts, setCounts] = useState<Record<Difficulty, number>>({ 1: 0, 2: 2, 3: 0 });
   const [figures, setFigures] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -84,12 +86,11 @@ export function GenerateQuestions() {
         difficulty: l.value,
         count: counts[l.value],
       })),
-      // The topic typed here wins; otherwise the model stays on whatever the
-      // bank already covers, so generated items do not wander off syllabus.
-      topics: topic.trim()
-        ? [topic.trim()]
-        : [...new Set(subjectBank.map((q) => q.topic).filter(Boolean))].slice(0, 20),
-      domains: [...new Set(subjectBank.map((q) => q.domain).filter(Boolean))].slice(0, 20),
+      // Chosen from the official taxonomy, not typed: a generated item is filed
+      // under exactly the same names a hand-written one is, so the two are
+      // comparable in every report.
+      topics: [skill],
+      domains: [domain],
       avoid: subjectBank.map((q) => q.prompt.en ?? "").filter(Boolean).slice(0, 40),
       calibration,
       wantFigures: figures,
@@ -153,7 +154,14 @@ export function GenerateQuestions() {
           <select
             className="field"
             value={subjectId}
-            onChange={(e) => setSubjectId(e.target.value)}
+            onChange={(e) => {
+              // Sections share no domains, so the pair is reseeded rather than
+              // left pointing at a skill the new section does not have.
+              const first = domainsFor(e.target.value)[0];
+              setSubjectId(e.target.value);
+              setDomain(first.name);
+              setSkill(first.skills[0]);
+            }}
           >
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
@@ -164,13 +172,32 @@ export function GenerateQuestions() {
         </label>
 
         <label className="block">
-          <span className="label">Topic (optional)</span>
-          <input
+          <span className="label">Domain</span>
+          <select
             className="field"
-            value={topic}
-            placeholder="e.g. Systems of equations"
-            onChange={(e) => setTopic(e.target.value)}
-          />
+            value={domain}
+            onChange={(e) => {
+              setDomain(e.target.value);
+              setSkill(skillsFor(subjectId, e.target.value)[0] ?? "");
+            }}
+          >
+            {domainsFor(subjectId).map((d) => (
+              <option key={d.name} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="label">Skill</span>
+          <select className="field" value={skill} onChange={(e) => setSkill(e.target.value)}>
+            {skillsFor(subjectId, domain).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 
