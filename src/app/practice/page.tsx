@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SAT, getSubject, subjectColor, subjectColorSoft, subjectsFor } from "@/data/exams";
+import { SAT, getSubject, subjectColor, subjectGradient, subjectsFor } from "@/data/exams";
+import { SubjectScene } from "@/components/three/SubjectScene";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
@@ -9,7 +10,6 @@ import { useI18n } from "@/lib/i18n";
 import { NOUNS, pluralize } from "@/lib/plural";
 import {
   difficultyColor,
-  difficultyColorSoft,
   pct,
   reviewQueue,
   shuffle,
@@ -366,95 +366,58 @@ function BankInner() {
               const solved = new Set(
                 tries.filter((a) => a.correct).map((a) => a.questionId),
               ).size;
-              const accuracy = tries.length
-                ? tries.filter((a) => a.correct).length / tries.length
-                : null;
               const name = tx(subject.name);
-
-              const mix = LEVELS.map((value) => ({
-                value,
-                count: available.filter((q) => q.difficulty === value).length,
-              }));
 
               return (
                 <Reveal as="li" key={subject.id} delay={i * 55}>
                   <div
-                    className="qb-subject-card h-full flex flex-col gap-4"
-                    style={
-                      {
-                        ["--tone"]: subjectColor(subject.id),
-                        ["--tone-soft"]: subjectColorSoft(subject.id),
-                      } as React.CSSProperties
-                    }
+                    className="bank-card qb-subject-card"
+                    style={subjectGradient(subject.id) as React.CSSProperties}
                   >
-                    <div className="flex items-start gap-3">
-                      <span className="qb-glyph" aria-hidden>
-                        {subject.glyph}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <h2 className="text-body font-semibold leading-tight">{name}</h2>
-                        <p className="text-micro text-muted mt-1">
-                          {pluralize(available.length, NOUNS.question)}
-                          {available.length !== subjectTotal && (
-                            <span className="text-faint"> / {subjectTotal}</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
+                    {/* Text zone. The card is a grid, so the artwork beside it
+                        can never reach this column. */}
+                    <span className="block min-w-0">
+                      <span className="block bank-title">{name}</span>
 
-                    {/* Progress, then the level mix — what is left to do, and how
-                        hard it gets. */}
-                    <div className="space-y-2">
-                      <div className="flex items-baseline gap-2 text-micro text-muted">
-                        <span className="num">
-                          {solved} / {subjectTotal}
+                      <span className="bank-stats">
+                        <span className="num whitespace-nowrap">
+                          {solved} {t("bank.of")} {subjectTotal}
                         </span>
-                        <span>{t("study.solvedOf")}</span>
-                        {accuracy !== null && (
-                          <span className="num ml-auto">
-                            {pct(accuracy)} {t("study.accuracy")}
+                        <span className="whitespace-nowrap">{t("bank.solved")}</span>
+                        {subjectTotal > 0 && (
+                          <span className="num ml-auto font-semibold">
+                            {pct(subjectTotal ? solved / subjectTotal : 0)}
                           </span>
                         )}
-                      </div>
-                      <span className="qb-rule block">
+                      </span>
+
+                      <span className="block bank-track mt-2.5">
                         <span
-                          className="qb-rule-fill block"
+                          className="block bank-fill"
                           style={{
                             width: `${subjectTotal ? (solved / subjectTotal) * 100 : 0}%`,
                           }}
                         />
                       </span>
-                    </div>
 
-                    <div className="space-y-2.5">
-                      <div className="qb-mix" role="img" aria-label={t("study.mixTitle")}>
-                        {mix.map(({ value, count }) => (
-                          <span
-                            key={value}
-                            className="qb-mix-seg"
-                            style={{
-                              width: `${available.length ? (count / available.length) * 100 : 0}%`,
-                              background: difficultyColor(value),
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {mix.map(({ value, count }) => (
-                          <LevelPill key={value} level={value} label={t(`diff.${value}`)}>
-                            {count}
-                          </LevelPill>
-                        ))}
-                      </div>
-                    </div>
+                      <button
+                        className="qb-start mt-4"
+                        disabled={available.length === 0}
+                        onClick={() => start((q) => q.subjectId === subject.id, name)}
+                      >
+                        {attempted.length > 0
+                          ? t("study.resumeSession")
+                          : t("study.startSession")}
+                        <span aria-hidden>›</span>
+                      </button>
+                    </span>
 
-                    <button
-                      className="qb-start mt-auto w-full"
-                      disabled={available.length === 0}
-                      onClick={() => start((q) => q.subjectId === subject.id, name)}
-                    >
-                      {attempted.length > 0 ? t("study.resumeSession") : t("study.startSession")}
-                    </button>
+                    {/* Art zone: the subject's own lit scene, the same one the
+                        home cards use. It is what the card was missing — without
+                        it a gradient card is just a coloured rectangle. */}
+                    <span className="bank-art">
+                      <SubjectScene kind={subject.id === "sat-math" ? "math" : "verbal"} />
+                    </span>
                   </div>
                 </Reveal>
               );
@@ -609,28 +572,6 @@ function Chip({
   );
 }
 
-function LevelPill({
-  level,
-  label,
-  children,
-}: {
-  level: Difficulty;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className="qb-level"
-      style={{
-        ["--tone" as string]: difficultyColor(level),
-        ["--tone-soft" as string]: difficultyColorSoft(level),
-      }}
-    >
-      <span className="qb-level-dot" aria-hidden />
-      {label} <span className="num">{children}</span>
-    </span>
-  );
-}
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
