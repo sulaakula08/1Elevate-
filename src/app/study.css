@@ -1185,7 +1185,12 @@ body[data-exam] .test-foot {
     background: var(--surface);
   }
 
-  /* Only the grip drags, so any text in the row stays selectable. */
+  /* Only the grip drags, so any text in the row stays selectable.
+
+     It reads as a control rather than as decoration: a border, a surface and a
+     muted-not-faint foreground. The first version was 16px of --faint in a
+     corner, which is indistinguishable from an icon nobody can press — and an
+     affordance nobody notices is the same as no affordance. */
   .swipe-grip {
     position: absolute;
     top: 0.5rem;
@@ -1194,9 +1199,11 @@ body[data-exam] .test-foot {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.25rem;
-    border-radius: var(--radius-sm);
-    color: var(--faint);
+    padding: 0.2rem 0.4rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 99px;
+    background: var(--surface-2);
+    color: var(--muted);
     cursor: grab;
     /* Claim the horizontal gesture from the browser's own scrolling. */
     touch-action: none;
@@ -1207,7 +1214,7 @@ body[data-exam] .test-foot {
   }
   .swipe-grip:hover {
     color: var(--foreground);
-    background: var(--surface-2);
+    border-color: var(--foreground);
   }
   .swipe-grip:active {
     cursor: grabbing;
@@ -1230,11 +1237,9 @@ body[data-exam] .test-foot {
     border-radius: var(--radius);
   }
 
-  /* Someone who asked for less motion should not be invited to fling things;
-     every caller keeps its ordinary buttons. */
-  @media (prefers-reduced-motion: reduce) {
-    .swipe-grip {
-      display: none;
-    }
-  }
+  /* Reduced motion is deliberately NOT handled by hiding the grip. Asking for
+     less movement means "do not animate", not "take the feature away" — and
+     hiding it left anyone with the OS setting on with no gesture at all and no
+     way to tell why. MotionConfig reducedMotion="user" already shortens the
+     animation; the drag itself follows the finger either way. */
 }
