@@ -136,15 +136,37 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   const confirmRef = React.useRef<HTMLButtonElement>(null);
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  /**
+   * The cancel handler behind a ref.
+   *
+   * Callers pass an inline arrow, so `onCancel` is a different function on every
+   * render. With it in a dependency array the whole effect re-ran on each one —
+   * and since the effect moved focus, every keystroke in a dialog that contains
+   * a field bounced focus onto the confirm button, so the next key press
+   * activated it. That is the bug; the ref is the fix.
+   */
+  const cancelRef = React.useRef(onCancel);
+  React.useEffect(() => {
+    cancelRef.current = onCancel;
+  }, [onCancel]);
+
+  // Once, on open. A dialog that asks a question gets its field focused; one
+  // that only needs a yes gets the confirm button.
+  React.useEffect(() => {
+    const field = panelRef.current?.querySelector<HTMLElement>(
+      "input:not([type=hidden]), textarea, select",
+    );
+    (field ?? confirmRef.current)?.focus();
+  }, []);
 
   React.useEffect(() => {
-    confirmRef.current?.focus();
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onCancel();
+      if (event.key === "Escape") cancelRef.current();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
+  }, []);
 
   return (
     <div
@@ -155,6 +177,7 @@ export function ConfirmDialog({
       }}
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}

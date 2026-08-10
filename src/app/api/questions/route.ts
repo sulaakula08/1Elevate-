@@ -227,17 +227,37 @@ export async function POST(request: Request) {
   // An edit must not rewrite authorship: the upsert sends every column, so
   // without this the last admin to touch a question would appear to have
   // written it. Rows that do not exist yet fall back to the caller.
-  const { data: existing } = await found.client
-    .from("custom_questions")
-    .select("id, created_by")
-    .in(
-      "id",
-      questions.map((q) => String(q.id)),
-    );
+  /*
+   * Only real ids are looked up, and a blank one is never treated as an
+   * existing row.
+   *
+   * This mattered more than it looks. The editor sends "" for a new question,
+   * and the lookup used to include it — so the moment a row with an empty id
+   * existed in the table, every subsequent save matched it, was classified as
+   * an edit, kept the empty id, and the upsert overwrote that same row. The bank
+   * could therefore only ever hold one admin-written question, and each new one
+   * silently replaced the last.
+   */
+  const lookupIds = questions
+    .map((q) => String(q.id ?? "").trim())
+    .filter((id) => id.length > 0);
+
+  const { data: existing } = lookupIds.length
+    ? await found.client
+        .from("custom_questions")
+        .select("id, created_by")
+        .in("id", lookupIds)
+    : { data: [] as { id: string; created_by: string | null }[] };
+
   const originalAuthor = new Map(
     (existing ?? []).map((row) => [row.id as string, row.created_by as string | null]),
   );
   const known = new Set(originalAuthor.keys());
+  /** A question is an edit only if its id names a row that is actually there. */
+  const isEdit = (q: Question) => {
+    const id = String(q.id ?? "").trim();
+    return id.length > 0 && known.has(id);
+  };
 
   /*
    * Give every genuinely new question its section number.
@@ -250,7 +270,7 @@ export async function POST(request: Request) {
    */
   const subjectsNeeding = [
     ...new Set(
-      questions.filter((q) => !known.has(String(q.id))).map((q) => String(q.subjectId)),
+      questions.filter((q) => !isEdit(q)).map((q) => String(q.subjectId)),
     ),
   ];
 
@@ -268,16 +288,28 @@ export async function POST(request: Request) {
 
   const assigned: { from: string; to: string }[] = [];
   const numbered = questions.map((q) => {
-    if (known.has(String(q.id))) return q;
+    if (isEdit(q)) return q;
     const subjectId = String(q.subjectId);
-    const n = nextNumber.get(subjectId) ?? 1;
+    // Deliberately not `?? 1`. Falling back to the first number hands out an id
+    // that already exists, and the upsert then overwrites the question holding
+    // it. Every new question's subject was counted in the pass above, so this is
+    // unreachable — and if it ever is reached, failing is the safe outcome.
+    const n = nextNumber.get(subjectId);
+    if (n === undefined) return null;
     nextNumber.set(subjectId, n + 1);
     const id = formatId(subjectId, n);
-    assigned.push({ from: String(q.id), to: id });
+    assigned.push({ from: String(q.id ?? ""), to: id });
     return { ...q, id };
   });
 
-  const rows = numbered.map((q) =>
+  if (numbered.some((q) => q === null)) {
+    return NextResponse.json(
+      { error: "Could not assign a question number. Nothing was saved." },
+      { status: 500 },
+    );
+  }
+
+  const rows = (numbered as Question[]).map((q) =>
     toRow(q, originalAuthor.get(String(q.id)) ?? found.user.id),
   );
   const { error } = await found.client

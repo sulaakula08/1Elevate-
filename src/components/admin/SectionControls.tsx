@@ -154,7 +154,6 @@ export function SectionControls() {
                   value={draft}
                   placeholder={t("closed.messagePlaceholder")}
                   onChange={(e) => setDraft(e.target.value)}
-                  autoFocus
                 />
               </label>
             </>
