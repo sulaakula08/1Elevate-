@@ -33,6 +33,10 @@ export const STUDY_COPY: CopyDict = {
   "study.chooseAnswer": { en: "Choose one answer" },
   /* Surfaced as a hint under the choices, so the shortcut is discoverable
      rather than folklore. */
+  /* How many questions one session draws. "All" is the default. */
+  "study.filterLength": { en: "Session" },
+  "study.lengthAll": { en: "All" },
+
   "study.keyHint": { en: "Keys 1–4 pick an answer, Enter checks it" },
 
   /* ---------------- tutor ----------------

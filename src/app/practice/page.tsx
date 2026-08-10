@@ -19,7 +19,15 @@ import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { ProgressBar, Reveal } from "@/components/motion";
 import { SectionGate } from "@/components/SectionGate";
 
-const SESSION_SIZE = 10;
+/**
+ * How many questions a session draws. `null` means "everything that matches the
+ * filters", which is the default: a student who has narrowed the bank down to a
+ * topic means to work through that topic, not through ten of it.
+ *
+ * The shorter lengths stay because a full section is 150+ questions, and a
+ * quick set before school is a real way to use this.
+ */
+const SESSION_LENGTHS: (number | null)[] = [10, 20, 50, null];
 const LEVELS: Difficulty[] = [1, 2, 3];
 
 /** Where a question stands for this student. Derived from attempts, never stored. */
@@ -50,6 +58,7 @@ function BankInner() {
   const [status, setStatus] = useState<Status>("all");
   const [view, setView] = useState<View>("sections");
   const [search, setSearch] = useState("");
+  const [length, setLength] = useState<number | null>(null);
   /** Domains the student has folded open. Empty means "all closed but the first". */
   const [openDomains, setOpenDomains] = useState<Set<string>>(new Set());
 
@@ -182,7 +191,8 @@ function BankInner() {
     const priority = draw.filter((q) => !seen.has(q.id) || (seen.get(q.id)?.wrong ?? 0) > 0);
     const priorityIds = new Set(priority.map((q) => q.id));
     const rest = draw.filter((q) => !priorityIds.has(q.id));
-    let questions = [...shuffle(priority), ...shuffle(rest)].slice(0, SESSION_SIZE);
+    const ordered = [...shuffle(priority), ...shuffle(rest)];
+    let questions = length === null ? ordered : ordered.slice(0, length);
     if (!level) questions = [...questions].sort((a, b) => a.difficulty - b.difficulty);
     setSession({ questions, title });
   }
@@ -205,7 +215,8 @@ function BankInner() {
     );
   }
 
-  const filtersOn = section !== null || level !== null || status !== "all" || search !== "";
+  const filtersOn =
+    section !== null || level !== null || status !== "all" || search !== "" || length !== null;
   const poolSolved = pool.filter((q) => solvedIds.has(q.id)).length;
   // Set membership, not a nested scan: this runs on every keystroke of the
   // topic search, over the whole attempt log.
@@ -272,6 +283,18 @@ function BankInner() {
             </Chip>
           ))}
         </Filter>
+
+        <Filter label={t("study.filterLength")}>
+          {SESSION_LENGTHS.map((value) => (
+            <Chip
+              key={value ?? "all"}
+              on={length === value}
+              onClick={() => setLength(value)}
+            >
+              {value === null ? t("study.lengthAll") : value}
+            </Chip>
+          ))}
+        </Filter>
       </div>
 
       {/* ---------------- coverage ---------------- */}
@@ -298,6 +321,7 @@ function BankInner() {
               setLevel(null);
               setStatus("all");
               setSearch("");
+              setLength(null);
             }}
           >
             {t("study.clearFilters")}
