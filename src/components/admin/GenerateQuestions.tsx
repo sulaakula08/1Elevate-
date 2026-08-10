@@ -6,8 +6,6 @@ import { domainsFor, skillsFor } from "@/data/taxonomy";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { apiFetch } from "@/lib/supabase/client";
-import { AnimatePresence, motion } from "motion/react";
-import { DraftCard } from "./DraftCard";
 import { RichText } from "@/lib/math/markdown";
 
 /**
@@ -130,8 +128,7 @@ export function GenerateQuestions() {
     }
   }
 
-  /** Returns whether the draft actually reached the bank. */
-  async function keepDraft(draft: Draft): Promise<boolean> {
+  async function keepDraft(draft: Draft) {
     setSavingId(draft.id);
     setError(null);
     // Blank id: the server numbers it like any hand-written question, so a
@@ -145,10 +142,9 @@ export function GenerateQuestions() {
     setSavingId(null);
     if (!outcome.ok) {
       setError(outcome.error);
-      return false;
+      return;
     }
     setDrafts((current) => current.filter((d) => d.id !== draft.id));
-    return true;
   }
 
   return (
@@ -269,26 +265,8 @@ export function GenerateQuestions() {
 
       {drafts.length > 0 && (
         <ul className="mt-6 space-y-3">
-          {/* Drag right to keep, left to discard — see DraftCard. The buttons
-              on every card do the same thing and are the accessible path. */}
-          <p className="text-[12.5px] text-faint">
-            Drag a card right to add it, left to discard — or use the buttons.
-          </p>
-          <AnimatePresence initial={false}>
           {drafts.map((draft) => (
-            <motion.li
-              key={draft.id}
-              layout
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              transition={{ duration: 0.2, ease: [0.22, 0.61, 0.36, 1] }}
-            >
-            <DraftCard
-              busy={savingId === draft.id}
-              onKeep={() => keepDraft(draft)}
-              onDiscard={() =>
-                setDrafts((current) => current.filter((d) => d.id !== draft.id))
-              }
-            >
+            <li key={draft.id} className="card p-4">
               <p className="text-[12px] text-muted">
                 {draft.topic}
                 {draft.skill ? ` · ${draft.skill}` : ""} · difficulty {draft.difficulty}
@@ -342,10 +320,8 @@ export function GenerateQuestions() {
                   Discard
                 </button>
               </div>
-            </DraftCard>
-            </motion.li>
+            </li>
           ))}
-          </AnimatePresence>
         </ul>
       )}
     </section>
