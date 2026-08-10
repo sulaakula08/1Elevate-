@@ -80,7 +80,7 @@ Format rules — the response is parsed by a program, so every field matters:
 - Between ${MIN_CHOICES} and ${MAX_CHOICES} answer choices, four unless the item type calls for otherwise. Exactly one is correct; "answer" is its zero-based index. No two choices may say the same thing.
 - "passage" is the stimulus a Reading & Writing item is built on. Write an original passage — never reproduce a real exam text or a copyrighted source. Use an empty string when the question needs no passage.
 - "topic" must be one of the topics listed below. "domain" must be one of the official content domains listed below.
-- A question may carry a figure, and some skills need one — reading a trend, comparing series, interpolating from a graph. Write it as a fenced chart block inside "prompt", on its own lines:
+${request.wantFigures ? `- A question may carry a figure, and some skills need one — reading a trend, comparing series, interpolating from a graph. Write it as a fenced chart block inside "prompt", on its own lines:
 
   \`\`\`chart
   type: line
@@ -95,7 +95,7 @@ Format rules — the response is parsed by a program, so every field matters:
   "type" is line, bar or scatter. One "series" line per data set; a blank value is a gap. Invent your own scenario and your own numbers — never transcribe a figure from a real exam.
 - Only include a figure when the skill genuinely requires reading one. A question that can be asked in a sentence must be asked in a sentence.
 - Anything the figure does not show must be stated in words: a question can only be answered from the figure plus the stem.
-- No other images or diagrams. Geometry figures are not supported yet, so do not write a question that needs one.
+- No other images or diagrams. Geometry figures are not supported yet, so do not write a question that needs one.` : "- Every question must be answerable from text alone: no images, diagrams, graphs or tables."}
 - "explanation" teaches the rule that makes the answer work, in two to four sentences, so it transfers to the next question. Write math as plain text: / for division, ^ for powers, no LaTeX.
 
 Quality rules:
@@ -169,6 +169,26 @@ function parseBody(raw: unknown): GenerateRequest | null {
     topics: stringList(body.topics, MAX_TOPICS, 80),
     domains: stringList(body.domains, MAX_TOPICS, 80),
     avoid: stringList(body.avoid, MAX_AVOID, 200),
+    // Only entries that carry a real measured accuracy are passed on: a made-up
+    // number would be worse than no calibration at all.
+    wantFigures: body.wantFigures === true,
+    calibration: Array.isArray(body.calibration)
+      ? (body.calibration as unknown[])
+          .flatMap((entry) => {
+            const row = entry as { prompt?: unknown; difficulty?: unknown; accuracy?: unknown };
+            const level = Number(row.difficulty);
+            const accuracy = Number(row.accuracy);
+            if (typeof row.prompt !== "string" || !row.prompt.trim()) return [];
+            if (![1, 2, 3].includes(level)) return [];
+            if (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 1) return [];
+            return [{
+              prompt: row.prompt.trim().slice(0, 200),
+              difficulty: level as Difficulty,
+              accuracy,
+            }];
+          })
+          .slice(0, 12)
+      : undefined,
   };
 }
 

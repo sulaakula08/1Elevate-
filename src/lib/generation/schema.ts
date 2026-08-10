@@ -37,6 +37,9 @@ export type GenerateRequest = {
    * it meant, while 45% correct is a fact about these students.
    */
   calibration?: { prompt: string; difficulty: Difficulty; accuracy: number }[];
+  /** Whether a chart may be written at all. Off by default: a figure is the
+   *  exception, and a generator left to choose adds them decoratively. */
+  wantFigures?: boolean;
 };
 
 export type GenerateResponse = {

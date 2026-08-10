@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 
 import { PeopleManager } from "@/components/PeopleManager";
 import { SectionControls } from "@/components/admin/SectionControls";
+import { GenerateQuestions } from "@/components/admin/GenerateQuestions";
 import { FeedbackInbox } from "@/components/admin/FeedbackInbox";
 import { UsageStats } from "@/components/admin/UsageStats";
 import { QuestionView } from "@/components/QuestionView";
@@ -537,6 +538,8 @@ function AdminInner() {
 
       {/* Role management. Visible to admins as a read-only roster; only the
           owner sees the buttons, and only the database can actually grant. */}
+      <GenerateQuestions />
+
       <SectionControls />
 
       <PeopleManager />
