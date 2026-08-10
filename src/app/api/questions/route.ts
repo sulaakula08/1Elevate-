@@ -182,11 +182,27 @@ const statusFor = (error: WriteError) =>
  * upsert — the second one would quietly overwrite the first's question instead
  * of failing. The server holds the only view of what already exists.
  */
-const ID_PATTERN = (subjectId: string) => new RegExp(`^${subjectId}-(\d+)$`);
+/**
+ * The number at the end of an id, or null if it does not carry one.
+ *
+ * Written without building a pattern from a string. It used to be
+ * `new RegExp(`^${subjectId}-(\d+)$`)`, and inside a template literal a lone
+ * backslash before d is not an escape — it collapsed to a literal "d", so the
+ * pattern matched the letter rather than a digit and every existing id read as
+ * unnumbered. The allocator therefore always believed the section was empty and
+ * always handed out 001.
+ *
+ * A literal regex cannot lose its backslash, and comparing the prefix directly
+ * means a subject id with a regex metacharacter in it can never change the
+ * meaning of the pattern either.
+ */
+const DIGITS = /^\d+$/;
 
 function suffixOf(id: string, subjectId: string): number | null {
-  const match = ID_PATTERN(subjectId).exec(id);
-  return match ? Number(match[1]) : null;
+  const prefix = `${subjectId}-`;
+  if (!id.startsWith(prefix)) return null;
+  const tail = id.slice(prefix.length);
+  return DIGITS.test(tail) ? Number(tail) : null;
 }
 
 /**
