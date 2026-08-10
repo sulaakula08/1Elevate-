@@ -349,12 +349,23 @@ function BankInner() {
               const available = pool.filter((q) => q.subjectId === subject.id);
               const subjectTotal = statsFor(stats, subject.id).total;
               const attempted = available.filter((q) => seen.has(q.id));
+              /*
+               * Counted against the questions that are actually in the bank
+               * today, not against the whole attempt log.
+               *
+               * Matching on subjectId alone credited answers to questions that
+               * have since been deleted, so a card could read "1 / 1 solved"
+               * while the summary above it — which only ever counted live
+               * questions — read "0 / 1". Two numbers for the same fact, and
+               * the more flattering one was wrong.
+               */
+              const subjectIds = new Set(
+                bank.filter((q) => q.subjectId === subject.id).map((q) => q.id),
+              );
+              const tries = data.attempts.filter((a) => subjectIds.has(a.questionId));
               const solved = new Set(
-                data.attempts
-                  .filter((a) => a.subjectId === subject.id && a.correct)
-                  .map((a) => a.questionId),
+                tries.filter((a) => a.correct).map((a) => a.questionId),
               ).size;
-              const tries = data.attempts.filter((a) => a.subjectId === subject.id);
               const accuracy = tries.length
                 ? tries.filter((a) => a.correct).length / tries.length
                 : null;
