@@ -6,18 +6,6 @@ import { subjectsFor } from "@/data/exams";
 import { useI18n } from "@/lib/i18n";
 import { useCommunity, type CreatePostInput } from "@/lib/community-state";
 import { useSendDelay } from "@/lib/send-delay";
-import { POST_TYPE_ICON } from "./icons";
-
-type TypeOption = { id: CommunityPostType; labelKey: string; hintKey: string };
-
-const TYPE_OPTIONS: TypeOption[] = [
-  { id: "question", labelKey: "community.postTypeQuestion", hintKey: "community.postTypeQuestionHint" },
-  { id: "progress", labelKey: "community.postTypeProgress", hintKey: "community.postTypeProgressHint" },
-  { id: "explanation", labelKey: "community.postTypeExplanation", hintKey: "community.postTypeExplanationHint" },
-  { id: "study-update", labelKey: "community.postTypeStudyUpdate", hintKey: "community.postTypeStudyUpdateHint" },
-  { id: "achievement", labelKey: "community.postTypeAchievement", hintKey: "community.postTypeAchievementHint" },
-  { id: "resource", labelKey: "community.postTypeResource", hintKey: "community.postTypeResourceHint" },
-];
 
 const SUBJECT_TYPES: CommunityPostType[] = ["question", "explanation", "study-update", "resource"];
 
@@ -148,7 +136,7 @@ export function ComposerModal({
   initialType,
   onClose,
 }: {
-  initialType: CommunityPostType | null;
+  initialType: CommunityPostType;
   onClose: () => void;
 }) {
   const { t, tx } = useI18n();
@@ -157,7 +145,12 @@ export function ComposerModal({
   // The parent only mounts this component while the composer is open (see
   // app/community/page.tsx), so a fresh mount is exactly when state should
   // reset — no effect needed to sync it with an `open` flag.
-  const [type, setType] = useState<CommunityPostType | null>(initialType);
+  /*
+   * The type is decided before this modal opens — the entry composer sends
+   * either "post" or "question" — so there is no null state and no picker to
+   * come back to. That screen is what the change removed.
+   */
+  const type = initialType;
   const [form, setForm] = useState<FormState>(emptyForm);
 
   useEffect(() => {
@@ -189,21 +182,25 @@ export function ComposerModal({
       <span className="label">
         {type === "question"
           ? t("community.composerQuestionBody")
-          : type === "achievement"
-            ? t("community.composerDetail")
-            : t("community.composerBody")}
+          : type === "post"
+            ? t("community.composerPostBody")
+            : type === "achievement"
+              ? t("community.composerDetail")
+              : t("community.composerBody")}
       </span>
       <textarea
         className="field cm-textarea"
-        rows={type === "question" ? 4 : 3}
+        rows={type === "question" || type === "post" ? 5 : 3}
         value={form.text}
         onChange={(event) => set("text", event.target.value)}
         placeholder={t(
           type === "question"
             ? "community.composerBodyPlaceholderQuestion"
-            : type === "explanation"
-              ? "community.composerBodyPlaceholderExplanation"
-              : "community.composerBodyPlaceholderGeneric",
+            : type === "post"
+              ? "community.composerPostBody"
+              : type === "explanation"
+                ? "community.composerBodyPlaceholderExplanation"
+                : "community.composerBodyPlaceholderGeneric",
         )}
       />
     </label>
@@ -223,13 +220,8 @@ export function ComposerModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-5 pt-5 pb-3">
-          {type && (
-            <button type="button" className="bar-btn -ml-1.5" onClick={() => setType(null)} aria-label={t("community.composerBack")}>
-              <span aria-hidden>←</span>
-            </button>
-          )}
           <h2 id="composer-title" className="text-body font-semibold flex-1 min-w-0 truncate">
-            {type ? t(TYPE_OPTIONS.find((o) => o.id === type)!.labelKey) : t("community.composerChooseType")}
+            {t(type === "question" ? "community.postTypeQuestion" : "community.composerCreateTitle")}
           </h2>
           <button type="button" className="bar-btn" onClick={onClose} aria-label={t("community.composerCancel")}>
             <span aria-hidden>✕</span>
@@ -237,275 +229,210 @@ export function ComposerModal({
         </div>
 
         <div className="cm-composer-body px-5 pb-5">
-          {!type ? (
-            /*
-             * Asking for help is the strongest educational action in the
-             * product, and a flat list of six equal rows said the six were
-             * equally likely. It leads now, with its own surface and a sentence
-             * saying what it does; the other five follow as a plain list.
-             *
-             * Not a 3×2 grid of icon cards — that was the third place in the
-             * product using the same icon-tile / bold-title / grey-line card.
-             */
-            <>
+          <div className="space-y-3.5">
+            {(type === "question" || type === "post") && bodyField}
+
+            {SUBJECT_TYPES.includes(type) && (
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="label">{t("community.composerSubject")}</span>
+                  <select
+                    className="field"
+                    value={form.subjectId}
+                    onChange={(event) => set("subjectId", event.target.value)}
+                  >
+                    {subjectsFor("sat").map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {tx(subject.name)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="label">{t("community.composerTopic")}</span>
+                  <input
+                    type="text"
+                    className="field"
+                    value={form.topic}
+                    onChange={(event) => set("topic", event.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+
+            {type === "question" && (
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="label">{t("community.composerMyAnswer")}</span>
+                  <input
+                    type="text"
+                    maxLength={8}
+                    inputMode="text"
+                    className="field"
+                    placeholder={t("community.composerAnswerHint")}
+                    value={form.myAnswer}
+                    onChange={(event) => set("myAnswer", event.target.value.toUpperCase())}
+                  />
+                </label>
+                <label className="block">
+                  <span className="label">{t("community.composerCorrectAnswer")}</span>
+                  <input
+                    type="text"
+                    maxLength={8}
+                    inputMode="text"
+                    className="field"
+                    placeholder={t("community.composerAnswerHint")}
+                    value={form.correctAnswer}
+                    onChange={(event) => set("correctAnswer", event.target.value.toUpperCase())}
+                  />
+                </label>
+              </div>
+            )}
+
+            {type === "progress" && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="label">{t("community.composerFromScore")}</span>
+                    <input
+                      type="number"
+                      min={400}
+                      max={1600}
+                      className="field"
+                      value={form.fromScore}
+                      onChange={(event) => set("fromScore", event.target.value)}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="label">{t("community.composerToScore")}</span>
+                    <input
+                      type="number"
+                      min={400}
+                      max={1600}
+                      className="field"
+                      value={form.toScore}
+                      onChange={(event) => set("toScore", event.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="label">{t("community.composerMathScore")}</span>
+                    <input
+                      type="number"
+                      min={200}
+                      max={800}
+                      className="field"
+                      value={form.mathScore}
+                      onChange={(event) => set("mathScore", event.target.value)}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="label">{t("community.composerRwScore")}</span>
+                    <input
+                      type="number"
+                      min={200}
+                      max={800}
+                      className="field"
+                      value={form.rwScore}
+                      onChange={(event) => set("rwScore", event.target.value)}
+                    />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="label">{t("community.composerMockLabel")}</span>
+                  <input
+                    type="text"
+                    className="field"
+                    value={form.mockLabel}
+                    onChange={(event) => set("mockLabel", event.target.value)}
+                  />
+                </label>
+              </>
+            )}
+
+            {type === "achievement" && (
+              <label className="block">
+                <span className="label">{t("community.composerAchievementTitle")}</span>
+                <input
+                  type="text"
+                  className="field"
+                  value={form.achievementTitle}
+                  onChange={(event) => set("achievementTitle", event.target.value)}
+                />
+              </label>
+            )}
+
+            {type === "explanation" && (
+              <label className="block">
+                <span className="label">{t("community.composerExplanationTitle")}</span>
+                <input
+                  type="text"
+                  className="field"
+                  value={form.explanationTitle}
+                  onChange={(event) => set("explanationTitle", event.target.value)}
+                />
+              </label>
+            )}
+
+            {type === "study-update" && (
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="label">{t("community.composerQuestionsCount")}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    className="field"
+                    value={form.questionsCompleted}
+                    onChange={(event) => set("questionsCompleted", event.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  <span className="label">{t("community.composerAccuracy")}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="field"
+                    value={form.accuracy}
+                    onChange={(event) => set("accuracy", event.target.value)}
+                  />
+                </label>
+              </div>
+            )}
+
+            {type === "resource" && (
+              <label className="block">
+                <span className="label">{t("community.composerResourceTitle")}</span>
+                <input
+                  type="text"
+                  className="field"
+                  value={form.resourceTitle}
+                  onChange={(event) => set("resourceTitle", event.target.value)}
+                />
+              </label>
+            )}
+
+            {/* Asked last for every other type; asked first for a question,
+                because the problem is the post. It used to sit under
+                "Details" below the answer letters, so the composer asked what
+                you picked before it asked what you were stuck on. */}
+            {type !== "question" && type !== "post" && bodyField}
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button type="button" className="btn" onClick={onClose} disabled={pending}>
+                {t("community.composerCancel")}
+              </button>
               <button
                 type="button"
-                className="cm-type-lead"
-                onClick={() => setType("question")}
+                className="btn btn-primary"
+                disabled={!canSubmit(type, form) || pending}
+                onClick={submit}
               >
-                <span className="cm-type-lead-icon" aria-hidden>
-                  {(() => {
-                    const Icon = POST_TYPE_ICON.question;
-                    return <Icon size={20} />;
-                  })()}
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-body font-semibold">
-                    {t("community.postTypeQuestion")}
-                  </span>
-                  <span className="block text-sm text-muted mt-0.5">
-                    {t("community.postTypeQuestionHint")}
-                  </span>
-                </span>
-                <span className="cm-type-chevron" aria-hidden>
-                  ›
-                </span>
+                {pending ? t("community.posting") : t("community.composerPost")}
               </button>
-
-              <p className="t-label cm-type-divider">{t("community.composerOrShare")}</p>
-
-              <ul className="cm-type-list">
-                {TYPE_OPTIONS.filter((option) => option.id !== "question").map((option) => (
-                  <li key={option.id}>
-                    <button
-                      type="button"
-                      className="cm-type-row"
-                      onClick={() => setType(option.id)}
-                    >
-                      <span className="cm-type-icon" aria-hidden>
-                        {(() => {
-                          const Icon = POST_TYPE_ICON[option.id];
-                          return <Icon size={18} />;
-                        })()}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-medium">{t(option.labelKey)}</span>
-                        <span className="block text-micro text-faint">{t(option.hintKey)}</span>
-                      </span>
-                      <span className="cm-type-chevron" aria-hidden>
-                        ›
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <div className="space-y-3.5">
-              {type === "question" && bodyField}
-
-              {SUBJECT_TYPES.includes(type) && (
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <span className="label">{t("community.composerSubject")}</span>
-                    <select
-                      className="field"
-                      value={form.subjectId}
-                      onChange={(event) => set("subjectId", event.target.value)}
-                    >
-                      {subjectsFor("sat").map((subject) => (
-                        <option key={subject.id} value={subject.id}>
-                          {tx(subject.name)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block">
-                    <span className="label">{t("community.composerTopic")}</span>
-                    <input
-                      type="text"
-                      className="field"
-                      value={form.topic}
-                      onChange={(event) => set("topic", event.target.value)}
-                    />
-                  </label>
-                </div>
-              )}
-
-              {type === "question" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <span className="label">{t("community.composerMyAnswer")}</span>
-                    <input
-                      type="text"
-                      maxLength={8}
-                      inputMode="text"
-                      className="field"
-                      placeholder={t("community.composerAnswerHint")}
-                      value={form.myAnswer}
-                      onChange={(event) => set("myAnswer", event.target.value.toUpperCase())}
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="label">{t("community.composerCorrectAnswer")}</span>
-                    <input
-                      type="text"
-                      maxLength={8}
-                      inputMode="text"
-                      className="field"
-                      placeholder={t("community.composerAnswerHint")}
-                      value={form.correctAnswer}
-                      onChange={(event) => set("correctAnswer", event.target.value.toUpperCase())}
-                    />
-                  </label>
-                </div>
-              )}
-
-              {type === "progress" && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="block">
-                      <span className="label">{t("community.composerFromScore")}</span>
-                      <input
-                        type="number"
-                        min={400}
-                        max={1600}
-                        className="field"
-                        value={form.fromScore}
-                        onChange={(event) => set("fromScore", event.target.value)}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="label">{t("community.composerToScore")}</span>
-                      <input
-                        type="number"
-                        min={400}
-                        max={1600}
-                        className="field"
-                        value={form.toScore}
-                        onChange={(event) => set("toScore", event.target.value)}
-                      />
-                    </label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="block">
-                      <span className="label">{t("community.composerMathScore")}</span>
-                      <input
-                        type="number"
-                        min={200}
-                        max={800}
-                        className="field"
-                        value={form.mathScore}
-                        onChange={(event) => set("mathScore", event.target.value)}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="label">{t("community.composerRwScore")}</span>
-                      <input
-                        type="number"
-                        min={200}
-                        max={800}
-                        className="field"
-                        value={form.rwScore}
-                        onChange={(event) => set("rwScore", event.target.value)}
-                      />
-                    </label>
-                  </div>
-                  <label className="block">
-                    <span className="label">{t("community.composerMockLabel")}</span>
-                    <input
-                      type="text"
-                      className="field"
-                      value={form.mockLabel}
-                      onChange={(event) => set("mockLabel", event.target.value)}
-                    />
-                  </label>
-                </>
-              )}
-
-              {type === "achievement" && (
-                <label className="block">
-                  <span className="label">{t("community.composerAchievementTitle")}</span>
-                  <input
-                    type="text"
-                    className="field"
-                    value={form.achievementTitle}
-                    onChange={(event) => set("achievementTitle", event.target.value)}
-                  />
-                </label>
-              )}
-
-              {type === "explanation" && (
-                <label className="block">
-                  <span className="label">{t("community.composerExplanationTitle")}</span>
-                  <input
-                    type="text"
-                    className="field"
-                    value={form.explanationTitle}
-                    onChange={(event) => set("explanationTitle", event.target.value)}
-                  />
-                </label>
-              )}
-
-              {type === "study-update" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <span className="label">{t("community.composerQuestionsCount")}</span>
-                    <input
-                      type="number"
-                      min={1}
-                      className="field"
-                      value={form.questionsCompleted}
-                      onChange={(event) => set("questionsCompleted", event.target.value)}
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="label">{t("community.composerAccuracy")}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      className="field"
-                      value={form.accuracy}
-                      onChange={(event) => set("accuracy", event.target.value)}
-                    />
-                  </label>
-                </div>
-              )}
-
-              {type === "resource" && (
-                <label className="block">
-                  <span className="label">{t("community.composerResourceTitle")}</span>
-                  <input
-                    type="text"
-                    className="field"
-                    value={form.resourceTitle}
-                    onChange={(event) => set("resourceTitle", event.target.value)}
-                  />
-                </label>
-              )}
-
-              {/* Asked last for every other type; asked first for a question,
-                  because the problem is the post. It used to sit under
-                  "Details" below the answer letters, so the composer asked what
-                  you picked before it asked what you were stuck on. */}
-              {type !== "question" && bodyField}
-
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button type="button" className="btn" onClick={onClose} disabled={pending}>
-                  {t("community.composerCancel")}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={!canSubmit(type, form) || pending}
-                  onClick={submit}
-                >
-                  {pending ? t("community.posting") : t("community.composerPost")}
-                </button>
-              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

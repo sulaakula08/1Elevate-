@@ -65,6 +65,8 @@
     border-radius: 2px;
     background: transparent;
   }
+  /* An ordinary post carries no spine at all. It is the default kind of thing
+     in the feed now, and marking the default marks nothing. */
   .cm-post[data-type="question"]::before {
     background: var(--brand);
   }
@@ -122,36 +124,6 @@
     border-color: var(--line-strong);
     background: var(--surface-2);
   }
-  .cm-composer-more {
-    color: var(--muted);
-  }
-
-  /* ---------------- composer type list ---------------- */
-  .cm-type-list {
-    display: flex;
-    flex-direction: column;
-  }
-  .cm-type-row {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    width: 100%;
-    text-align: left;
-    padding: 0.75rem 0.5rem;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: background 150ms ease;
-  }
-  .cm-type-row:hover {
-    background: var(--surface-2);
-  }
-  .cm-type-chevron {
-    margin-left: auto;
-    color: var(--faint);
-  }
-
   /* ---------------- feed tabs ---------------- */
   .cm-tabs {
     display: flex;
@@ -294,52 +266,6 @@
     resize: vertical;
     min-height: 4.5rem;
   }
-  .cm-type-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-    text-align: left;
-    padding: 0.875rem 0.875rem 1rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface);
-    cursor: pointer;
-    transition:
-      border-color 180ms ease,
-      background 180ms ease;
-  }
-  .cm-type-btn:hover {
-    border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
-    background: var(--surface-2);
-  }
-  .cm-type-btn:active {
-    transform: scale(0.985);
-  }
-
-  /* The icon sits in its own tinted well rather than floating on the card, so
-     six tiles read as one set. Emoji could not take a colour at all; these
-     inherit the brand and lift to full strength on hover, which is what makes
-     the whole tile feel like the target. */
-  .cm-type-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.375rem;
-    height: 2.375rem;
-    margin-bottom: 0.375rem;
-    border-radius: var(--radius-sm);
-    background: var(--brand-soft);
-    color: var(--brand);
-    transition:
-      background 180ms ease,
-      color 180ms ease;
-  }
-  .cm-type-btn:hover .cm-type-icon {
-    background: var(--brand);
-    color: var(--brand-contrast);
-  }
-
   /* The milestone mark on an achievement card. Amber because a medal is warm
      and the brand hue is already carrying every other affordance on the card. */
   .cm-badge-mark {
@@ -521,43 +447,5 @@
     border-radius: var(--radius-pill);
     background: var(--surface-2);
     color: var(--warning);
-  }
-}
-
-@layer components {
-  /* ---------------- composer: the lead action ----------------
-     Asking the community for help is the one action here that only an exam
-     product has. It gets a surface; the rest get a list. */
-  .cm-type-lead {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    width: 100%;
-    text-align: left;
-    padding: 1rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface-2);
-    cursor: pointer;
-    transition:
-      border-color 150ms ease,
-      background 150ms ease;
-  }
-  .cm-type-lead:hover {
-    border-color: var(--brand);
-    background: var(--surface);
-  }
-  .cm-type-lead-icon {
-    display: grid;
-    place-items: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    flex-shrink: 0;
-    border-radius: var(--radius-sm);
-    background: var(--brand);
-    color: var(--brand-contrast);
-  }
-  .cm-type-divider {
-    margin: 1.25rem 0 0.25rem;
   }
 }

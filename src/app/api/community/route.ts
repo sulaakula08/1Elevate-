@@ -20,7 +20,9 @@ export const runtime = "nodejs";
  * relationship detection that is easy to break and hard to notice.
  */
 
+/* Mirrors the check constraint on community_posts.type. */
 const POST_TYPES: CommunityPostType[] = [
+  "post",
   "question",
   "progress",
   "achievement",

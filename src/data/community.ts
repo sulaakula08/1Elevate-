@@ -9,7 +9,21 @@ import type { ExamId } from "./types";
  * top at render time (see `lib/community-state.tsx`), so this file stays pure
  * demo content that a real API response could replace field-for-field.
  */
+/**
+ * `post` is an ordinary post: someone's words, with no structured block behind
+ * them. It is the only type a person now picks, and they pick it by starting to
+ * write rather than by choosing it.
+ *
+ * The other six describe a shape the product understands, and five of them are
+ * on their way to being written by the app itself — progress from a mock result,
+ * a study update from a finished session, an achievement from a real milestone.
+ * They stay in the model, in the feed and in the filters; they have just left
+ * the composer, because asking a student to tell the difference between "Explain
+ * Something" and "Study Update" before they have written a word is asking them
+ * to learn our schema.
+ */
 export type CommunityPostType =
+  | "post"
   | "question"
   | "progress"
   | "achievement"

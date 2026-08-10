@@ -12,9 +12,13 @@ import { AchievementPostContent } from "./AchievementPostContent";
 import { ExplanationPostContent } from "./ExplanationPostContent";
 import { StudyUpdatePostContent } from "./StudyUpdatePostContent";
 import { ResourcePostContent } from "./ResourcePostContent";
+import { GenericPostContent } from "./GenericPostContent";
 
 /** Content-sharing types ask for help; personal-milestone types get congratulated. See AGENTS §7. */
 const REACTION_BY_TYPE: Record<CommunityPostType, CommunityReactionKind> = {
+  /* An ordinary post is usually a thought or a tip, so it earns "helpful"
+     rather than congratulations. */
+  post: "helpful",
   question: "helpful",
   explanation: "helpful",
   resource: "helpful",
@@ -26,6 +30,8 @@ const REACTION_BY_TYPE: Record<CommunityPostType, CommunityReactionKind> = {
 /** Routes a post to its typed content component — the only place that switches on `post.type`. */
 function PostBody({ post }: { post: CommunityPostView }) {
   switch (post.type) {
+    case "post":
+      return <GenericPostContent text={post.text} />;
     case "question":
       return <QuestionPostContent text={post.text} data={post.question!} topic={post.topic} />;
     case "progress":
