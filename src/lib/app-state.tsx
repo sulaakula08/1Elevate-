@@ -85,7 +85,8 @@ type Ctx = {
   recordAttempts: (attempts: Attempt[]) => void;
   recordMock: (result: Omit<MockResult, "id">) => void;
 
-  saveQuestion: (question: Question) => void;
+  /** Resolves once the database has answered, so the editor can report a failure. */
+  saveQuestion: (question: Question) => Promise<{ ok: true } | { ok: false; error: string }>;
   deleteQuestion: (id: string) => void;
   replaceCustomQuestions: (questions: Question[]) => void;
 
@@ -329,7 +330,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const saveQuestion = useCallback<Ctx["saveQuestion"]>(
-    (question) => {
+    async (question) => {
       const incomingId = String(question.id ?? "").trim();
       /*
        * A new question needs a local identity before the server gives it a real
@@ -360,29 +361,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         exists ? custom.map((q) => (q.id === marked.id ? marked : q)) : [...custom, marked],
       );
 
-      void (async () => {
-        const response = await apiFetch("/api/questions", {
-          method: "POST",
-          body: JSON.stringify({ questions: [marked] }),
-        });
-        if (!response.ok) {
-          // Drop the optimistic copy: leaving it would show the author a
-          // question the database refused, and the next save would try again
-          // under a different temporary id and create a duplicate.
-          if (!incomingId) {
-            setCustom((current) => {
-              const next = current.filter((q) => q.id !== localId);
-              saveCustomQuestions(next);
-              return next;
-            });
-          }
-          return;
+      const response = await apiFetch("/api/questions", {
+        method: "POST",
+        body: JSON.stringify({ questions: [marked] }),
+      });
+
+      if (!response.ok) {
+        // Drop the optimistic copy: leaving it would show the author a question
+        // the database refused, and the next save would try again under a
+        // different temporary id and create a duplicate.
+        if (!incomingId) {
+          setCustom((current) => {
+            const next = current.filter((q) => q.id !== localId);
+            saveCustomQuestions(next);
+            return next;
+          });
         }
-        // Re-read rather than reconcile. The server owns the numbering, the
-        // authorship and the timestamps, and every attempt to mirror that in
-        // the client has cost a question so far.
-        await refreshBank();
-      })();
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        return { ok: false as const, error: body.error ?? "Could not save the question." };
+      }
+
+      // Re-read rather than reconcile. The server owns the numbering, the
+      // authorship and the timestamps, and every attempt to mirror that in the
+      // client has cost a question so far.
+      await refreshBank();
+      return { ok: true as const };
     },
     [account?.email, custom, persistCustom, refreshBank],
   );

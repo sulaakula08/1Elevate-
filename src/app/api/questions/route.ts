@@ -138,6 +138,42 @@ function invalid(question: Question): string | null {
 
 const MAX_BATCH = 200;
 
+/*
+ * Why a save failed, in words an author can act on.
+ *
+ * Every failure used to come back as "Content editing is for admins", which was
+ * a guess dressed as a fact: a not-null violation, a check constraint and an
+ * actual permission refusal all produced the same sentence, so a save that was
+ * failing for a fixable reason looked like one that never could. The Postgres
+ * code is the only thing that knows which it is.
+ */
+type WriteError = { code?: string; message?: string; details?: string | null };
+
+function writeFailure(error: WriteError): { error: string } {
+  switch (error.code) {
+    case "23505":
+      return {
+        error:
+          "That question number was taken while you were writing. Nothing was saved — try again.",
+      };
+    case "23502":
+      return { error: "A required field was empty. Check the topic, prompt and answer." };
+    case "23514":
+      return { error: "A value was out of range — difficulty must be 1, 2 or 3." };
+    case "23503":
+      return { error: "The author record is missing. Sign out and back in, then retry." };
+    case "42501":
+      return { error: "Could not save. Content editing is for admins." };
+    default:
+      // The driver text names columns and constraints, so it stays out of the
+      // browser — but the code is safe and is what makes a report actionable.
+      return { error: `Could not save the question. (${error.code ?? "unknown"})` };
+  }
+}
+
+const statusFor = (error: WriteError) =>
+  error.code === "23505" ? 409 : error.code === "42501" ? 403 : 400;
+
 /**
  * Question ids are a running number per section: sat-math-041, sat-rw-018.
  *
@@ -333,19 +369,7 @@ export async function POST(request: Request) {
 
     if (error) {
       if (process.env.NODE_ENV !== "production") console.error("[questions:new]", error);
-      if (error.code === "23505") {
-        return NextResponse.json(
-          {
-            error:
-              "That question number was taken while you were writing. Nothing was saved — try again.",
-          },
-          { status: 409 },
-        );
-      }
-      return NextResponse.json(
-        { error: "Could not save. Content editing is for admins." },
-        { status: 403 },
-      );
+      return NextResponse.json(writeFailure(error), { status: statusFor(error) });
     }
   }
 
@@ -359,10 +383,7 @@ export async function POST(request: Request) {
 
     if (error) {
       if (process.env.NODE_ENV !== "production") console.error("[questions:edit]", error);
-      return NextResponse.json(
-        { error: "Could not save. Content editing is for admins." },
-        { status: 403 },
-      );
+      return NextResponse.json(writeFailure(error), { status: statusFor(error) });
     }
   }
 

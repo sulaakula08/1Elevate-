@@ -148,7 +148,7 @@ function AdminInner() {
     return { en: text.en.trim() };
   }
 
-  function submit(event: React.FormEvent) {
+  async function submit(event: React.FormEvent) {
     event.preventDefault();
     setNotice(null);
 
@@ -177,9 +177,18 @@ function AdminInner() {
       custom: true,
     };
 
-    saveQuestion(question);
-    setDraft(emptyDraft());
+    // Await the database before claiming success. This reported "Saved" whatever
+    // happened, so a rejected question looked identical to a stored one — an
+    // author could retype the same item repeatedly and never learn why it was
+    // not appearing.
     setError(null);
+    setNotice(null);
+    const outcome = await saveQuestion(question);
+    if (!outcome.ok) {
+      setError(outcome.error);
+      return;
+    }
+    setDraft(emptyDraft());
     setNotice(t("admin.saved"));
   }
 
