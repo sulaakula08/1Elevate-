@@ -27,13 +27,29 @@ export function Dashboard({ account }: { account: Account }) {
   const lastMock = [...data.mocks].reverse().find((m) => m.exam === exam);
   const fresh = stats.total === 0;
 
-  /** Distinct questions answered per subject — "solved of total", as on the card. */
+  /*
+   * Counted against the questions in the bank today, not against the whole
+   * attempt log.
+   *
+   * Matching on subjectId alone counted answers to questions that have since
+   * been deleted, while the denominator was the bank's current size — so a
+   * student with older history saw "36 of 2 solved, 1800%". The numerator and
+   * the denominator have to be drawn from the same set or the ratio is
+   * meaningless.
+   */
+  const bankIds = new Map<string, Set<string>>();
+  for (const question of bank) {
+    const ids = bankIds.get(question.subjectId) ?? new Set<string>();
+    ids.add(question.id);
+    bankIds.set(question.subjectId, ids);
+  }
+
   const solvedBySubject = new Map<string, number>();
-  for (const subjectId of new Set(data.attempts.map((a) => a.subjectId))) {
-    solvedBySubject.set(
-      subjectId,
-      new Set(data.attempts.filter((a) => a.subjectId === subjectId).map((a) => a.questionId)).size,
+  for (const [subjectId, ids] of bankIds) {
+    const solved = new Set(
+      data.attempts.filter((a) => a.correct && ids.has(a.questionId)).map((a) => a.questionId),
     );
+    solvedBySubject.set(subjectId, solved.size);
   }
 
   /**
@@ -144,7 +160,9 @@ export function Dashboard({ account }: { account: Account }) {
           {subjectsFor(exam).map((subject, i) => {
             const total = statsFor(totals, subject.id).total;
             const solved = solvedBySubject.get(subject.id) ?? 0;
-            const share = total ? solved / total : 0;
+            // Clamped: a ratio above 1 is always a counting mistake, and showing
+            // 1800% teaches a student nothing except that the app is broken.
+            const share = total ? Math.min(1, solved / total) : 0;
             return (
               <Reveal key={subject.id} delay={i * 70}>
                 <Link

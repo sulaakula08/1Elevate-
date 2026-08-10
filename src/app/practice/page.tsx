@@ -389,7 +389,7 @@ function BankInner() {
                         <span className="whitespace-nowrap">{t("bank.solved")}</span>
                         {subjectTotal > 0 && (
                           <span className="num ml-auto font-semibold">
-                            {pct(subjectTotal ? solved / subjectTotal : 0)}
+                            {pct(subjectTotal ? Math.min(1, solved / subjectTotal) : 0)}
                           </span>
                         )}
                       </span>
@@ -398,7 +398,7 @@ function BankInner() {
                         <span
                           className="block bank-fill"
                           style={{
-                            width: `${subjectTotal ? (solved / subjectTotal) * 100 : 0}%`,
+                            width: `${subjectTotal ? Math.min(1, solved / subjectTotal) * 100 : 0}%`,
                           }}
                         />
                       </span>
