@@ -80,12 +80,34 @@ Format rules — the response is parsed by a program, so every field matters:
 - Between ${MIN_CHOICES} and ${MAX_CHOICES} answer choices, four unless the item type calls for otherwise. Exactly one is correct; "answer" is its zero-based index. No two choices may say the same thing.
 - "passage" is the stimulus a Reading & Writing item is built on. Write an original passage — never reproduce a real exam text or a copyrighted source. Use an empty string when the question needs no passage.
 - "topic" must be one of the topics listed below. "domain" must be one of the official content domains listed below.
-- Every question must be answerable from text alone: no images, diagrams, graphs or tables that cannot be written out in words.
+- A question may carry a figure, and some skills need one — reading a trend, comparing series, interpolating from a graph. Write it as a fenced chart block inside "prompt", on its own lines:
+
+  \`\`\`chart
+  type: line
+  title: Wheat exported by three countries
+  x: 2019/2020, 2020/2021, 2021/2022, 2022/2023
+  xLabel: Marketing year
+  yLabel: Percent
+  series: Kazakhstan = 64, 68, 79, 71
+  series: Ukraine = 22, 17, 33, 30
+  \`\`\`
+
+  "type" is line, bar or scatter. One "series" line per data set; a blank value is a gap. Invent your own scenario and your own numbers — never transcribe a figure from a real exam.
+- Only include a figure when the skill genuinely requires reading one. A question that can be asked in a sentence must be asked in a sentence.
+- Anything the figure does not show must be stated in words: a question can only be answered from the figure plus the stem.
+- No other images or diagrams. Geometry figures are not supported yet, so do not write a question that needs one.
 - "explanation" teaches the rule that makes the answer work, in two to four sentences, so it transfers to the next question. Write math as plain text: / for division, ^ for powers, no LaTeX.
 
 Quality rules:
 - Distractors must be wrong for a reason a real student would fall for — a sign error, a misread of scope, a plausible but unsupported inference — never filler.
-- Difficulty 1 is one step; difficulty 2 takes two or three; difficulty 3 combines ideas or hides the step that matters.
+- Difficulty 1 is one step; difficulty 2 takes two or three; difficulty 3 combines ideas or hides the step that matters.${
+    request.calibration && request.calibration.length
+      ? `
+- Calibrate against what this platform's own students actually score, which is better evidence than a label. Questions already in the bank, with the share of students answering each correctly:
+${request.calibration.map((c) => `  - ${LEVEL_NAME[c.difficulty]}: ${Math.round(c.accuracy * 100)}% correct — "${c.prompt.slice(0, 120)}"`).join("\n")}
+  Aim for the same accuracy band at each level.`
+      : ""
+  }
 - Check the arithmetic and the answer index before you return. An item you are unsure of is worse than one fewer item.
 
 Topics available: ${request.topics.join("; ") || "standard SAT topics for this section"}.

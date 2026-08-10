@@ -30,6 +30,13 @@ export type GenerateRequest = {
   domains: string[];
   /** Prompts already in the bank; the model is told not to write them again. */
   avoid: string[];
+  /**
+   * Questions whose real accuracy is known, so difficulty is calibrated against
+   * what this platform's own students score rather than against a label. A
+   * measured band beats an adjective: "medium" means whatever the writer thought
+   * it meant, while 45% correct is a fact about these students.
+   */
+  calibration?: { prompt: string; difficulty: Difficulty; accuracy: number }[];
 };
 
 export type GenerateResponse = {
@@ -79,6 +86,7 @@ export type QuestionDraft = {
   topic?: unknown;
   domain?: unknown;
   difficulty?: unknown;
+  skill?: unknown;
   passage?: unknown;
   prompt?: unknown;
   choices?: unknown;
@@ -147,6 +155,7 @@ export function validateDraft(
     exam: "sat",
     subjectId: subject.id,
     topic: shared.topic,
+    skill: typeof draft.skill === "string" && draft.skill.trim() ? draft.skill.trim() : undefined,
     domain: shared.domain,
     difficulty: shared.difficulty,
     ...(passage ? { passage: { en: passage } } : {}),
@@ -195,6 +204,7 @@ export function validateQuestion(value: unknown, expected: { subjectId: string }
     exam: "sat",
     subjectId: subject.id,
     topic: shared.topic,
+    skill: typeof record.skill === "string" && record.skill.trim() ? record.skill.trim() : undefined,
     domain: shared.domain,
     difficulty: shared.difficulty,
     ...(passage ? { passage } : {}),
