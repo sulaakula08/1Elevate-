@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SAT, getSubject, subjectColor, subjectGradient, subjectsFor } from "@/data/exams";
+import { SAT, getSubject, subjectColor, subjectColorSoft, subjectsFor } from "@/data/exams";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
@@ -379,8 +379,13 @@ function BankInner() {
               return (
                 <Reveal as="li" key={subject.id} delay={i * 55}>
                   <div
-                    className="bank-card qb-subject-card h-full flex flex-col gap-4"
-                    style={subjectGradient(subject.id) as React.CSSProperties}
+                    className="qb-subject-card h-full flex flex-col gap-4"
+                    style={
+                      {
+                        ["--tone"]: subjectColor(subject.id),
+                        ["--tone-soft"]: subjectColorSoft(subject.id),
+                      } as React.CSSProperties
+                    }
                   >
                     <div className="flex items-start gap-3">
                       <span className="qb-glyph" aria-hidden>
@@ -411,9 +416,9 @@ function BankInner() {
                           </span>
                         )}
                       </div>
-                      <span className="bank-track block">
+                      <span className="qb-rule block">
                         <span
-                          className="bank-fill block"
+                          className="qb-rule-fill block"
                           style={{
                             width: `${subjectTotal ? (solved / subjectTotal) * 100 : 0}%`,
                           }}
