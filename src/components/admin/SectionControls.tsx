@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { apiFetch } from "@/lib/supabase/client";
 import { forgetSectionStatus } from "@/components/SectionGate";
 import { ConfirmDialog } from "@/components/ui";
+import { SwipeRow } from "@/components/motion/SwipeRow";
 
 /**
  * The owner's maintenance switches.
@@ -13,8 +14,13 @@ import { ConfirmDialog } from "@/components/ui";
  * Closing asks for confirmation and offers a message, because the message is
  * the whole point: "Community is unavailable" tells a student nothing they
  * cannot already see, while "back in about an hour" tells them whether to wait.
- * Reopening is immediate — there is nothing to be careful about in making the
- * product work again.
+ * Clicking reopen is immediate — there is nothing to be careful about in making
+ * the product work again.
+ *
+ * A row can also be swiped: right reopens, left closes. A gesture is easier to
+ * trigger by accident than a button, and this one takes a section away from
+ * every student at once, so a swipe never applies anything — either direction
+ * only opens the confirmation, and the row springs back while it is up.
  */
 
 const SECTIONS: { key: string; label: string }[] = [
@@ -33,7 +39,10 @@ export function SectionControls() {
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<{ key: string; label: string } | null>(null);
+  /** The section awaiting confirmation, and which way it is about to go. */
+  const [pending, setPending] = useState<
+    { key: string; label: string; closing: boolean } | null
+  >(null);
   const [draft, setDraft] = useState("");
 
   const isOwner = account?.role === "owner";
@@ -97,45 +106,62 @@ export function SectionControls() {
           const current = status[section.key];
           const closed = current?.closed ?? false;
           return (
-            <li
-              key={section.key}
-              className="flex flex-wrap items-center gap-3 py-3.5 border-b"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-medium">{section.label}</p>
-                {closed && current?.message && (
-                  <p className="text-[13px] text-muted truncate">{current.message}</p>
-                )}
-              </div>
-
-              <span
-                className="chip shrink-0"
-                style={{
-                  ["--tone" as string]: closed ? "var(--danger)" : "var(--success)",
+            <li key={section.key} className="border-b">
+              <SwipeRow
+                disabled={!isOwner || busy === section.key}
+                hint={
+                  closed
+                    ? t("closed.swipeHintClosed")
+                    : t("closed.swipeHintOpen")
+                }
+                onSwipe={(direction) => {
+                  // Swiping the way it already is means nothing.
+                  if (direction === "right" && !closed) return "revert";
+                  if (direction === "left" && closed) return "revert";
+                  setDraft("");
+                  setPending({ ...section, closing: direction === "left" });
+                  // The dialog takes over; the row goes back where it was.
+                  return "revert";
                 }}
               >
-                {t(closed ? "closed.stateClosed" : "closed.stateOpen")}
-              </span>
+                <div className="flex flex-wrap items-center gap-3 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-medium">{section.label}</p>
+                    {closed && current?.message && (
+                  <p className="text-[13px] text-muted truncate">{current.message}</p>
+                    )}
+                  </div>
 
-              {isOwner && (
-                <button
-                  type="button"
-                  className="btn btn-sm shrink-0"
-                  disabled={busy === section.key}
-                  onClick={() => {
-                    if (closed) {
-                      void apply(section.key, false, null);
-                    } else {
-                      setDraft("");
-                      setPending(section);
-                    }
-                  }}
-                >
-                  {busy === section.key
-                    ? "…"
-                    : t(closed ? "closed.reopen" : "closed.close")}
-                </button>
-              )}
+                  <span
+                    className="chip shrink-0"
+                    style={{
+                  ["--tone" as string]: closed ? "var(--danger)" : "var(--success)",
+                    }}
+                  >
+                    {t(closed ? "closed.stateClosed" : "closed.stateOpen")}
+                  </span>
+
+                {isOwner && (
+                  <button
+                    type="button"
+                    className="btn btn-sm shrink-0"
+                    disabled={busy === section.key}
+                    onClick={() => {
+                      if (closed) {
+                        void apply(section.key, false, null);
+                      } else {
+                        setDraft("");
+                        setPending({ ...section, closing: true });
+                      }
+                    }}
+                  >
+                    {busy === section.key
+                      ? "…"
+                      : t(closed ? "closed.reopen" : "closed.close")}
+                  </button>
+                )}
+                </div>
+              </SwipeRow>
             </li>
           );
         })}
@@ -143,24 +169,35 @@ export function SectionControls() {
 
       {pending && (
         <ConfirmDialog
-          title={`${t("closed.confirmTitle")} ${pending.label}?`}
+          title={`${t(pending.closing ? "closed.confirmTitle" : "closed.reopenTitle")} ${
+            pending.label
+          }?`}
           body={
-            <>
-              <span className="block">{t("closed.confirmBody")}</span>
-              <label className="block mt-4">
-                <span className="label">{t("closed.messageLabel")}</span>
-                <input
-                  className="field"
-                  value={draft}
-                  placeholder={t("closed.messagePlaceholder")}
-                  onChange={(e) => setDraft(e.target.value)}
-                />
-              </label>
-            </>
+            pending.closing ? (
+              <>
+                <span className="block">{t("closed.confirmBody")}</span>
+                {/* The message is the point of closing at all — see the note at
+                    the top of this file — so it is asked for here and nowhere
+                    else. Reopening has nothing to explain. */}
+                <label className="block mt-4">
+                  <span className="label">{t("closed.messageLabel")}</span>
+                  <input
+                    className="field"
+                    value={draft}
+                    placeholder={t("closed.messagePlaceholder")}
+                    onChange={(e) => setDraft(e.target.value)}
+                  />
+                </label>
+              </>
+            ) : (
+              <span className="block">{t("closed.reopenBody")}</span>
+            )
           }
-          confirmLabel={t("closed.close")}
-          danger
-          onConfirm={() => void apply(pending.key, true, draft.trim() || null)}
+          confirmLabel={t(pending.closing ? "closed.close" : "closed.reopen")}
+          danger={pending.closing}
+          onConfirm={() =>
+            void apply(pending.key, pending.closing, pending.closing ? draft.trim() || null : null)
+          }
           onCancel={() => setPending(null)}
         />
       )}
