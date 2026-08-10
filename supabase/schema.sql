@@ -634,3 +634,23 @@ create policy "sections: write owner"
   on public.service_sections for all
   using (public.is_owner())
   with check (public.is_owner());
+
+-- ------------------------------------------------- question id integrity --
+-- A blank id caused real data loss, so the database refuses one now rather than
+-- trusting every client to.
+--
+-- What happened: the editor sends an empty id for a new question, an early
+-- version of the API looked that empty value up among existing rows, and from
+-- then on every save matched the blank row, was treated as an edit, and
+-- overwrote it. Two admins writing to different sections ended up with one
+-- question between them.
+--
+-- The delete runs first, because the constraint cannot be added while a row
+-- violates it. It removes at most the single blank row; on a clean table it
+-- matches nothing, which keeps this file re-runnable.
+
+delete from public.custom_questions where trim(coalesce(id, '')) = '';
+
+alter table public.custom_questions drop constraint if exists custom_questions_id_present;
+alter table public.custom_questions
+  add constraint custom_questions_id_present check (length(trim(id)) > 0);

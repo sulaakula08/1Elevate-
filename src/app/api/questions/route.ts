@@ -309,24 +309,64 @@ export async function POST(request: Request) {
     );
   }
 
-  const rows = (numbered as Question[]).map((q) =>
-    toRow(q, originalAuthor.get(String(q.id)) ?? found.user.id),
-  );
-  const { error } = await found.client
-    .from("custom_questions")
-    .upsert(rows, { onConflict: "id" });
+  const settled = numbered as Question[];
 
-  if (error) {
-    if (process.env.NODE_ENV !== "production") console.error("[questions]", error);
-    // 403 rather than 502: the overwhelmingly likely cause is a student calling
-    // this, and the write policy refusing them.
-    return NextResponse.json(
-      { error: "Could not save. Content editing is for admins." },
-      { status: 403 },
-    );
+  /*
+   * New questions are inserted; only edits are upserted.
+   *
+   * This is the guard that matters, because it is the difference between a bug
+   * and lost work. A single upsert over both cases means any id collision —
+   * a stale client, two admins saving at the same second, a leftover row — is
+   * resolved by overwriting whatever was already there, silently. That is how
+   * one admin's verbal question replaced another admin's maths question.
+   *
+   * An insert cannot overwrite. If the id is somehow taken, Postgres raises
+   * 23505 and nothing is written, which is recoverable; a lost question is not.
+   */
+  const edits = settled.filter((q) => isEdit(q));
+  const fresh = settled.filter((q) => !isEdit(q));
+
+  if (fresh.length > 0) {
+    const { error } = await found.client
+      .from("custom_questions")
+      .insert(fresh.map((q) => toRow(q, found.user.id)));
+
+    if (error) {
+      if (process.env.NODE_ENV !== "production") console.error("[questions:new]", error);
+      if (error.code === "23505") {
+        return NextResponse.json(
+          {
+            error:
+              "That question number was taken while you were writing. Nothing was saved — try again.",
+          },
+          { status: 409 },
+        );
+      }
+      return NextResponse.json(
+        { error: "Could not save. Content editing is for admins." },
+        { status: 403 },
+      );
+    }
   }
 
-  return NextResponse.json({ ok: true, saved: rows.length, assigned });
+  if (edits.length > 0) {
+    const { error } = await found.client
+      .from("custom_questions")
+      .upsert(
+        edits.map((q) => toRow(q, originalAuthor.get(String(q.id)) ?? found.user.id)),
+        { onConflict: "id" },
+      );
+
+    if (error) {
+      if (process.env.NODE_ENV !== "production") console.error("[questions:edit]", error);
+      return NextResponse.json(
+        { error: "Could not save. Content editing is for admins." },
+        { status: 403 },
+      );
+    }
+  }
+
+  return NextResponse.json({ ok: true, saved: settled.length, assigned });
 }
 
 export async function DELETE(request: Request) {
