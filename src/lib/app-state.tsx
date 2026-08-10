@@ -319,15 +319,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveCustomQuestions(next);
   }, []);
 
+  /** Pulls the shared bank back from the database and replaces the cache. */
+  const refreshBank = useCallback(async () => {
+    const response = await apiFetch("/api/questions");
+    if (!response.ok) return;
+    const body = (await response.json()) as { questions: Question[] };
+    setCustom(body.questions);
+    saveCustomQuestions(body.questions);
+  }, []);
+
   const saveQuestion = useCallback<Ctx["saveQuestion"]>(
     (question) => {
-      const previous = custom.find((q) => q.id === question.id);
+      const incomingId = String(question.id ?? "").trim();
+      /*
+       * A new question needs a local identity before the server gives it a real
+       * one. It used to be held under a blank id, and that was the bug: two
+       * unsaved questions both keyed on "" meant the second one replaced the
+       * first in the list — the editor appeared to lose a question even though
+       * both were safely in the database.
+       *
+       * The server treats any id it does not recognise as new, so a temporary
+       * one costs nothing and is unique per save.
+       */
+      const localId = incomingId || `new-${crypto.randomUUID()}`;
+
+      const previous = custom.find((q) => q.id === localId);
       // Provenance is the database's to assign, but stamping it optimistically
       // means a question the admin just saved shows an author and a time
       // straight away instead of blanks until the next reload. An edit keeps
       // whatever the original author and time were.
       const marked = {
         ...question,
+        id: localId,
         custom: true,
         authorEmail: previous?.authorEmail ?? question.authorEmail ?? account?.email,
         createdAt: previous?.createdAt ?? question.createdAt ?? Date.now(),
@@ -336,32 +359,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       persistCustom(
         exists ? custom.map((q) => (q.id === marked.id ? marked : q)) : [...custom, marked],
       );
+
       void (async () => {
         const response = await apiFetch("/api/questions", {
           method: "POST",
           body: JSON.stringify({ questions: [marked] }),
         });
-        if (!response.ok) return;
-
-        // A new question is saved with a blank id and numbered by the server,
-        // so the optimistic copy has to be renamed to the id it was actually
-        // given — otherwise the editor holds a question the database has never
-        // heard of, and the next save would create a second one.
-        const body = (await response.json().catch(() => ({}))) as {
-          assigned?: { from: string; to: string }[];
-        };
-        const given = body.assigned?.find((a) => a.from === String(marked.id));
-        if (!given) return;
-        setCustom((current) => {
-          const next = current.map((q) =>
-            q.id === marked.id ? { ...q, id: given.to } : q,
-          );
-          saveCustomQuestions(next);
-          return next;
-        });
+        if (!response.ok) {
+          // Drop the optimistic copy: leaving it would show the author a
+          // question the database refused, and the next save would try again
+          // under a different temporary id and create a duplicate.
+          if (!incomingId) {
+            setCustom((current) => {
+              const next = current.filter((q) => q.id !== localId);
+              saveCustomQuestions(next);
+              return next;
+            });
+          }
+          return;
+        }
+        // Re-read rather than reconcile. The server owns the numbering, the
+        // authorship and the timestamps, and every attempt to mirror that in
+        // the client has cost a question so far.
+        await refreshBank();
       })();
     },
-    [account?.email, custom, persistCustom],
+    [account?.email, custom, persistCustom, refreshBank],
   );
 
   const deleteQuestion = useCallback<Ctx["deleteQuestion"]>(
