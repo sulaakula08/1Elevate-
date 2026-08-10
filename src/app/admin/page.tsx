@@ -45,6 +45,9 @@ function formatWhen(at: number): string {
   });
 }
 
+/** How many of the newest questions the list shows before it is expanded. */
+const RECENT_COUNT = 5;
+
 /** Reading & Writing is the default section, so its first domain seeds a draft. */
 const RW_FIRST = domainsFor("sat-rw")[0];
 
@@ -99,6 +102,7 @@ function AdminInner() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // The question the admin has asked to delete but not yet confirmed.
+  const [showAllQuestions, setShowAllQuestions] = useState(false);
   const [toDelete, setToDelete] = useState<Question | null>(null);
   /** The editor starts folded: most visits here are to read, not to write. */
   const [editorOpen, setEditorOpen] = useState(false);
@@ -114,6 +118,21 @@ function AdminInner() {
   }
 
   const customQuestions = bank.filter((q) => q.custom);
+
+  /**
+   * Newest first, so "the last five" means the five just written rather than
+   * the five that happen to sit at the end of the array. Items from before
+   * `createdAt` existed have no timestamp; they sort last and keep their
+   * relative order rather than being scattered by an undefined comparison.
+   */
+  const recentFirst = [...customQuestions].sort((a, b) => {
+    if (a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
+    if (a.createdAt) return -1;
+    if (b.createdAt) return 1;
+    return 0;
+  });
+  const shown = showAllQuestions ? recentFirst : recentFirst.slice(0, RECENT_COUNT);
+  const hidden = recentFirst.length - shown.length;
   const subjectOptions = SUBJECTS.filter((s) => s.exam === draft.exam);
 
   /**
@@ -535,7 +554,7 @@ function AdminInner() {
           <EmptyState>—</EmptyState>
         ) : (
           <ul className="space-y-2">
-            {customQuestions.map((question) => {
+            {shown.map((question) => {
               const subject = getSubject(question.subjectId);
               return (
                 <li key={question.id} className="flex items-start gap-3 py-3.5 border-b">
@@ -591,6 +610,18 @@ function AdminInner() {
               );
             })}
           </ul>
+        )}
+
+        {/* Only offered when it would actually change what is on screen. */}
+        {hidden > 0 && (
+          <button className="btn btn-sm mt-4" onClick={() => setShowAllQuestions(true)}>
+            {t("admin.showAll")} ({recentFirst.length})
+          </button>
+        )}
+        {showAllQuestions && recentFirst.length > RECENT_COUNT && (
+          <button className="btn btn-sm mt-4" onClick={() => setShowAllQuestions(false)}>
+            {t("admin.showRecent")}
+          </button>
         )}
       </section>
 

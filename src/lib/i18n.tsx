@@ -605,6 +605,8 @@ const D: Dict = {
   "admin.cancel": { en: "Cancel" },
   "admin.delete": { en: "Delete" },
   "admin.edit": { en: "Edit" },
+  "admin.showAll": { en: "Show all" },
+  "admin.showRecent": { en: "Show only the latest 5" },
   "admin.yourQuestions": { en: "Questions you added" },
   "admin.builtIn": { en: "built-in" },
   "admin.custom": { en: "custom" },
