@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import type { Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useSettings } from "@/lib/settings";
@@ -37,6 +38,24 @@ type Props = {
 
 type Tool = "calculator" | "reference" | null;
 
+/**
+ * The question slides out the way the student is travelling and the next one
+ * arrives from the opposite edge, so moving through a section reads as motion
+ * along it rather than as the page blinking.
+ *
+ * `custom` carries the direction: +1 going forward, -1 going back. CSS cannot
+ * express this at all — it has no way to animate an element that is being
+ * removed from the DOM, which is exactly what the outgoing question is.
+ */
+const QUESTION_SLIDE = {
+  enter: (direction: number) => ({ opacity: 0, x: direction > 0 ? 28 : -28 }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction: number) => ({ opacity: 0, x: direction > 0 ? -28 : 28 }),
+};
+
+/** Short enough that a fast reader never waits on it. */
+const SLIDE = { duration: 0.18, ease: [0.22, 0.61, 0.36, 1] as const };
+
 function clock(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -64,6 +83,8 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
   const count = questions.length;
 
   const [index, setIndex] = useState(0);
+  /** Which way the last move went, so the slide points the right way. */
+  const [direction, setDirection] = useState(1);
   const [answers, setAnswers] = useState<(number | null)[]>(() => Array(count).fill(null));
   const [revealed, setRevealed] = useState<boolean[]>(() => Array(count).fill(false));
   const [marked, setMarked] = useState<boolean[]>(() => Array(count).fill(false));
@@ -154,9 +175,11 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
   const goTo = useCallback(
     (next: number) => {
-      if (next >= 0 && next < count) setIndex(next);
+      if (next < 0 || next >= count) return;
+      setDirection(next > index ? 1 : -1);
+      setIndex(next);
     },
-    [count],
+    [count, index],
   );
 
   const next = useCallback(() => {
@@ -296,8 +319,16 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
       {/* ---------------- work area ---------------- */}
       <div className={`test-body ${tool ? "test-body-split" : ""}`}>
-        {tool && (
-          <aside className="test-pane fade-in">
+        <AnimatePresence initial={false}>
+          {tool && (
+            <motion.aside
+              key={tool}
+              className="test-pane"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -12 }}
+              transition={SLIDE}
+            >
             <div className="flex items-center gap-2 px-3 h-11 border-b">
               <p className="text-sm font-medium">
                 {tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
@@ -310,11 +341,12 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
                 ✕
               </button>
             </div>
-            <div className="flex-1 min-h-0">
-              {tool === "calculator" ? <Calculator /> : <ReferenceSheet />}
-            </div>
-          </aside>
-        )}
+              <div className="flex-1 min-h-0">
+                {tool === "calculator" ? <Calculator /> : <ReferenceSheet />}
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
 
         <main className="test-question">
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -374,28 +406,43 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
             </p>
           )}
 
-          <div className="mt-5" ref={questionRef}>
-            <QuestionView
-              question={question}
-              selected={selected}
-              onSelect={select}
-              revealed={isRevealed}
-              disabled={isRevealed}
-              crossOutMode={crossOutMode}
-              crossedOut={crossed[index]}
-              onToggleCross={(choice) =>
-                setCrossed((list) =>
-                  setAt(
-                    list,
-                    index,
-                    list[index].includes(choice)
-                      ? list[index].filter((c) => c !== choice)
-                      : [...list[index], choice],
-                  ),
-                )
-              }
-            />
-          </div>
+          {/* mode="wait" so the two questions never overlap mid-slide — with a
+              stem and four choices on screen, a cross-fade of two different
+              questions is unreadable for the moment it lasts. */}
+          <AnimatePresence mode="wait" initial={false} custom={direction}>
+            <motion.div
+              key={question.id}
+              ref={questionRef}
+              className="mt-5"
+              custom={direction}
+              variants={QUESTION_SLIDE}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={SLIDE}
+            >
+              <QuestionView
+                question={question}
+                selected={selected}
+                onSelect={select}
+                revealed={isRevealed}
+                disabled={isRevealed}
+                crossOutMode={crossOutMode}
+                crossedOut={crossed[index]}
+                onToggleCross={(choice) =>
+                  setCrossed((list) =>
+                    setAt(
+                      list,
+                      index,
+                      list[index].includes(choice)
+                        ? list[index].filter((c) => c !== choice)
+                        : [...list[index], choice],
+                    ),
+                  )
+                }
+              />
+            </motion.div>
+          </AnimatePresence>
 
           {isRevealed && (
             <p
@@ -421,16 +468,20 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
             </span>
             <IconChevron />
           </button>
-          {navOpen && (
-            <QuestionNavigator
-              total={count}
-              current={index}
-              answered={answers.map((a) => a !== null)}
-              marked={marked}
-              onGo={goTo}
-              onClose={() => setNavOpen(false)}
-            />
-          )}
+          {/* AnimatePresence keeps the popover mounted long enough to play its
+              exit — the reason it is here rather than a CSS class. */}
+          <AnimatePresence>
+            {navOpen && (
+              <QuestionNavigator
+                total={count}
+                current={index}
+                answered={answers.map((a) => a !== null)}
+                marked={marked}
+                onGo={goTo}
+                onClose={() => setNavOpen(false)}
+              />
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="flex items-center gap-2">

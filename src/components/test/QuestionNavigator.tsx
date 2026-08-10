@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { motion } from "motion/react";
 import { useI18n } from "@/lib/i18n";
 import { IconFlag } from "./TestIcons";
 
@@ -37,12 +38,19 @@ export function QuestionNavigator({ total, current, answered, marked, onGo, onCl
   }, [onClose]);
 
   return (
-    <div
+    <motion.div
       ref={ref}
       role="dialog"
       aria-label={t("ptool.navTitle")}
-      className="panel scale-in absolute bottom-full mb-2 left-0 w-[min(24rem,calc(100vw-2rem))] p-4"
-      style={{ boxShadow: "var(--overlay)" }}
+      className="panel absolute bottom-full mb-2 left-0 w-[min(24rem,calc(100vw-2rem))] p-4"
+      /* Anchored at the bottom-left, because that is where the button that
+         opened it is — a popover that grows from anywhere else reads as an
+         unrelated thing appearing. */
+      style={{ transformOrigin: "bottom left", boxShadow: "var(--overlay)" }}
+      initial={{ opacity: 0, scale: 0.94, y: 6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96, y: 4 }}
+      transition={{ duration: 0.16, ease: [0.22, 0.61, 0.36, 1] }}
     >
       <p className="text-sm font-medium text-center">{t("ptool.navTitle")}</p>
 
@@ -83,6 +91,6 @@ export function QuestionNavigator({ total, current, answered, marked, onGo, onCl
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
