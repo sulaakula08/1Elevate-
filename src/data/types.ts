@@ -21,6 +21,12 @@ export type Question = {
    * Analysis, Geometry and Trigonometry).
    */
   domain?: string;
+  /**
+   * The specific thing being tested, one level finer than `topic` — "Systems of
+   * equations" is a topic, "solving by substitution" is a skill. Optional: a
+   * question is usable without one, and the bank predates the field.
+   */
+  skill?: string;
   difficulty: Difficulty;
   /** Optional reading passage / shared stimulus shown above the prompt. */
   passage?: LocalizedText;

@@ -559,6 +559,8 @@ const D: Dict = {
   "admin.exam": { en: "Exam" },
   "admin.subject": { en: "Subject" },
   "admin.topic": { en: "Topic" },
+  "admin.skill": { en: "Skill" },
+  "admin.skillHint": { en: "e.g. solving by substitution" },
   "admin.passage": { en: "Passage (optional)" },
   "admin.prompt": { en: "Question" },
   "admin.choices": { en: "Answer choices" },

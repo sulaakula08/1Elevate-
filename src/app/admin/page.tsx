@@ -19,6 +19,7 @@ type Draft = {
   exam: ExamId;
   subjectId: string;
   topic: string;
+  skill: string;
   difficulty: Difficulty;
   passage: LocalizedText;
   prompt: LocalizedText;
@@ -48,6 +49,7 @@ function emptyDraft(): Draft {
     exam: "sat",
     subjectId: "sat-rw",
     topic: "",
+    skill: "",
     difficulty: 1,
     passage: { ...EMPTY_TEXT },
     prompt: { ...EMPTY_TEXT },
@@ -63,6 +65,7 @@ function toDraft(question: Question): Draft {
     exam: question.exam,
     subjectId: question.subjectId,
     topic: question.topic,
+    skill: question.skill ?? "",
     difficulty: question.difficulty,
     passage: { ...EMPTY_TEXT, ...(question.passage ?? {}) },
     prompt: { ...EMPTY_TEXT, ...question.prompt },
@@ -117,6 +120,7 @@ function AdminInner() {
     exam: draft.exam,
     subjectId: draft.subjectId,
     topic: draft.topic.trim() || tx(getSubject(draft.subjectId)?.name),
+    skill: draft.skill.trim() || undefined,
     difficulty: draft.difficulty,
     passage: draft.passage.en.trim() ? draft.passage : undefined,
     prompt: draft.prompt,
@@ -162,6 +166,7 @@ function AdminInner() {
       exam: draft.exam,
       subjectId: draft.subjectId,
       topic: draft.topic.trim() || tx(getSubject(draft.subjectId)?.name),
+    skill: draft.skill.trim() || undefined,
       difficulty: draft.difficulty,
       passage: draft.passage.en.trim() ? clean(draft.passage) : undefined,
       prompt: clean(draft.prompt),
@@ -287,6 +292,15 @@ function AdminInner() {
               className="field"
               value={draft.topic}
               onChange={(e) => setDraft((prev) => ({ ...prev, topic: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="label">{t("admin.skill")}</label>
+            <input
+              className="field"
+              value={draft.skill}
+              placeholder={t("admin.skillHint")}
+              onChange={(e) => setDraft((prev) => ({ ...prev, skill: e.target.value }))}
             />
           </div>
           <div>
@@ -469,6 +483,7 @@ function AdminInner() {
                     <p className="text-xs text-muted">
                       {question.exam.toUpperCase()} · {subject ? tx(subject.name) : question.subjectId}{" "}
                       · {question.topic}
+                      {question.skill && <> · {question.skill}</>}
                     </p>
                     {/* Rendered, not raw: a list of "$rac{3}{8}$" tells an
                         author nothing about the item they are looking for. */}

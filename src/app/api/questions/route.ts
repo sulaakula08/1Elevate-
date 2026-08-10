@@ -58,6 +58,11 @@ function toRow(question: Question, authorId: string) {
       prompt: question.prompt,
       choices: question.choices,
       explanation: question.explanation,
+      // Skill rides in the payload rather than in a column of its own. It is
+      // free text the author types, nothing queries it in SQL, and putting it
+      // here means the field works without a migration — the same reason the
+      // prompt and the choices live in jsonb.
+      skill: question.skill ?? null,
     },
     created_by: authorId,
   };
@@ -76,6 +81,7 @@ type Row = {
     prompt: Question["prompt"];
     choices: Question["choices"];
     explanation: Question["explanation"];
+    skill?: string | null;
   };
   created_at?: string | null;
   /**
@@ -105,6 +111,7 @@ function toQuestion(row: Row): Question {
     choices: row.payload?.choices ?? [],
     answer: row.answer,
     explanation: row.payload?.explanation,
+    skill: row.payload?.skill ?? undefined,
     custom: true,
     authorEmail: authorEmail(row.author),
     createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined,
