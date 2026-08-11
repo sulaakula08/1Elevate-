@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useCommunity, type ReportReason, type ReportTarget } from "@/lib/community-state";
 
@@ -47,6 +47,36 @@ export function ReportDialog({
   /** Set once the report is in. The dialog becomes an acknowledgement. */
   const [sent, setSent] = useState(false);
 
+  /*
+   * Focus has to be moved here explicitly, and Escape has to be a window
+   * listener rather than a handler on the panel.
+   *
+   * The menu that opened this dialog unmounts as it opens, which leaves focus on
+   * <body>. A keydown handler on the panel would then never fire — Escape did
+   * nothing, and a keyboard user was stranded in a modal with no way out but the
+   * mouse. Focusing the first radio fixes both at once: the dialog is where the
+   * keyboard already is, and Escape is caught regardless.
+   */
+  const firstReasonRef = useRef<HTMLInputElement>(null);
+  const doneRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    (sent ? doneRef.current : firstReasonRef.current)?.focus();
+  }, [sent]);
+
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onCloseRef.current();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   async function submit() {
     if (!reason || busy) return;
     setBusy(true);
@@ -67,9 +97,6 @@ export function ReportDialog({
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") onClose();
-      }}
     >
       <div
         role="dialog"
@@ -89,7 +116,7 @@ export function ReportDialog({
               {t("community.reportSentBody")}
             </p>
             <div className="mt-6 flex justify-end">
-              <button type="button" className="btn btn-primary" onClick={onClose} autoFocus>
+              <button ref={doneRef} type="button" className="btn btn-primary" onClick={onClose}>
                 {t("community.reportDone")}
               </button>
             </div>
@@ -114,9 +141,10 @@ export function ReportDialog({
                 {t("community.reportReasonLabel")}
               </legend>
               <div className="mt-2 space-y-1">
-                {REASONS.map((value) => (
+                {REASONS.map((value, index) => (
                   <label key={value} className="cm-report-reason">
                     <input
+                      ref={index === 0 ? firstReasonRef : undefined}
                       type="radio"
                       name={groupId}
                       value={value}
