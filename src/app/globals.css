@@ -135,9 +135,16 @@
   --surface: #121215;
   --surface-hover: #1a1a1f;
   --surface-selected: #1f1f26;
-  /* Down into the page, not up off it — see the light theme's note. */
-  --btn-hover: #0d0d10;
-  --btn-press: #070709;
+  /*
+   * Down into the page, not up off it — see the light theme's note.
+   *
+   * The step has to be big enough to see. A button sits on #121215, and the
+   * first attempt at this moved it to #0d0d10, which is a change you have to
+   * look for: on a dialog, where the two buttons are the whole interface, that
+   * reads as nothing happening at all.
+   */
+  --btn-hover: #08080a;
+  --btn-press: #000000;
   /* Lifted off the page rather than inverted, so the slab is still a slab. */
   --next-surface: #191920;
   --next-fg: #ffffff;
