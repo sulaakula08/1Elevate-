@@ -14,13 +14,17 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.tabQuestions": { en: "Questions" },
   "community.tabWins": { en: "Wins" },
 
-  "community.composerPrompt": { en: "What are you working on?" },
+  "community.composerPrompt": { en: "Share something with the community…" },
   "community.quickAsk": { en: "Ask a question" },
-  "community.quickProgress": { en: "Share progress" },
-  "community.quickExplain": { en: "Explain something" },
-  "community.quickMore": { en: "More…" },
 
-  "community.composerOrShare": { en: "Or share something" },
+  /* Names for the types that still exist in the feed. Only the question one is
+     read today, as the composer's title; the rest are kept because the types
+     they name still render, and the flows that will write them automatically —
+     progress from a mock, a study update from a session — will want them back.
+
+     The six one-line hints that used to sit here are gone. They existed only to
+     describe rows in the "what would you like to share?" picker, and that screen
+     was the thing this change removed. */
   "community.postTypeQuestion": { en: "Ask a Question" },
   "community.postTypeProgress": { en: "Share Progress" },
   "community.postTypeAchievement": { en: "Achievement" },
@@ -28,16 +32,10 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.postTypeStudyUpdate": { en: "Study Update" },
   "community.postTypeResource": { en: "Share Resource" },
 
-  "community.postTypeQuestionHint": { en: "Get help with an exam problem" },
-  "community.postTypeProgressHint": { en: "Score improvement, streaks, practice progress" },
-  "community.postTypeAchievementHint": { en: "A personal milestone" },
-  "community.postTypeExplanationHint": { en: "A useful explanation for others" },
-  "community.postTypeStudyUpdateHint": { en: "A summary of a practice session" },
-  "community.postTypeResourceHint": { en: "Useful notes or a resource" },
-
-  "community.composerChooseType": { en: "What would you like to share?" },
   "community.composerSubject": { en: "Subject" },
   "community.composerTopic": { en: "Topic (optional)" },
+  "community.composerCreateTitle": { en: "Create a post" },
+  "community.composerPostBody": { en: "What do you want to share?" },
   "community.composerQuestionBody": { en: "Your question" },
   "community.composerBody": { en: "Details" },
   "community.composerMyAnswer": { en: "My answer" },
@@ -61,7 +59,6 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.composerBodyPlaceholderGeneric": { en: "Add a short note…" },
   "community.composerCancel": { en: "Cancel" },
   "community.composerPost": { en: "Post" },
-  "community.composerBack": { en: "Back" },
 
   "community.reactionHelpful": { en: "Helpful" },
   "community.reactionCongrats": { en: "Congrats" },

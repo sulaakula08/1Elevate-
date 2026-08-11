@@ -6,31 +6,28 @@ import { useI18n } from "@/lib/i18n";
 import { POST_TYPE_ICON } from "./icons";
 
 /**
- * The three things a student actually opens this page to do. Everything else
- * lives behind "More", which opens the same picker the prompt does.
- */
-const QUICK_ACTIONS: { type: CommunityPostType; labelKey: string }[] = [
-  { type: "question", labelKey: "community.quickAsk" },
-  { type: "progress", labelKey: "community.quickProgress" },
-  { type: "explanation", labelKey: "community.quickExplain" },
-];
-
-/**
- * Collapsed composer entry point — expands into ComposerModal on click, never
- * shows a bare textarea inline (see AGENTS §5).
+ * Two ways in, and that is the whole design.
  *
- * The avatar-plus-rounded-input-plus-chip-row arrangement this replaces is the
- * generic social composer, and on a phone its chip row scrolled sideways and cut
- * "Achievement" in half. The prompt now asks the question this product is for,
- * and the actions wrap instead of scrolling.
+ * This used to be a prompt plus four chips, and every one of them opened a
+ * screen asking you to choose between Ask a Question, Share Progress, Explain
+ * Something, Study Update, Achievement and Share Resource. A test user called it
+ * intimidating, which it was: it made you learn the difference between an
+ * explanation and a study update before you had written a word, and five of
+ * those six are things the product should eventually write for you from real
+ * study data.
+ *
+ * So there is one decision left, and it is the only one a person actually has:
+ * am I saying something, or am I stuck. Each button goes straight to its form —
+ * no picker in between.
  */
-export function CreatePostCard({ onOpen }: { onOpen: (type: CommunityPostType | null) => void }) {
+export function CreatePostCard({ onOpen }: { onOpen: (type: CommunityPostType) => void }) {
   const { t } = useI18n();
   const { account } = useApp();
+  const AskIcon = POST_TYPE_ICON.question;
 
   return (
     <div className="cm-composer-entry">
-      <button type="button" className="cm-composer-prompt" onClick={() => onOpen(null)}>
+      <button type="button" className="cm-composer-prompt" onClick={() => onOpen("post")}>
         <span
           className="grid place-items-center w-8 h-8 rounded-[var(--radius-pill)] text-micro font-semibold shrink-0"
           style={{ background: "var(--ink)", color: "var(--ink-contrast)" }}
@@ -42,26 +39,13 @@ export function CreatePostCard({ onOpen }: { onOpen: (type: CommunityPostType | 
       </button>
 
       <div className="cm-composer-actions">
-        {QUICK_ACTIONS.map((action) => {
-          const Icon = POST_TYPE_ICON[action.type];
-          return (
-            <button
-              key={action.type}
-              type="button"
-              className="cm-composer-action"
-              onClick={() => onOpen(action.type)}
-            >
-              <Icon size={16} />
-              {t(action.labelKey)}
-            </button>
-          );
-        })}
         <button
           type="button"
-          className="cm-composer-action cm-composer-more"
-          onClick={() => onOpen(null)}
+          className="cm-composer-action"
+          onClick={() => onOpen("question")}
         >
-          {t("community.quickMore")}
+          <AskIcon size={16} />
+          {t("community.quickAsk")}
         </button>
       </div>
     </div>

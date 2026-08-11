@@ -91,6 +91,12 @@ type ReactionState = Record<string, Partial<Record<CommunityReactionKind, boolea
 function payloadFor(input: CreatePostInput): Record<string, unknown> {
   const text = input.text.trim();
   switch (input.type) {
+    /* An ordinary post has no structured block — its words are the whole post,
+       and they travel in the row's own `text` column. Listed explicitly rather
+       than left to the `default`, which falls through to `resource` and would
+       quietly turn every post into a shared resource. */
+    case "post":
+      return {};
     case "question":
       return {
         question: {

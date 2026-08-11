@@ -391,8 +391,14 @@ grant select on public.public_profiles to authenticated;
 create table if not exists public.community_posts (
   id         uuid primary key default gen_random_uuid(),
   author_id  uuid not null references public.profiles (id) on delete cascade,
+  -- 'post' is an ordinary user-authored post: words, and nothing structured.
+  -- The other six are shapes the product understands — a question carries an
+  -- answer pair, progress carries two scores — and five of them are on their way
+  -- to being written by the app itself rather than by a person choosing a
+  -- category from a list.
   type       text not null check (type in
-               ('question', 'progress', 'achievement', 'explanation', 'study-update', 'resource')),
+               ('post', 'question', 'progress', 'achievement', 'explanation',
+                'study-update', 'resource')),
   exam       text not null default 'sat',
   topic      text,
   text       text,
@@ -402,6 +408,17 @@ create table if not exists public.community_posts (
   payload    jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+
+-- `create table if not exists` leaves an existing table's constraints alone, so
+-- a project created before 'post' was a type still carries the six-value check
+-- and would reject an ordinary post with a constraint violation. Replacing it
+-- explicitly is what lets this file run against an existing project as well as
+-- a fresh one — the same reason profiles_role_check is replaced above.
+alter table public.community_posts drop constraint if exists community_posts_type_check;
+alter table public.community_posts
+  add constraint community_posts_type_check check (type in
+    ('post', 'question', 'progress', 'achievement', 'explanation',
+     'study-update', 'resource'));
 
 create index if not exists community_posts_recent on public.community_posts (created_at desc);
 

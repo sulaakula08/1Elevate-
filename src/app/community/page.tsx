@@ -27,9 +27,12 @@ function CommunityInner() {
   const { ready, posts } = useCommunity();
   const [tab, setTab] = useState<FeedTabId>("for-you");
   const [composerOpen, setComposerOpen] = useState(false);
-  const [composerType, setComposerType] = useState<CommunityPostType | null>(null);
+  /* Always a concrete type now: the entry composer opens either an ordinary post
+     or a question, and the "what would you like to share?" screen in between is
+     gone. */
+  const [composerType, setComposerType] = useState<CommunityPostType>("post");
 
-  const openComposer = (type: CommunityPostType | null) => {
+  const openComposer = (type: CommunityPostType) => {
     setComposerType(type);
     setComposerOpen(true);
   };
