@@ -170,12 +170,7 @@ const D: Dict = {
   },
   "settings.account": { en: "Account" },
   "settings.resetPrefs": { en: "Reset preferences" },
-  "settings.dangerTitle": { en: "Clear this browser" },
-  "settings.dangerBody": { en: "Removes the practice history cached on this device. Anything already synced comes back the next time you sign in; anything that never synced is gone.",
-  },
-  "settings.clearLocal": { en: "Clear local data" },
-  "settings.confirmClearTitle": { en: "Clear the data cached here?" },
-  "settings.confirmClearBody": { en: "Synced history returns on the next sign-in. Unsynced practice does not.",
+  "settings.confirmSignOutBody": { en: "You will be signed out on this device. Your synced history comes back the next time you sign in.",
   },
 
   "nav.darkMode": { en: "Dark theme" },

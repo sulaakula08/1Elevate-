@@ -13,6 +13,7 @@ import { Calculator } from "./test/Calculator";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { ReferenceSheet } from "./test/ReferenceSheet";
 import { useHighlighter } from "./test/useHighlighter";
+import { HighlightControls } from "./test/HighlightControls";
 import {
   IconCalculator,
   IconChevron,
@@ -353,16 +354,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
 
           {timedOut && <p className="mt-3 text-sm text-warning">{t("mock.timeUp")}</p>}
 
-          {highlightMode && (
-            <p className="mt-3 text-micro text-faint fade-in">
-              {t("ptool.highlightHint")}{" "}
-              {highlighter.count > 0 && (
-                <button className="underline" onClick={highlighter.clear}>
-                  {t("ptool.clearHighlights")}
-                </button>
-              )}
-            </p>
-          )}
+          {highlightMode && <HighlightControls highlighter={highlighter} />}
 
           <div className="mt-5" ref={questionRef}>
             <QuestionView

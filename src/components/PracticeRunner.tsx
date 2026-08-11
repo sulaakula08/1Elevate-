@@ -17,6 +17,7 @@ import { Calculator } from "./test/Calculator";
 import { ReferenceSheet } from "./test/ReferenceSheet";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { useHighlighter } from "./test/useHighlighter";
+import { HighlightControls } from "./test/HighlightControls";
 import {
   IconCalculator,
   IconChevron,
@@ -395,16 +396,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
             {streak >= 3 && <span className="ml-auto num text-micro text-muted">↑ {streak}</span>}
           </div>
 
-          {highlightMode && (
-            <p className="mt-3 text-micro text-faint fade-in">
-              {t("ptool.highlightHint")}{" "}
-              {highlighter.count > 0 && (
-                <button className="underline" onClick={highlighter.clear}>
-                  {t("ptool.clearHighlights")}
-                </button>
-              )}
-            </p>
-          )}
+          {highlightMode && <HighlightControls highlighter={highlighter} />}
 
           {/* mode="wait" so the two questions never overlap mid-slide — with a
               stem and four choices on screen, a cross-fade of two different

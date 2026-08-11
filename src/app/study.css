@@ -902,10 +902,34 @@
   }
 }
 
-/* The highlighter's marks. Registered from useHighlighter; ::highlight() is the
-   only way to style them, and it sits outside any cascade layer. */
-::highlight(sat-highlight) {
-  background-color: color-mix(in srgb, var(--s-amber) 45%, transparent);
+/* The highlighter's marks are styled from useHighlighter: ::highlight() is the
+   only way to reach them, and the build's CSS parser drops rules it does not
+   recognise, so the rules go in through the CSSOM instead.
+
+   What lives here is the colour picker that chooses between them. */
+.hl-swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  vertical-align: middle;
+}
+
+.hl-swatch {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--swatch) 55%, transparent);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.hl-swatch:hover {
+  transform: scale(1.15);
+}
+
+.hl-swatch-on {
+  border-color: var(--swatch);
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 3px var(--swatch);
 }
 
 /* ---------------- exam focus mode ----------------

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
@@ -17,9 +18,10 @@ export default function SettingsPage() {
 
 function SettingsInner() {
   const { t } = useI18n();
-  const { theme, toggleTheme, resetAll } = useApp();
+  const router = useRouter();
+  const { theme, toggleTheme, signOut } = useApp();
   const { settings, set, reset } = useSettings();
-  const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   return (
     <div className="container-read pb-16">
@@ -86,33 +88,28 @@ function SettingsInner() {
         </div>
 
         <div className="mt-8 pt-6 border-t">
-          <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
-            {t("settings.dangerTitle")}
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-muted max-w-lg">
-            {t("settings.dangerBody")}
-          </p>
           <button
-            className="btn btn-sm mt-4"
+            className="btn btn-sm"
             style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
-            onClick={() => setConfirmReset(true)}
+            onClick={() => setConfirmSignOut(true)}
           >
-            {t("settings.clearLocal")}
+            {t("auth.signOut")}
           </button>
         </div>
       </section>
 
-      {confirmReset && (
+      {confirmSignOut && (
         <ConfirmDialog
-          title={t("settings.confirmClearTitle")}
-          body={t("settings.confirmClearBody")}
-          confirmLabel={t("settings.clearLocal")}
+          title={t("auth.signOut")}
+          body={t("settings.confirmSignOutBody")}
+          confirmLabel={t("auth.signOut")}
           danger
           onConfirm={() => {
-            setConfirmReset(false);
-            resetAll();
+            setConfirmSignOut(false);
+            signOut();
+            router.push("/");
           }}
-          onCancel={() => setConfirmReset(false)}
+          onCancel={() => setConfirmSignOut(false)}
         />
       )}
     </div>

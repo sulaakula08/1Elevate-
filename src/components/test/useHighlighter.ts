@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 /**
  * The test surface's highlighter, built on the CSS Custom Highlight API.
@@ -16,7 +16,11 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
  * can span a formula without the renderer knowing it happened.
  */
 
-const NAME = "sat-highlight";
+/** One registry per colour, so each gets its own ::highlight() rule. */
+export const HIGHLIGHT_COLORS = ["amber", "green", "blue", "violet"] as const;
+export type HighlightColor = (typeof HIGHLIGHT_COLORS)[number];
+
+const NAME = (color: HighlightColor) => `sat-hl-${color}`;
 
 /** Not in TypeScript's DOM lib yet; this is the shape actually used below. */
 type HighlightRegistry = Map<string, unknown> & { set(name: string, value: unknown): void };
@@ -28,27 +32,73 @@ function registry(): HighlightRegistry | null {
   return css.highlights ?? null;
 }
 
+/**
+ * ::highlight() rules are injected at runtime rather than written into a
+ * stylesheet: the build's CSS parser does not know the pseudo-element and drops
+ * the rule on the floor. The CSSOM has no such opinion.
+ */
+const STYLE_ID = "sat-highlight-style";
+
+function ensureStyles() {
+  if (typeof document === "undefined" || document.getElementById(STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = STYLE_ID;
+  el.textContent = HIGHLIGHT_COLORS.map(
+    (c) =>
+      `::highlight(${NAME(c)}){background-color:color-mix(in srgb, var(--s-${c}) 42%, transparent);}`,
+  ).join("");
+  document.head.appendChild(el);
+}
+
+type Mark = { range: Range; color: HighlightColor };
+
+/** Does this range cover the caret the click landed on? */
+function covers(range: Range, node: Node, offset: number) {
+  try {
+    return range.isPointInRange(node, offset);
+  } catch {
+    return false;
+  }
+}
+
+/** Do these two ranges touch? Ranges in detached trees answer "no" rather than throw. */
+function overlaps(a: Range, b: Range) {
+  try {
+    return (
+      a.compareBoundaryPoints(Range.END_TO_START, b) < 0 &&
+      a.compareBoundaryPoints(Range.START_TO_END, b) > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function useHighlighter(
   scope: RefObject<HTMLElement | null>,
   enabled: boolean,
   /** Changing this drops the highlights — one question's marks never leak to the next. */
   resetKey: string,
 ) {
-  const ranges = useRef<Range[]>([]);
+  const marks = useRef<Mark[]>([]);
   const [count, setCount] = useState(0);
+  const [color, setColor] = useState<HighlightColor>("amber");
 
   const supported = typeof window !== "undefined" && registry() !== null;
 
   const paint = useCallback(() => {
     const store = registry();
     if (!store) return;
-    if (ranges.current.length === 0) store.delete(NAME);
-    else store.set(NAME, new Highlight(...ranges.current));
-    setCount(ranges.current.length);
+    ensureStyles();
+    for (const c of HIGHLIGHT_COLORS) {
+      const ranges = marks.current.filter((m) => m.color === c).map((m) => m.range);
+      if (ranges.length === 0) store.delete(NAME(c));
+      else store.set(NAME(c), new Highlight(...ranges));
+    }
+    setCount(marks.current.length);
   }, []);
 
   const clear = useCallback(() => {
-    ranges.current = [];
+    marks.current = [];
     paint();
   }, [paint]);
 
@@ -62,16 +112,31 @@ export function useHighlighter(
     if (!enabled || !supported) return;
     const onUp = () => {
       const selection = window.getSelection();
-      if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+      if (!selection || selection.rangeCount === 0) return;
       const range = selection.getRangeAt(0);
       if (!scope.current?.contains(range.commonAncestorContainer)) return;
-      ranges.current = [...ranges.current, range.cloneRange()];
+
+      // A click inside a mark takes it back off — the same gesture that made it.
+      if (selection.isCollapsed) {
+        const { startContainer: node, startOffset: offset } = range;
+        const hit = marks.current.filter((m) => covers(m.range, node, offset));
+        if (hit.length === 0) return;
+        marks.current = marks.current.filter((m) => !hit.includes(m));
+        paint();
+        return;
+      }
+
+      // Highlighting over existing marks recolours rather than stacks.
+      const next = range.cloneRange();
+      marks.current = [...marks.current.filter((m) => !overlaps(m.range, next)), { range: next, color }];
       paint();
       selection.removeAllRanges();
     };
     window.addEventListener("pointerup", onUp);
     return () => window.removeEventListener("pointerup", onUp);
-  }, [enabled, supported, scope, paint]);
+  }, [enabled, supported, scope, paint, color]);
 
-  return { supported, clear, count };
+  const colors = useMemo(() => HIGHLIGHT_COLORS, []);
+
+  return { supported, clear, count, color, setColor, colors };
 }
