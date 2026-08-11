@@ -46,14 +46,34 @@ export function supabaseProjectRef(): string | null {
 /**
  * Where the code is running.
  *
- * `NEXT_PUBLIC_APP_ENV` wins when set, so a developer can force a label without
- * touching anything else. Otherwise Vercel's own `NEXT_PUBLIC_VERCEL_ENV`
- * answers it exactly — "production" on the production deployment, "preview" on
- * every branch and pull-request build — and NODE_ENV is the local fallback.
+ * `NEXT_PUBLIC_APP_ENV` wins when set, so any deployment that is not on Vercel
+ * can still state what it is.
  *
- * Note that this says nothing about which database is attached. A preview
- * deployment wired to production Supabase still reports "preview"; that gap is
- * what `usingProductionDatabase` is for.
+ * Otherwise the deciding question is "is this a Vercel deployment at all", and
+ * NOT what NODE_ENV says. That is deliberate and it is the whole subtlety of
+ * this function:
+ *
+ *   `next start` sets NODE_ENV=production. So does the real production
+ *   deployment. Reading NODE_ENV therefore makes a developer who builds and
+ *   serves locally — the normal way to check a production build, and the way
+ *   this very badge was first tested — indistinguishable from production. Which
+ *   in turn switched off `isUnsafeProductionConnection`, because that check
+ *   excludes production, at exactly the moment someone was pointing a local
+ *   production build at the real database. The guard was off in the case it
+ *   existed for.
+ *
+ * `NEXT_PUBLIC_VERCEL_ENV` is present on Vercel builds and absent everywhere
+ * else, which is precisely the distinction wanted: no Vercel variable means a
+ * local build, whatever NODE_ENV claims.
+ *
+ * The residual gap is a non-Vercel production host, which would report
+ * "development" and show a DEV badge. That is the safe direction to be wrong in
+ * — it over-warns rather than under-warns — and `NEXT_PUBLIC_APP_ENV=production`
+ * is the fix if this is ever hosted somewhere else.
+ *
+ * Note this says nothing about which database is attached. A preview deployment
+ * wired to production Supabase still reports "preview"; that gap is what
+ * `usingProductionDatabase` is for.
  */
 export function appEnv(): AppEnv {
   const forced = process.env.NEXT_PUBLIC_APP_ENV;
@@ -61,11 +81,14 @@ export function appEnv(): AppEnv {
     return forced;
   }
 
-  const vercel = process.env.NEXT_PUBLIC_VERCEL_ENV;
+  // NEXT_PUBLIC_ for the browser, where only inlined values exist; the bare name
+  // for server-side rendering, where the full environment is readable and the
+  // public variant may not have been exposed.
+  const vercel = process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.VERCEL_ENV;
   if (vercel === "production") return "production";
   if (vercel === "preview" || vercel === "development") return "preview";
 
-  return process.env.NODE_ENV === "production" ? "production" : "development";
+  return "development";
 }
 
 /** True when the configured Supabase project is the one real students use. */

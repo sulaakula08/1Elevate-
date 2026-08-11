@@ -561,27 +561,29 @@ p {
      legible when looked at and invisible when not. The [data-unsafe] variant is
      the opposite, and is the one state that has earned the attention — a local
      build wired to the production database. */
+  /* Border COLOUR is deliberately not set here — see the unlayered override at
+     the bottom of this file. `* { border-color: var(--line) }` is unlayered, and
+     an unlayered declaration beats anything inside @layer whatever its
+     specificity, so a border-color written in here silently does nothing. */
   .env-badge {
     display: inline-flex;
     align-items: center;
     flex: none;
     height: 1.375rem;
     padding: 0 0.4375rem;
-    border: 1px solid var(--line-strong);
+    border-width: 1px;
+    border-style: solid;
     border-radius: var(--radius-sm);
     background: var(--surface);
     color: var(--muted);
     font-size: var(--t-2xs);
     font-weight: 700;
     letter-spacing: 0.04em;
-    /* Lining figures are irrelevant here, but the tabular width keeps DEV and
-       PREVIEW from shifting the nav beside them as builds change. */
     white-space: nowrap;
     cursor: default;
     user-select: none;
   }
   .env-badge[data-unsafe] {
-    border-color: var(--danger);
     background: var(--danger-soft);
     color: var(--danger);
   }
@@ -2324,4 +2326,24 @@ body[data-exam] .notif-dock {
   border-radius: var(--radius-pill);
   background: var(--warning-soft);
   color: var(--warning);
+}
+
+/* ---------------------------------------------------------------------------
+   Environment badge borders, unlayered on purpose.
+
+   `* { border-color: var(--line) }` near the top of this file is unlayered, and
+   the cascade puts unlayered declarations above every @layer regardless of
+   specificity. So `.env-badge[data-unsafe] { border-color: … }` written inside
+   @layer components parses fine, matches fine, and loses — which is how the
+   PROD DATA badge first shipped with a grey border instead of a red one while
+   its text and background were correctly red.
+
+   These two have to sit out here to win. Everything else about the badge stays
+   in the layer with the rest of the components.
+   --------------------------------------------------------------------------- */
+.env-badge {
+  border-color: var(--line-strong);
+}
+.env-badge[data-unsafe] {
+  border-color: var(--danger);
 }
