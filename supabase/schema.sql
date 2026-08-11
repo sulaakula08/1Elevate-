@@ -422,11 +422,23 @@ alter table public.community_posts
 
 create index if not exists community_posts_recent on public.community_posts (created_at desc);
 
+-- Moderation, kept reversible. A hidden post is still a row: it leaves every
+-- student's feed immediately, and an admin who hid the wrong thing can put it
+-- back. Hard deletion stays the author's own choice, which is the one case where
+-- the person asking is entitled to lose the data.
+alter table public.community_posts
+  add column if not exists hidden_at timestamptz,
+  add column if not exists hidden_by uuid references public.profiles (id) on delete set null;
+
 alter table public.community_posts enable row level security;
 
+-- Hidden means hidden, in the database and not merely in the query the feed
+-- happens to send. An admin still reads it, because the moderation queue has to
+-- show what it is moderating.
 drop policy if exists "posts: read signed in" on public.community_posts;
 create policy "posts: read signed in"
-  on public.community_posts for select to authenticated using (true);
+  on public.community_posts for select to authenticated
+  using (hidden_at is null or public.is_admin());
 
 drop policy if exists "posts: insert own" on public.community_posts;
 create policy "posts: insert own"
@@ -444,6 +456,24 @@ drop policy if exists "posts: delete own or admin" on public.community_posts;
 create policy "posts: delete own or admin"
   on public.community_posts for delete
   using (author_id = auth.uid() or public.is_admin());
+
+-- The same trap the profiles table fell into, for the same reason: the update
+-- policy above says WHICH ROW an author may write — their own — and says nothing
+-- about which columns. `hidden_at` lives in that row, so under policies alone an
+-- author whose post an admin had hidden could send
+--
+--   PATCH /rest/v1/community_posts?id=eq.<their own post>  {"hidden_at":null}
+--
+-- straight to PostgREST with the publishable key and put it back. That is a
+-- moderation bypass, not a cosmetic problem.
+--
+-- Column privileges are checked independently of RLS, so revoking UPDATE and
+-- granting it back on only the three columns a post's own words live in closes
+-- it: hidden_at and hidden_by are not writable by anyone signed in, and the only
+-- thing that sets them is the definer function below, which checks is_admin()
+-- first. author_id is left out too, so a post cannot be reassigned.
+revoke update on public.community_posts from anon, authenticated;
+grant update (text, topic, payload) on public.community_posts to authenticated;
 
 -- ---------------------------------------------------------- reactions --
 -- The composite primary key is what makes a reaction idempotent: reacting
@@ -486,11 +516,18 @@ create table if not exists public.community_comments (
 create index if not exists community_comments_by_post
   on public.community_comments (post_id, created_at);
 
+-- Hidden the same way a post is, and for the same reason: an abusive reply needs
+-- removing from every screen without destroying the record of what was said.
+alter table public.community_comments
+  add column if not exists hidden_at timestamptz,
+  add column if not exists hidden_by uuid references public.profiles (id) on delete set null;
+
 alter table public.community_comments enable row level security;
 
 drop policy if exists "comments: read signed in" on public.community_comments;
 create policy "comments: read signed in"
-  on public.community_comments for select to authenticated using (true);
+  on public.community_comments for select to authenticated
+  using (hidden_at is null or public.is_admin());
 
 drop policy if exists "comments: insert own" on public.community_comments;
 create policy "comments: insert own"
@@ -501,6 +538,13 @@ drop policy if exists "comments: delete own or admin" on public.community_commen
 create policy "comments: delete own or admin"
   on public.community_comments for delete
   using (author_id = auth.uid() or public.is_admin());
+
+-- There is deliberately no update policy, so RLS already refuses every UPDATE:
+-- a comment cannot be edited, and hidden_at therefore cannot be cleared by the
+-- person who wrote it. The revoke says the same thing a second way, so that
+-- adding an "edit your reply" policy later cannot silently hand over the
+-- moderation column with it.
+revoke update on public.community_comments from anon, authenticated;
 
 -- -------------------------------------------------------------- saves --
 -- A private bookmark. Unlike a reaction, nobody else may read it, so the read
@@ -528,6 +572,171 @@ drop policy if exists "saves: remove own" on public.community_saves;
 create policy "saves: remove own"
   on public.community_saves for delete
   using (account_id = auth.uid());
+
+-- ------------------------------------------------------------- reports --
+-- What one student says about another's post or reply.
+--
+-- Separate from `feedback`, which is a message to the team about the product.
+-- A report is about a specific piece of content, it needs a decision, and the
+-- two lists are read by an admin for entirely different reasons. Sharing one
+-- table would mean a nullable target on every product suggestion.
+--
+-- The target is a (type, id) pair rather than two nullable foreign keys, because
+-- a report points at exactly one thing and a pair of columns where one is always
+-- null invites the row that sets both. The cost is no referential integrity on
+-- target_id, which is why the API reads the target back and the queue skips a
+-- report whose content has since been deleted outright.
+
+create table if not exists public.community_reports (
+  id          uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references public.profiles (id) on delete cascade,
+  target_type text not null check (target_type in ('post', 'comment')),
+  target_id   uuid not null,
+  -- Five reasons, not twenty. A longer list makes the reporter classify rather
+  -- than report, and every extra category is one an admin has to weigh.
+  reason      text not null check (reason in
+                ('harassment', 'spam', 'inappropriate', 'misinformation', 'other')),
+  -- Optional. The sentence that explains what the category cannot.
+  details     text check (details is null or char_length(btrim(details)) <= 1000),
+  status      text not null default 'open'
+              check (status in ('open', 'dismissed', 'actioned')),
+  created_at  timestamptz not null default now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid references public.profiles (id) on delete set null
+);
+
+-- One report per person per target. This is the whole duplicate defence, and it
+-- is here rather than in the API because a loop calling the endpoint a thousand
+-- times has to hit something that cannot be raced. A second report of the same
+-- thing by the same person is a no-op the API reports as already-reported; a
+-- second report by a DIFFERENT person is a separate row on purpose, because how
+-- many people reported something is the most useful signal in the queue.
+create unique index if not exists community_reports_one_per_reporter
+  on public.community_reports (reporter_id, target_type, target_id);
+
+-- The queue reads open reports newest first.
+create index if not exists community_reports_open
+  on public.community_reports (status, created_at desc);
+
+alter table public.community_reports enable row level security;
+
+-- A reporter may read their own reports back, so the UI can say "you reported
+-- this" instead of failing on the unique index. Nobody else's are visible to
+-- them: who reported what is between the reporter and the team, and a feed where
+-- the author can see who reported them is a feed that punishes reporting.
+drop policy if exists "reports: read own or admin" on public.community_reports;
+create policy "reports: read own or admin"
+  on public.community_reports for select
+  using (reporter_id = auth.uid() or public.is_admin());
+
+-- `with check`, so the reporter id is the caller's own and cannot be forged into
+-- someone else's name.
+drop policy if exists "reports: insert own" on public.community_reports;
+create policy "reports: insert own"
+  on public.community_reports for insert
+  with check (reporter_id = auth.uid());
+
+-- Only an admin resolves one, and only through the functions below. No update
+-- policy for the reporter: withdrawing a report is not a feature, and letting
+-- the reporter rewrite `reason` after an admin has read it makes the queue a
+-- record of nothing.
+drop policy if exists "reports: update admin" on public.community_reports;
+create policy "reports: update admin"
+  on public.community_reports for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- No delete policy at all: a resolved report is the audit trail.
+
+-- --------------------------------------------------- moderation actions --
+-- Hiding a piece of content and settling its reports are one decision, so they
+-- are one statement. Doing it from the client as two calls leaves a queue full
+-- of open reports pointing at content that is already gone the moment the second
+-- call fails.
+--
+-- SECURITY DEFINER for the same reason set_role() is: the column grant above
+-- makes hidden_at unwritable by anyone signed in, and this function — running as
+-- its owner — is the single audited doorway that may set it. The is_admin()
+-- check on the first line is the real permission.
+
+create or replace function public.moderate_hide(
+  p_target_type text,
+  p_target_id   uuid,
+  p_hidden      boolean
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Only an admin can moderate' using errcode = '42501';
+  end if;
+
+  if p_target_type not in ('post', 'comment') then
+    raise exception 'Target must be a post or a comment' using errcode = '22023';
+  end if;
+
+  if p_target_type = 'post' then
+    update public.community_posts
+       set hidden_at = case when p_hidden then now() else null end,
+           hidden_by = case when p_hidden then auth.uid() else null end
+     where id = p_target_id;
+  else
+    update public.community_comments
+       set hidden_at = case when p_hidden then now() else null end,
+           hidden_by = case when p_hidden then auth.uid() else null end
+     where id = p_target_id;
+  end if;
+
+  if not found then
+    raise exception 'That content no longer exists' using errcode = 'P0002';
+  end if;
+
+  -- Hiding settles the reports that asked for it. Un-hiding deliberately does
+  -- not reopen them: the admin has now looked twice, and a report that keeps
+  -- coming back is a queue nobody can empty.
+  update public.community_reports
+     set status      = case when p_hidden then 'actioned' else 'dismissed' end,
+         reviewed_at = now(),
+         reviewed_by = auth.uid()
+   where target_type = p_target_type
+     and target_id   = p_target_id
+     and status      = 'open';
+end;
+$$;
+
+-- The other verdict: nothing wrong with it. Leaves the content exactly as it is
+-- and takes its reports out of the queue.
+create or replace function public.moderate_dismiss(
+  p_target_type text,
+  p_target_id   uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Only an admin can moderate' using errcode = '42501';
+  end if;
+
+  update public.community_reports
+     set status      = 'dismissed',
+         reviewed_at = now(),
+         reviewed_by = auth.uid()
+   where target_type = p_target_type
+     and target_id   = p_target_id
+     and status      = 'open';
+end;
+$$;
+
+revoke execute on function public.moderate_hide(text, uuid, boolean) from anon, public;
+grant execute on function public.moderate_hide(text, uuid, boolean) to authenticated;
+revoke execute on function public.moderate_dismiss(text, uuid) from anon, public;
+grant execute on function public.moderate_dismiss(text, uuid) to authenticated;
 
 -- ---------------------------------------------------------------- feedback --
 -- What students tell the team. Insert-your-own, read-by-admins: a student can

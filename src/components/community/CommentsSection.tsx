@@ -3,17 +3,76 @@
 import { useState } from "react";
 import type { CommunityComment } from "@/data/community";
 import { useI18n } from "@/lib/i18n";
+import { useApp } from "@/lib/app-state";
+import { ConfirmDialog } from "@/components/ui";
 import { useCommunity } from "@/lib/community-state";
 import { useSendDelay } from "@/lib/send-delay";
 import { NOUNS, pluralize } from "@/lib/plural";
 import { timeAgo } from "@/lib/community-time";
 import { Avatar } from "./Avatar";
+import { PostMenu, type MenuAction } from "./PostMenu";
+import { ReportDialog } from "./ReportDialog";
 
 const PREVIEW_COUNT = 2;
 
-function CommentRow({ comment }: { comment: CommunityComment }) {
+/**
+ * One reply, with the same two-option menu a post has.
+ *
+ * The menu is the reason this row holds state at all. It used to be a pure
+ * presentational function, and the dialogs could have been hoisted to the
+ * section — but then one open dialog would have to remember which of twenty
+ * replies it belonged to. Per-row state is the smaller thing.
+ */
+function CommentRow({ postId, comment }: { postId: string; comment: CommunityComment }) {
+  const { t } = useI18n();
+  const { account } = useApp();
+  const { deleteComment } = useCommunity();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const isMine = Boolean(
+    account?.id && comment.author.id && comment.author.id === account.id,
+  );
+  /* A reply that has not reached the server yet has a temporary id, and there is
+     nothing at that id to delete or report. The menu waits. */
+  const pending = comment.id.startsWith("pending-");
+
+  const actions: MenuAction[] = pending
+    ? []
+    : isMine
+      ? [
+          {
+            key: "delete",
+            label: t("community.deleteComment"),
+            danger: true,
+            onSelect: () => setConfirmingDelete(true),
+          },
+        ]
+      : comment.author.id
+        ? [
+            {
+              key: "report",
+              label: t("community.reportComment"),
+              onSelect: () => setReporting(true),
+            },
+          ]
+        : [];
+
+  async function confirmDelete() {
+    setDeleting(true);
+    const ok = await deleteComment(postId, comment.id);
+    setDeleting(false);
+    if (!ok) {
+      setFailed(true);
+      return;
+    }
+    setConfirmingDelete(false);
+  }
+
   return (
-    <div className="flex items-start gap-2.5">
+    <div className="cm-comment-row">
       <Avatar author={comment.author} size={26} />
       <div className="min-w-0">
         <p className="text-sm">
@@ -22,6 +81,40 @@ function CommentRow({ comment }: { comment: CommunityComment }) {
         </p>
         <p className="text-2xs text-faint mt-0.5">{timeAgo(comment.createdAt)}</p>
       </div>
+
+      <PostMenu
+        actions={actions}
+        label={t(isMine ? "community.menuYourComment" : "community.menuComment")}
+      />
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={t("community.deleteCommentConfirmTitle")}
+          body={
+            failed ? (
+              <span className="text-danger">{t("community.deleteFailed")}</span>
+            ) : (
+              t("community.deleteConfirmBody")
+            )
+          }
+          confirmLabel={t("community.deleteConfirm")}
+          cancelLabel={t("community.composerCancel")}
+          danger
+          busy={deleting}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => {
+            setConfirmingDelete(false);
+            setFailed(false);
+          }}
+        />
+      )}
+
+      {reporting && (
+        <ReportDialog
+          target={{ type: "comment", id: comment.id }}
+          onClose={() => setReporting(false)}
+        />
+      )}
     </div>
   );
 }
@@ -68,7 +161,7 @@ export function CommentsSection({
   return (
     <div className="cm-comments">
       {visible.map((comment) => (
-        <CommentRow key={comment.id} comment={comment} />
+        <CommentRow key={comment.id} postId={postId} comment={comment} />
       ))}
 
       {comments.length === 0 && open && (

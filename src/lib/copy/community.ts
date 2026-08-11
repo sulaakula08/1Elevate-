@@ -105,4 +105,47 @@ export const COMMUNITY_COPY: CopyDict = {
 
   "community.homeTitle": { en: "From your community" },
   "community.homeSeeAll": { en: "See all" },
+
+  /* ---------------- options menu, delete, report ----------------
+     The menu's accessible name says whose content it acts on, because "Options"
+     four times down a column tells a screen-reader user nothing about which post
+     they are on. */
+  "community.menuPost": { en: "Post options" },
+  "community.menuYourPost": { en: "Options for your post" },
+  "community.menuComment": { en: "Reply options" },
+  "community.menuYourComment": { en: "Options for your reply" },
+  "community.menuOpen": { en: "Menu open" },
+
+  "community.deletePost": { en: "Delete post" },
+  "community.deleteComment": { en: "Delete reply" },
+  "community.deletePostConfirmTitle": { en: "Delete post?" },
+  "community.deleteCommentConfirmTitle": { en: "Delete reply?" },
+  "community.deleteConfirmBody": { en: "This can't be undone." },
+  "community.deleteConfirm": { en: "Delete" },
+  "community.deleteFailed": { en: "That could not be deleted. Reload and try again." },
+
+  "community.reportPost": { en: "Report post" },
+  "community.reportComment": { en: "Report reply" },
+  "community.reportPostTitle": { en: "Report this post" },
+  "community.reportCommentTitle": { en: "Report this reply" },
+  "community.reportBody": {
+    en: "Only the 1Elevate team sees a report. The author is not told who sent it.",
+  },
+  "community.reportReasonLabel": { en: "Reason" },
+  "community.reportReason.harassment": { en: "Harassment or hate" },
+  "community.reportReason.spam": { en: "Spam" },
+  "community.reportReason.inappropriate": { en: "Inappropriate content" },
+  "community.reportReason.misinformation": { en: "Misinformation" },
+  "community.reportReason.other": { en: "Something else" },
+  "community.reportDetailsLabel": { en: "Anything to add? (optional)" },
+  "community.reportDetailsPlaceholder": { en: "What should we know?" },
+  "community.reportSubmit": { en: "Send report" },
+  "community.reportFailed": { en: "That report could not be sent. Try again." },
+  "community.reportSentTitle": { en: "Thanks — that's with us" },
+  /* Says plainly that the post is still there. A reporter who assumes it came
+     down comes back, finds it up, and reports it again. */
+  "community.reportSentBody": {
+    en: "Someone from the team will look at it. The post stays up until they do.",
+  },
+  "community.reportDone": { en: "Done" },
 };

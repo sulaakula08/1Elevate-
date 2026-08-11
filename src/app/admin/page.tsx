@@ -13,6 +13,7 @@ import { SectionControls } from "@/components/admin/SectionControls";
 import { GenerateQuestions } from "@/components/admin/GenerateQuestions";
 import { DeleteByNumber } from "@/components/admin/DeleteByNumber";
 import { FeedbackInbox } from "@/components/admin/FeedbackInbox";
+import { CommunityModeration } from "@/components/admin/CommunityModeration";
 import { UsageStats } from "@/components/admin/UsageStats";
 import { QuestionView } from "@/components/QuestionView";
 import { RichText } from "@/lib/math/markdown";
@@ -57,7 +58,17 @@ const RECENT_COUNT = 5;
  * feedback inbox, in that order. Reaching the inbox meant scrolling past all of
  * it, and nothing on the way was related to what you came for. One at a time.
  */
-const TABS = ["questions", "generate", "sections", "people", "usage", "feedback"] as const;
+const TABS = [
+  "questions",
+  "generate",
+  "sections",
+  "people",
+  "usage",
+  "feedback",
+  /* Last, beside feedback: both are queues of things students sent in, and an
+     admin comes to them after the writing and running work rather than before. */
+  "moderation",
+] as const;
 type Tab = (typeof TABS)[number];
 
 /** Reading & Writing is the default section, so its first domain seeds a draft. */
@@ -674,6 +685,8 @@ function AdminInner() {
       {tab === "usage" && <UsageStats />}
 
       {tab === "feedback" && <FeedbackInbox />}
+
+      {tab === "moderation" && <CommunityModeration />}
 
       {toDelete && (
         <ConfirmDialog

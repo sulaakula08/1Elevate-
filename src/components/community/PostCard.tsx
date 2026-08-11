@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import type { CommunityPostType, CommunityReactionKind } from "@/data/community";
+import { useApp } from "@/lib/app-state";
+import { useI18n } from "@/lib/i18n";
+import { ConfirmDialog } from "@/components/ui";
 import { useCommunity, type CommunityPostView } from "@/lib/community-state";
+import { PostMenu, type MenuAction } from "./PostMenu";
+import { ReportDialog } from "./ReportDialog";
 import { PostHeader } from "./PostHeader";
 import { PostActions } from "./PostActions";
 import { CommentsSection } from "./CommentsSection";
@@ -50,9 +55,49 @@ function PostBody({ post }: { post: CommunityPostView }) {
 }
 
 export function PostCard({ post }: { post: CommunityPostView }) {
-  const { toggleReaction, toggleSave } = useCommunity();
+  const { t } = useI18n();
+  const { account } = useApp();
+  const { toggleReaction, toggleSave, deletePost } = useCommunity();
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
   const reactionKind = REACTION_BY_TYPE[post.type];
+
+  /*
+   * "Mine" needs both ids to exist. CommunityAuthor.id is optional — seeded demo
+   * content has no id at all — so a truthiness check would make every anonymous
+   * author's post look like the reader's own and offer to delete it. The server
+   * would refuse, but the menu should never have said it.
+   */
+  const isMine = Boolean(account?.id && post.author.id && post.author.id === account.id);
+
+  const actions: MenuAction[] = isMine
+    ? [
+        {
+          key: "delete",
+          label: t("community.deletePost"),
+          danger: true,
+          onSelect: () => setConfirmingDelete(true),
+        },
+      ]
+    : post.author.id
+      ? [{ key: "report", label: t("community.reportPost"), onSelect: () => setReporting(true) }]
+      : /* Nobody to report: seeded content has no account behind it. */ [];
+
+  async function confirmDelete() {
+    setDeleting(true);
+    const ok = await deletePost(post.id);
+    setDeleting(false);
+    if (!ok) {
+      setDeleteFailed(true);
+      return;
+    }
+    // No need to close the dialog on success: the post it belonged to is gone
+    // from the feed, and this component with it.
+    setConfirmingDelete(false);
+  }
 
   return (
     /*
@@ -63,7 +108,16 @@ export function PostCard({ post }: { post: CommunityPostView }) {
      * mixed feed calm.
      */
     <article className="cm-post" data-type={post.type}>
-      <PostHeader author={post.author} createdAt={post.createdAt} />
+      <PostHeader
+        author={post.author}
+        createdAt={post.createdAt}
+        menu={
+          <PostMenu
+            actions={actions}
+            label={t(isMine ? "community.menuYourPost" : "community.menuPost")}
+          />
+        }
+      />
       <div className="mt-2.5">
         <PostBody post={post} />
       </div>
@@ -86,6 +140,35 @@ export function PostCard({ post }: { post: CommunityPostView }) {
         open={commentsOpen}
         onExpand={() => setCommentsOpen(true)}
       />
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={t("community.deletePostConfirmTitle")}
+          body={
+            deleteFailed ? (
+              <span className="text-danger">{t("community.deleteFailed")}</span>
+            ) : (
+              t("community.deleteConfirmBody")
+            )
+          }
+          confirmLabel={t("community.deleteConfirm")}
+          cancelLabel={t("community.composerCancel")}
+          danger
+          busy={deleting}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => {
+            setConfirmingDelete(false);
+            setDeleteFailed(false);
+          }}
+        />
+      )}
+
+      {reporting && (
+        <ReportDialog
+          target={{ type: "post", id: post.id }}
+          onClose={() => setReporting(false)}
+        />
+      )}
     </article>
   );
 }

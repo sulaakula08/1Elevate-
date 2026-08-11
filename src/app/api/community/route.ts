@@ -34,6 +34,10 @@ const POST_TYPES: CommunityPostType[] = [
 const FEED_LIMIT = 60;
 const MAX_TEXT = 4000;
 
+/* Mirrors the check constraint on community_reports.reason. */
+const REPORT_REASONS = ["harassment", "spam", "inappropriate", "misinformation", "other"];
+const MAX_DETAILS = 1000;
+
 function notConfigured() {
   return NextResponse.json(
     { error: "Supabase is not configured. See DATABASE.md." },
@@ -80,9 +84,20 @@ export async function GET(request: Request) {
   if (!found) return unauthorized();
   const { client, user } = found;
 
+  /*
+   * `is("hidden_at", null)` as well as the read policy, and not instead of it.
+   *
+   * The policy already hides moderated content from a student. It deliberately
+   * does NOT hide it from an admin, because the moderation queue has to be able
+   * to read what it is moderating — which would otherwise mean an admin, and
+   * only an admin, kept seeing hidden posts in the ordinary feed. The filter here
+   * is what makes the feed mean the same thing for everyone; the policy is what
+   * makes it true even if this line is ever dropped.
+   */
   const { data: postRows, error } = await client
     .from("community_posts")
     .select("id, author_id, type, exam, topic, text, payload, created_at")
+    .is("hidden_at", null)
     .order("created_at", { ascending: false })
     .limit(FEED_LIMIT);
 
@@ -107,6 +122,7 @@ export async function GET(request: Request) {
       .from("community_comments")
       .select("id, post_id, author_id, text, created_at")
       .in("post_id", ids)
+      .is("hidden_at", null)
       .order("created_at", { ascending: true }),
     client.from("community_saves").select("post_id").eq("account_id", user.id),
   ]);
@@ -326,22 +342,111 @@ export async function POST(request: Request) {
     });
   }
 
+  /* ---------------- report ---------------- */
+
+  /*
+   * Reporting is the one write here that is about someone else's row, so it is
+   * worth being explicit about what it does and does not do: it inserts a report
+   * and nothing more. It does not hide, delete or touch the target in any way —
+   * that is a decision only an admin makes, through the moderation endpoint. A
+   * reporting flow that removed content on submission would be a heckler's veto.
+   */
+  if (action === "report") {
+    const targetType = String(body.targetType ?? "");
+    const targetId = String(body.targetId ?? "");
+    const reason = String(body.reason ?? "");
+
+    if (targetType !== "post" && targetType !== "comment") {
+      return NextResponse.json({ error: "Report a post or a comment." }, { status: 400 });
+    }
+    if (!targetId) {
+      return NextResponse.json({ error: "Which one?" }, { status: 400 });
+    }
+    if (!REPORT_REASONS.includes(reason)) {
+      return NextResponse.json({ error: "Pick a reason." }, { status: 400 });
+    }
+
+    const details =
+      typeof body.details === "string" && body.details.trim()
+        ? body.details.trim().slice(0, MAX_DETAILS)
+        : null;
+
+    const { error } = await client.from("community_reports").insert({
+      reporter_id: user.id,
+      target_type: targetType,
+      target_id: targetId,
+      reason,
+      details,
+    });
+
+    if (error) {
+      // 23505 is the unique index on (reporter, target): this person has already
+      // reported this thing. Answered as success, because from the reporter's
+      // side the outcome is the one they wanted — the team has their report —
+      // and telling them off for tapping twice adds nothing.
+      if (error.code === "23505") {
+        return NextResponse.json({ ok: true, already: true });
+      }
+      if (process.env.NODE_ENV !== "production") console.error("[community]", error);
+      return NextResponse.json({ error: "Could not send that report." }, { status: 502 });
+    }
+
+    return NextResponse.json({ ok: true });
+  }
+
   return NextResponse.json({ error: "Unknown action." }, { status: 400 });
 }
 
-/** Withdraw a post. The policy decides whether the caller may. */
+/**
+ * Withdraw a post (`?id=`) or a reply (`?commentId=`).
+ *
+ * The policy decides whether the caller may — author or admin, checked against
+ * the row rather than against anything the request said. What this handler adds
+ * is telling the truth about the outcome.
+ *
+ * A DELETE that matches no row is not an error in Postgres: it deletes nothing
+ * and reports success. So a student calling this with another student's post id
+ * used to get `200 {ok:true}` while the post stayed exactly where it was, and the
+ * client, believing it, removed the card from the feed until the next reload.
+ * Nothing leaked and nothing was destroyed — the policy held — but the API
+ * asserted something false, and a security test pointed at it would have passed.
+ *
+ * `.select("id")` makes the delete return the rows it actually removed, so an
+ * empty result is distinguishable from a successful one and answers 403.
+ */
 export async function DELETE(request: Request) {
   if (!supabaseConfigured()) return notConfigured();
   const found = await caller(request);
   if (!found) return unauthorized();
 
-  const id = new URL(request.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Which post?" }, { status: 400 });
+  const params = new URL(request.url).searchParams;
+  const postId = params.get("id");
+  const commentId = params.get("commentId");
 
-  const { error } = await found.client.from("community_posts").delete().eq("id", id);
+  if (!postId && !commentId) {
+    return NextResponse.json({ error: "Which post or comment?" }, { status: 400 });
+  }
+
+  const table = commentId ? "community_comments" : "community_posts";
+  const targetId = commentId ?? postId!;
+
+  const { data, error } = await found.client
+    .from(table)
+    .delete()
+    .eq("id", targetId)
+    .select("id");
+
   if (error) {
     if (process.env.NODE_ENV !== "production") console.error("[community]", error);
-    return NextResponse.json({ error: "Could not delete." }, { status: 403 });
+    return NextResponse.json({ error: "Could not delete." }, { status: 502 });
   }
+
+  // Nothing removed: either it was never there, or it is not the caller's to
+  // remove. Both get the same answer, because distinguishing them would confirm
+  // the existence of a row the caller has no business knowing about.
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "That is not yours to delete." }, { status: 403 });
+  }
+
   return NextResponse.json({ ok: true });
 }

@@ -20,10 +20,17 @@ export function PostHeader({
   author,
   createdAt,
   size = 34,
+  menu,
 }: {
   author: CommunityAuthor;
   createdAt: number;
   size?: number;
+  /**
+   * The post's `…` menu, if it has one. Passed in rather than built here so this
+   * component stays what it is — a byline — and does not need to know who is
+   * signed in or what they are allowed to do to the post underneath it.
+   */
+  menu?: React.ReactNode;
 }) {
   return (
     <div className="cm-author">
@@ -33,6 +40,7 @@ export function PostHeader({
         {author.context && <p className="cm-author-context">{author.context}</p>}
       </div>
       <time className="num cm-author-time">{timeAgo(createdAt)}</time>
+      {menu}
     </div>
   );
 }
