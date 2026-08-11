@@ -8,6 +8,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
+import { useClosedHrefs } from "./SectionGate";
 import {
   NavAdmin,
   NavCommunity,
@@ -64,23 +65,32 @@ export function Sidebar({
   const { data } = useApp();
   const pathname = usePathname();
   const days = streak(data.attempts);
+  const closed = useClosedHrefs();
+  const staff = account.role !== "student";
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
   const renderGroup = (items: Item[]) =>
-    items.map(({ href, key, Icon }) => (
-      <Link
-        key={href}
-        href={href}
-        className={`side-link ${isActive(href) ? "side-link-on" : ""}`}
-        title={collapsed ? t(key) : undefined}
-        aria-current={isActive(href) ? "page" : undefined}
-      >
-        <Icon size={18} />
-        {!collapsed && <span className="truncate">{t(key)}</span>}
-      </Link>
-    ));
+    items
+      // A student is not shown a way into a section that will refuse them.
+      .filter(({ href }) => staff || !closed.has(href))
+      .map(({ href, key, Icon }) => (
+        <Link
+          key={href}
+          href={href}
+          className={`side-link ${isActive(href) ? "side-link-on" : ""}`}
+          title={collapsed ? t(key) : undefined}
+          aria-current={isActive(href) ? "page" : undefined}
+        >
+          <Icon size={18} />
+          {!collapsed && <span className="truncate">{t(key)}</span>}
+          {/* Staff see what they closed, from wherever they are. */}
+          {closed.has(href) && !collapsed && (
+            <span className="side-closed" title={t("closed.title")} aria-hidden />
+          )}
+        </Link>
+      ));
 
   return (
     <aside className={`sidebar hidden md:flex ${collapsed ? "sidebar-tight" : ""}`}>

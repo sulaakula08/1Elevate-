@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
 import { NotificationsBell } from "./NotificationsBell";
+import { useClosedHrefs } from "./SectionGate";
 import {
   NavAdmin,
   NavCommunity,
@@ -83,6 +84,9 @@ export function MobileTabs() {
   const { account, signOut } = useApp();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const closed = useClosedHrefs();
+  const staff = Boolean(account && account.role !== "student");
+  const tabs = TABS.filter(({ href }) => staff || !closed.has(href));
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -90,7 +94,7 @@ export function MobileTabs() {
   return (
     <>
       <nav className="tabbar md:hidden" aria-label="Primary">
-        {TABS.map(({ href, short, Icon }) => (
+        {tabs.map(({ href, short, Icon }) => (
           <Link
             key={href}
             href={href}
@@ -126,21 +130,21 @@ export function MobileTabs() {
                 { href: "/feedback", key: "nav.feedback", Icon: NavFeedback },
                 { href: "/settings", key: "nav.settings", Icon: NavSettings },
                 { href: "/account", key: "nav.profile", Icon: NavHome },
-                ...(account && account.role !== "student"
-                  ? [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }]
-                  : []),
-              ].map(({ href, key, Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-[var(--radius-sm)] text-body"
-                  style={{ color: isActive(href) ? "var(--accent)" : "var(--foreground)" }}
-                >
-                  <Icon size={19} />
-                  {t(key)}
-                </Link>
-              ))}
+                ...(staff ? [{ href: "/admin", key: "nav.admin", Icon: NavAdmin }] : []),
+              ]
+                .filter(({ href }) => staff || !closed.has(href))
+                .map(({ href, key, Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-[var(--radius-sm)] text-body"
+                    style={{ color: isActive(href) ? "var(--accent)" : "var(--foreground)" }}
+                  >
+                    <Icon size={19} />
+                    {t(key)}
+                  </Link>
+                ))}
               <button
                 className="w-full flex items-center gap-3 px-3 py-3 text-body"
                 style={{ color: "var(--danger)" }}

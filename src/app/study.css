@@ -736,7 +736,7 @@
       border-color 160ms ease;
   }
   .tool-btn:hover {
-    background: var(--surface-2);
+    background: var(--btn-hover);
     color: var(--foreground);
   }
   .tool-btn-on {
@@ -907,6 +907,20 @@
    recognise, so the rules go in through the CSSOM instead.
 
    What lives here is the colour picker that chooses between them. */
+/* The review queue's summary strip: what is due, across how many skills, and
+   the one skill doing the most damage — with the way in on the right. */
+.rv-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding: 1.125rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
 .hl-swatches {
   display: inline-flex;
   align-items: center;

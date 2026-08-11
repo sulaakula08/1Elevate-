@@ -120,7 +120,7 @@
   }
   .cm-composer-action:hover {
     border-color: var(--line-strong);
-    background: var(--surface-2);
+    background: var(--btn-hover);
   }
   .cm-composer-more {
     color: var(--muted);
@@ -183,7 +183,7 @@
       color 150ms ease;
   }
   .cm-action:hover {
-    background: var(--surface-2);
+    background: var(--btn-hover);
     color: var(--foreground);
   }
   /* A real press. Without it a toggle on a touch screen gives no feedback at
@@ -311,7 +311,7 @@
   }
   .cm-type-btn:hover {
     border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
-    background: var(--surface-2);
+    background: var(--btn-hover);
   }
   .cm-type-btn:active {
     transform: scale(0.985);

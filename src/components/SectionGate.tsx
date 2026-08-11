@@ -14,9 +14,13 @@ import { apiFetch } from "@/lib/supabase/client";
  * shell, the sidebar and the navigation. A student who lands on it can read why
  * and go somewhere else, rather than meeting a blank screen or a crash.
  *
- * Admins and the owner always pass through. Closing a section is what you do
- * *because* it is broken, so the people fixing it are exactly the ones who need
- * to keep opening it.
+ * Closed means closed, including for the people who closed it. Staff used to
+ * pass straight through to the working page with a warning above it, which made
+ * "closed" impossible to check: the owner would shut a section, look at it, see
+ * it, and have no idea whether a student could. They now meet the same screen a
+ * student does and can step past it deliberately — closing a section is usually
+ * something you do *because* it is broken, and the people fixing it still need
+ * a way in.
  */
 
 type Status = { closed: boolean; message: string | null };
@@ -45,6 +49,54 @@ export function forgetSectionStatus() {
   inFlight = null;
 }
 
+/**
+ * Which sections are closed, for anything that is not a gate — the navigation,
+ * mainly, which should not offer a student a door that will not open.
+ */
+export function useSectionStatus(): { sections: StatusMap; checked: boolean } {
+  const [sections, setSections] = useState<StatusMap>({});
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    void loadStatus().then((map) => {
+      if (!live) return;
+      setSections(map);
+      setChecked(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return { sections, checked };
+}
+
+/** Which destination belongs to which closable section. */
+const SECTION_OF: Record<string, string> = {
+  "/practice": "practice",
+  "/mock": "mock",
+  "/review": "review",
+  "/community": "community",
+  "/progress": "progress",
+};
+
+/**
+ * The navigation entries that currently lead nowhere.
+ *
+ * A closed section that is still listed in the rail is a door a student can
+ * keep walking into. They are dropped from the navigation entirely; staff keep
+ * them, because they are the ones who have to go and look.
+ */
+export function useClosedHrefs(): Set<string> {
+  const { sections } = useSectionStatus();
+  const closed = new Set<string>();
+  for (const [href, key] of Object.entries(SECTION_OF)) {
+    if (sections[key]?.closed) closed.add(href);
+  }
+  return closed;
+}
+
 export function SectionGate({
   section,
   children,
@@ -56,6 +108,8 @@ export function SectionGate({
   const { account } = useApp();
   const [status, setStatus] = useState<Status | null>(null);
   const [checked, setChecked] = useState(false);
+  /** Staff only, and never remembered: stepping past is a per-visit decision. */
+  const [override, setOverride] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -71,13 +125,22 @@ export function SectionGate({
 
   const staff = account?.role === "admin" || account?.role === "owner";
 
-  // Render the section while the answer is in flight. The alternative is a
-  // flash of "unavailable" on every page load, which is worse than a moment of
-  // content on the rare occasion something is genuinely closed.
-  if (!checked || !status?.closed || staff) {
+  /*
+   * Nothing at all until the answer is in.
+   *
+   * This used to render the section while the request was in flight, to avoid a
+   * flash of "unavailable" on every load. The cost was that a closed section
+   * was briefly a working one: long enough to tap a card and start a session
+   * that should not have been startable. A closed section has to be closed from
+   * the first frame, so the wait is empty instead. It is one request against a
+   * response already on its way to the same page.
+   */
+  if (!checked) return null;
+
+  if (!status?.closed || override) {
     return (
       <>
-        {status?.closed && staff && (
+        {status?.closed && (
           <p className="notice notice-warn mb-5">
             {t("closed.staffNotice")}
             {status.message ? ` — ${status.message}` : ""}
@@ -109,9 +172,18 @@ export function SectionGate({
         <h1 className="display mt-5 text-[24px]">{t("closed.title")}</h1>
         <p className="lede mt-3 text-[15px]">{status.message || t("closed.body")}</p>
 
-        <Link href="/" className="btn btn-primary mt-7">
-          {t("closed.home")}
-        </Link>
+        <div className="mt-7 flex flex-wrap justify-center gap-2">
+          <Link href="/" className="btn btn-primary">
+            {t("closed.home")}
+          </Link>
+          {/* The way back in for whoever has to fix it, stated as what it is:
+              this page is shut, and you are choosing to look anyway. */}
+          {staff && (
+            <button type="button" className="btn" onClick={() => setOverride(true)}>
+              {t("closed.openAnyway")}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
