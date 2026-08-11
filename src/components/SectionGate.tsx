@@ -137,7 +137,9 @@ export function SectionGate({
    */
   if (!checked) return null;
 
-  if (!status?.closed || override) {
+  // `staff &&` and not just `override`: the bypass is checked against the role
+  // here, rather than trusting that the button which sets it was never shown.
+  if (!status?.closed || (override && staff)) {
     return (
       <>
         {status?.closed && (
