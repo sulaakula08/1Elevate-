@@ -136,6 +136,44 @@
     display: none;
   }
 
+  /* ---------------- touch targets ----------------
+     Measured on a 390px screen, the two controls at the top of this page were
+     the smallest things on it: "Ask a question" came out at ~38px tall and the
+     feed tabs at ~36px, against the ~44px a finger actually needs. Both are the
+     first thing a student touches here, and the tabs are a horizontal row where
+     a near miss lands on the neighbouring filter.
+
+     `pointer: coarse` rather than a width breakpoint, because the constraint is
+     the finger and not the viewport: a small laptop window keeps the compact
+     control, and a large tablet gets the bigger one. Desktop density is
+     therefore unchanged — which is the point, since these sit beside a title on
+     one line at 640px and up.
+
+     min-height, not padding, so the text stays optically centred and the pill
+     radius does not have to be recomputed. */
+  @media (pointer: coarse) {
+    .cm-tabs .chip {
+      min-height: 2.75rem;
+      padding-inline: 0.9375rem;
+    }
+    .cm-composer-action {
+      min-height: 2.75rem;
+      padding-inline: 1rem;
+    }
+    /* The new `…` control, held to the same rule as the two above rather than
+       left at the 30px that reads correctly under a mouse. */
+    .cm-menu-btn {
+      width: 2.75rem;
+      height: 2.75rem;
+      opacity: 1;
+    }
+    /* It grew, so the negative margin that lined the dots up with the column
+       edge has to grow with it. */
+    .cm-menu {
+      margin-right: -0.75rem;
+    }
+  }
+
   /* ---------------- post actions ---------------- */
   .cm-action {
     display: inline-flex;
@@ -433,6 +471,132 @@
     flex-shrink: 0;
     font-size: var(--t-micro);
     color: var(--faint);
+  }
+
+  /* ---------------- options menu ----------------
+     The `…` control and its two-item list.
+
+     Quiet by default and only fully present on hover or focus: every post in the
+     column carries one, and four dark dot-triads down the right edge would draw a
+     second vertical line beside the spine. It never disappears entirely — an
+     invisible control is one nobody finds — and on a touch screen, where there is
+     no hover, it stays at full strength. */
+  .cm-menu {
+    position: relative;
+    flex-shrink: 0;
+    align-self: flex-start;
+    /* Pulled into the padding so the dots line up with the column edge rather
+       than sitting a control's width inside it. */
+    margin-right: -0.375rem;
+  }
+  .cm-menu-btn {
+    display: grid;
+    place-items: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--faint);
+    cursor: pointer;
+    opacity: 0.55;
+    transition:
+      opacity 150ms ease,
+      background 150ms ease,
+      color 150ms ease;
+  }
+  .cm-post:hover .cm-menu-btn,
+  .cm-comment-row:hover .cm-menu-btn {
+    opacity: 1;
+  }
+  .cm-menu-btn:hover {
+    background: var(--btn-hover);
+    color: var(--foreground);
+  }
+  /* Focus must never be the state that is hidden, or the menu is unreachable by
+     keyboard in practice even though it is reachable in theory. */
+  .cm-menu-btn:focus-visible {
+    opacity: 1;
+  }
+  .cm-menu-btn[aria-expanded="true"] {
+    opacity: 1;
+    background: var(--btn-hover);
+    color: var(--foreground);
+  }
+
+  .cm-menu-list {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    /* Anchored to the right edge, because the control sits at the right edge of
+       the column — opening leftwards is what keeps it inside the viewport at
+       390px without any measuring. */
+    right: 0;
+    z-index: 20;
+    min-width: 11rem;
+    padding: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    /* The only elevated surface in the feed. Panels here are flat — a border and
+       a background — but this one floats over text it must stay separable from,
+       so it gets the least shadow that achieves that, mixed from --foreground so
+       it inverts with the theme instead of staying black on a dark background. */
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--foreground) 12%, transparent);
+    display: flex;
+    flex-direction: column;
+  }
+  .cm-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.5rem 0.625rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    text-align: left;
+    font-size: var(--t-sm);
+    font-weight: 500;
+    color: var(--foreground);
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+  .cm-menu-item:hover,
+  .cm-menu-item:focus-visible {
+    background: var(--btn-hover);
+  }
+  .cm-menu-item-danger {
+    color: var(--danger);
+  }
+
+  /* A reply is now a row with a control at its end, so it needs the same
+     three-part layout the post header has rather than a bare flex pair. */
+  .cm-comment-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+  }
+  .cm-comment-row > .cm-menu {
+    margin-left: auto;
+  }
+
+  /* ---------------- report dialog ---------------- */
+  .cm-report-reason {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* A comfortable row to hit, and the whole row is the label, so tapping the
+       words selects the radio. */
+    min-height: 2.25rem;
+    padding: 0 0.125rem;
+    font-size: var(--t-sm);
+    cursor: pointer;
+  }
+  .cm-report-reason input {
+    accent-color: var(--brand);
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+    cursor: pointer;
   }
 
   /* ---------------- achievement ----------------

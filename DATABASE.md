@@ -163,6 +163,37 @@ a browser with the anon key. The rules are:
   else's id, because the check is on the row being written, not on the request.
 - **`custom_questions`** — any signed-in student can read; only an admin can
   write.
+- **`community_posts` / `community_comments`** — any signed-in student reads
+  anything not hidden; you insert only under your own id; you delete only your
+  own, and an admin deletes anyone's.
+
+  `hidden_at` is the moderation column, and it is the second place in this file
+  where row-level security is not enough on its own. `posts: update own` says
+  "your row", and `hidden_at` lives in your row — so under policies alone an
+  author whose post had been hidden could send `PATCH
+  /rest/v1/community_posts?id=eq.<their own post>` with `{"hidden_at":null}` and
+  put it straight back. That is a moderation bypass, so the same column-level
+  `GRANT` trick the `profiles` table uses applies here: `UPDATE` is revoked and
+  granted back on `text`, `topic` and `payload` only. The one thing that writes
+  `hidden_at` is `moderate_hide()`.
+- **`community_reports`** — you insert a report under your own id and can read
+  your own back; only an admin reads everyone's, and only an admin resolves one.
+  Nobody can delete one, because a resolved report is the audit trail.
+
+  A unique index on `(reporter_id, target_type, target_id)` is the duplicate
+  defence. It is in the database and not in the API because a script calling the
+  endpoint in a loop has to hit something that cannot be raced; the API turns the
+  resulting `23505` into a friendly "already reported". A second report of the
+  same content by a *different* person is deliberately a separate row — how many
+  people reported something is the most useful signal in the queue.
+
+`moderate_hide()` and `moderate_dismiss()` are `SECURITY DEFINER` for the same
+reason `set_role()` is: the column grant above leaves `hidden_at` unwritable by
+anyone signed in, and these are the single audited doorway that may set it. Each
+checks `is_admin()` on its first line, and that check — not anything in the admin
+page or the API route — is what makes moderation admin-only. Hiding also settles
+the target's open reports in the same statement, so the queue cannot end up
+holding open reports against content that is already gone.
 
 Two details in `schema.sql` that look odd and are deliberate:
 
@@ -174,6 +205,66 @@ are: one that resolves names through the caller's path can be hijacked.
 
 The `handle_new_user` trigger creates a profile row on signup. Without it a
 student authenticates successfully and then has nowhere to keep a target score.
+
+## Environments — one database, and why that is now a problem
+
+Audited August 2026, at the end of Phase 4A. Written down because it is the kind
+of thing everyone half-knows and nobody has stated.
+
+**There is one Supabase project, and every environment points at it.**
+
+| Where | Supabase project | How it gets there |
+| --- | --- | --- |
+| `localhost` | `mkxebolzrqwfuvpevtsu` | `.env.local`, git-ignored, on each developer's machine |
+| Vercel preview | `mkxebolzrqwfuvpevtsu` | Vercel env vars, set for all environments |
+| Vercel production | `mkxebolzrqwfuvpevtsu` | the same variables |
+
+Next reads `.env.local` only when running locally; on Vercel the dashboard's
+variables win. `.env.example` documents the names and holds no values. Nothing in
+the app selects a project per environment — `src/lib/supabase/{client,server}.ts`
+each read one `NEXT_PUBLIC_SUPABASE_URL` and one key, so "which database" is
+decided entirely by which value is present.
+
+The consequence is the thing worth fixing: **running the app locally, or opening a
+preview deployment, writes to the database real students use.** A browser test
+that publishes a post publishes it to the feed. During this phase that is exactly
+what happened — the test rows are listed in the Phase 4A notes and were removed
+afterwards — but "remember to clean up" is not a safety model, and a preview
+branch with a half-finished migration in it can do worse than add a row.
+
+Two further details found while auditing:
+
+- The local `.env.local` sets no `SUPABASE_SECRET_KEY`, which is correct and worth
+  keeping: nothing in the app needs it, and its absence is why a developer's
+  machine cannot bypass row-level security even by accident.
+- Schema changes are applied by pasting `schema.sql` into the SQL Editor. There is
+  no migration history, so "which database is on which version" is answered by
+  querying it. That is survivable with one database and stops being survivable
+  with two.
+
+### What Phase 4B should do
+
+1. **Create a second Supabase project** — `1elevate-dev`, same region. Run
+   `schema.sql` in it; the file is re-runnable and creates everything, so a fresh
+   project reaches the current shape in one paste.
+2. **Point local and preview at it.** Change each developer's `.env.local`, and in
+   Vercel set the variables **per environment** — dev project for Preview and
+   Development, production project for Production only. Vercel supports this on
+   the same variable name, so no code changes.
+3. **Make the app say which one it is on.** A build-time banner or a line in
+   Settings showing the project ref, visible to an admin. The current situation is
+   dangerous partly because nothing on screen distinguishes the two.
+4. **Seed instead of copy.** A small script writing a handful of fake students and
+   posts into dev. Do not clone production: it is student data, and the point of
+   the exercise is to stop touching it.
+5. **Then adopt migrations.** Once there are two databases, `supabase/schema.sql`
+   as the single re-runnable file stops being enough. The Supabase CLI's
+   `migrations/` directory plus `supabase db push` gives an ordered history and a
+   way to know what a project has had applied. Worth doing at the same time as
+   step 1, and not before — one database does not need it.
+
+Owner-level access to both the Supabase and Vercel projects is required for steps
+1 and 2, so this is not something a coding agent can complete unattended.
 
 ## Two rules that keep this safe
 

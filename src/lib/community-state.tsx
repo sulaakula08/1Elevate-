@@ -69,6 +69,16 @@ export type CreatePostInput = {
   resource?: Partial<ResourcePostData>;
 };
 
+/** Why a student is reporting something. Mirrors the check constraint on community_reports.reason. */
+export type ReportReason =
+  | "harassment"
+  | "spam"
+  | "inappropriate"
+  | "misinformation"
+  | "other";
+
+export type ReportTarget = { type: "post" | "comment"; id: string };
+
 type Ctx = {
   ready: boolean;
   posts: CommunityPostView[];
@@ -76,6 +86,16 @@ type Ctx = {
   toggleSave: (postId: string) => void;
   addComment: (postId: string, text: string) => void;
   createPost: (input: CreatePostInput) => void;
+  /** Withdraw your own post. Resolves false when the server refused. */
+  deletePost: (postId: string) => Promise<boolean>;
+  /** Withdraw your own reply. */
+  deleteComment: (postId: string, commentId: string) => Promise<boolean>;
+  /** Report someone else's post or reply. Never changes what is on screen. */
+  reportContent: (
+    target: ReportTarget,
+    reason: ReportReason,
+    details?: string,
+  ) => Promise<boolean>;
 };
 
 const CommunityContext = createContext<Ctx | null>(null);
@@ -378,6 +398,63 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
     [account, load],
   );
 
+  /*
+   * Deleting is pessimistic, unlike every other write here.
+   *
+   * A reaction that fails to save is worth showing immediately and rolling back,
+   * because the cost of being briefly wrong is a number that flickers. A post
+   * that vanishes and comes back is different: the student has just been told
+   * their post is gone, and taking that back is worse than a moment's wait. So
+   * the row goes only once the server confirms it.
+   */
+  const deletePost = useCallback<Ctx["deletePost"]>(async (postId) => {
+    const response = await apiFetch(`/api/community?id=${encodeURIComponent(postId)}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) return false;
+    setPosts((previous) => previous.filter((post) => post.id !== postId));
+    return true;
+  }, []);
+
+  const deleteComment = useCallback<Ctx["deleteComment"]>(async (postId, commentId) => {
+    const response = await apiFetch(
+      `/api/community?commentId=${encodeURIComponent(commentId)}`,
+      { method: "DELETE" },
+    );
+    if (!response.ok) return false;
+    setPosts((previous) =>
+      previous.map((post) =>
+        post.id === postId
+          ? { ...post, comments: post.comments.filter((c) => c.id !== commentId) }
+          : post,
+      ),
+    );
+    return true;
+  }, []);
+
+  /*
+   * Reporting deliberately touches no state at all. The content stays exactly
+   * where it is — one student's report is not a decision, and a flow that hid the
+   * post as soon as somebody objected to it would hand every argument to whoever
+   * complained first. An admin decides; this only tells them.
+   */
+  const reportContent = useCallback<Ctx["reportContent"]>(
+    async (target, reason, details) => {
+      const response = await apiFetch("/api/community", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "report",
+          targetType: target.type,
+          targetId: target.id,
+          reason,
+          details: details?.trim() || undefined,
+        }),
+      });
+      return response.ok;
+    },
+    [],
+  );
+
   const view = useMemo<CommunityPostView[]>(
     () =>
       posts.map((post) => ({
@@ -395,6 +472,9 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
     toggleSave,
     addComment,
     createPost,
+    deletePost,
+    deleteComment,
+    reportContent,
   };
 
   return <CommunityContext.Provider value={value}>{children}</CommunityContext.Provider>;
