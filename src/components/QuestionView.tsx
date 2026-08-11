@@ -24,7 +24,36 @@ type Props = {
   crossOutMode?: boolean;
   crossedOut?: number[];
   onToggleCross?: (index: number) => void;
+  /** Passage can live in the runner's reading pane on wide exam layouts. */
+  showPassage?: boolean;
+  /** Gives the dedicated test surface its reading-focused visual treatment. */
+  variant?: "default" | "exam";
+  /** Primary practice action, rendered visually inside the selected answer. */
+  inlineAction?: "check" | "explain" | null;
+  onInlineAction?: () => void;
+  /** Lets practice reveal correctness before the explanation is requested. */
+  showExplanation?: boolean;
 };
+
+export function QuestionPassage({
+  question,
+  labelled = true,
+}: {
+  question: Question;
+  labelled?: boolean;
+}) {
+  const { tx, t } = useI18n();
+  if (!question.passage) return null;
+
+  return (
+    <div className="q-passage-wrap">
+      {labelled && <p className="label-xs mb-2">{t("study.passage")}</p>}
+      <blockquote className="q-passage">
+        <RichText text={tx(question.passage)} block />
+      </blockquote>
+    </div>
+  );
+}
 
 /**
  * One question, its choices, and — once checked — its explanation.
@@ -44,6 +73,11 @@ export function QuestionView({
   crossOutMode = false,
   crossedOut = [],
   onToggleCross,
+  showPassage = true,
+  variant = "default",
+  inlineAction = null,
+  onInlineAction,
+  showExplanation = revealed,
 }: Props) {
   const { tx, t } = useI18n();
   const { settings } = useSettings();
@@ -63,13 +97,16 @@ export function QuestionView({
       if (Number.isInteger(index) && index >= 0 && index < count) {
         event.preventDefault();
         if (!crossedOut.includes(index)) onSelect(index);
+      } else if (event.key === "Enter" && inlineAction === "check" && onInlineAction) {
+        event.preventDefault();
+        onInlineAction();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // Rebinding when the ruled-out set changes is cheap, and it keeps the
     // handler reading current state rather than a stale closure.
-  }, [live, count, onSelect, crossedOut]);
+  }, [live, count, onSelect, crossedOut, inlineAction, onInlineAction]);
 
   /** State lives on one class, so a choice can never be two states at once. */
   const choiceClass = useCallback(
@@ -83,28 +120,29 @@ export function QuestionView({
   );
 
   return (
-    <div className="space-y-5">
-      {question.passage && (
-        <div>
-          <p className="label-xs mb-2">{t("study.passage")}</p>
-          <blockquote className="q-passage">
-            <RichText text={tx(question.passage)} block />
-          </blockquote>
-        </div>
-      )}
+    <div className={`q-view ${variant === "exam" ? "q-view-exam" : "space-y-5"}`}>
+      {showPassage && <QuestionPassage question={question} />}
 
       <RichText className="q-prompt" text={tx(question.prompt)} block />
 
       {/* A radiogroup, not a list of buttons: a screen reader announces "2 of 4
           selected" and arrow keys move between options for free. */}
-      <div role="radiogroup" aria-label={t("study.chooseAnswer")} className="space-y-2">
+      <div
+        role="radiogroup"
+        aria-label={t("study.chooseAnswer")}
+        className={variant === "exam" ? "q-answer-list" : "space-y-2"}
+      >
         {question.choices.map((choice, index) => {
           const isSelected = selected === index;
           const wrongPick = revealed && isSelected && index !== question.answer;
           const struck = crossedOut.includes(index);
           const showCross = crossOutMode && !revealed && Boolean(onToggleCross);
+          const showInlineAction = isSelected && Boolean(inlineAction && onInlineAction);
           return (
-            <div key={index} className={showCross ? "flex items-center gap-2" : undefined}>
+            <div
+              key={index}
+              className={`q-choice-row ${showCross ? "has-cross-control" : ""}`}
+            >
               <button
                 type="button"
                 role="radio"
@@ -113,7 +151,7 @@ export function QuestionView({
                 onClick={() => onSelect(index)}
                 className={`${choiceClass(index)} ${wrongPick ? "shake" : ""} ${
                   struck ? "q-choice-struck" : ""
-                } ${showCross ? "flex-1 min-w-0" : ""}`}
+                } ${showInlineAction ? "q-choice-has-action" : ""}`}
               >
                 <span className="q-mark" aria-hidden>
                   {revealed && index === question.answer
@@ -125,15 +163,25 @@ export function QuestionView({
                 <RichText className="q-text" text={tx(choice)} />
               </button>
 
+              {showInlineAction && (
+                <button
+                  type="button"
+                  className={`q-inline-action ${inlineAction === "explain" ? "is-explain" : ""}`}
+                  onClick={onInlineAction}
+                >
+                  {inlineAction === "explain" ? "Explain" : "Check"}
+                </button>
+              )}
+
               {showCross && (
                 <button
                   type="button"
                   onClick={() => onToggleCross?.(index)}
                   aria-pressed={struck}
                   aria-label={`${struck ? t("ptool.undoCross") : t("ptool.crossOut")} ${LETTERS[index]}`}
-                  className={`cross-btn ${struck ? "cross-btn-on" : ""}`}
+                  className={struck ? "cross-undo" : "cross-btn"}
                 >
-                  {LETTERS[index]}
+                  {struck ? "Undo" : LETTERS[index]}
                 </button>
               )}
             </div>
@@ -145,8 +193,8 @@ export function QuestionView({
         <p className="text-micro text-faint">{t("study.keyHint")}</p>
       )}
 
-      {revealed && (
-        <div className="fade-up pt-5 border-t">
+      {revealed && showExplanation && (
+        <div className="q-explanation fade-up pt-5 border-t">
           <p className="label-xs">{t("quiz.explanation")}</p>
           <RichText
             className="mt-2.5 text-body text-muted"
