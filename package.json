@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:which": "node scripts/db-guard.mjs --print",
+    "db:new": "supabase migration new",
+    "db:push": "node scripts/db-guard.mjs && supabase db push",
+    "db:seed:auth": "node scripts/seed-auth.mjs",
+    "db:seed": "node scripts/db-guard.mjs && node scripts/seed-db.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
@@ -27,6 +32,7 @@
     "@types/three": "^0.185.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "supabase": "^2.113.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

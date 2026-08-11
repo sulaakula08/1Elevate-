@@ -7,6 +7,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
+import { EnvironmentBadge } from "./EnvironmentBadge";
 import {
   NavAdmin,
   NavHome,
@@ -85,6 +86,10 @@ export function TopBar() {
               <Logo compact />
             </span>
           </Link>
+
+          {/* Beside the wordmark, where "which build am I looking at" belongs.
+              Renders nothing on production. */}
+          <EnvironmentBadge />
 
           {/*
             Icon-only pills until there's room for labels, so nothing ever wraps.
