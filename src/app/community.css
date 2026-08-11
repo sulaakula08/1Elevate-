@@ -160,19 +160,12 @@
       min-height: 2.75rem;
       padding-inline: 1rem;
     }
-    /* The new `…` control, held to the same rule as the two above rather than
-       left at the 30px that reads correctly under a mouse. */
-    .cm-menu-btn {
-      width: 2.75rem;
-      height: 2.75rem;
-      opacity: 1;
-    }
-    /* It grew, so the negative margin that lined the dots up with the column
-       edge has to grow with it. */
-    .cm-menu {
-      margin-right: -0.75rem;
-    }
   }
+  /* The `…` control and the report dialog's rows are held to the same 44px, but
+     their override lives beside their own rules further down this file rather
+     than here. Both are a single class, so specificity is a tie and source order
+     decides: written here, the base .cm-menu-btn declared later would win and
+     the control would stay at 30px on a phone. Measured, it did. */
 
   /* ---------------- post actions ---------------- */
   .cm-action {
@@ -597,6 +590,32 @@
     height: 1rem;
     flex: none;
     cursor: pointer;
+  }
+
+  /* The touch sizing for the two controls declared above, placed after them for
+     the source-order reason given beside the other coarse-pointer block. */
+  @media (pointer: coarse) {
+    .cm-menu-btn {
+      width: 2.75rem;
+      height: 2.75rem;
+      /* No hover on a touch screen, so the quiet default would never lift. */
+      opacity: 1;
+    }
+    /* The control grew, so the negative margin that lined the dots up with the
+       column edge grows with it. */
+    .cm-menu {
+      margin-right: -0.75rem;
+    }
+    /* A reason is a required answer in a dialog, so it gets a full-size row too
+       rather than the 36px that is comfortable only with a mouse. */
+    .cm-report-reason {
+      min-height: 2.75rem;
+    }
+    /* And the menu's own rows. One of them is Delete, which is the last place to
+       be generous about a mis-tap. */
+    .cm-menu-item {
+      min-height: 2.75rem;
+    }
   }
 
   /* ---------------- achievement ----------------
