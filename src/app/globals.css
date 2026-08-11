@@ -2201,6 +2201,49 @@ body[data-exam] .notif-dock {
   }
 }
 
+/* A screenshot attached to feedback — in the form before it is sent, and in
+   both lists afterwards. Fixed-height tiles so a portrait phone capture and a
+   landscape desktop one still line up in a row. */
+.fb-shot {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.fb-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Sits over the corner of its own thumbnail; nothing else is near enough to
+   crowd, and a remove button below the tile would double the row's height. */
+.fb-shot-x {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  border: 0;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fb-shot-x:hover {
+  background: var(--danger);
+}
+
 /* The mark on the "temporarily unavailable" screen. Amber, not red: the section
    is coming back, and red would read as an error the student caused. */
 .closed-mark {

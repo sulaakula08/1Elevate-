@@ -15,6 +15,12 @@ export const runtime = "nodejs";
 const CATEGORIES = new Set(["bug", "content", "idea", "other"]);
 const MAX_LENGTH = 4000;
 
+/** Screenshots per message. Three is enough to show a sequence; more is a video. */
+const MAX_SHOTS = 3;
+const SHOTS_BUCKET = "feedback-shots";
+/** How long a signed screenshot link lives. Long enough to read the inbox. */
+const SHOT_TTL_SECONDS = 60 * 60;
+
 function notConfigured() {
   return NextResponse.json(
     { error: "Supabase is not configured. See DATABASE.md." },
@@ -43,6 +49,8 @@ type Row = {
   handled_at: string | null;
   created_at: string;
   account_id: string;
+  /** Object paths in the feedback-shots bucket, signed for the reader on the way out. */
+  shots: string[] | null;
   /**
    * Embedded author. Null for a student reading their own list — the profiles
    * policy shows them only their own row, and the embed is a left join — and
@@ -60,9 +68,9 @@ export async function POST(request: Request) {
   const found = await caller(request);
   if (!found) return unauthorized();
 
-  let body: { message?: unknown; category?: unknown };
+  let body: { message?: unknown; category?: unknown; shots?: unknown };
   try {
-    body = (await request.json()) as { message?: unknown; category?: unknown };
+    body = (await request.json()) as { message?: unknown; category?: unknown; shots?: unknown };
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -83,10 +91,27 @@ export async function POST(request: Request) {
       ? body.category
       : "other";
 
+  /*
+   * The uploads the browser says it made.
+   *
+   * They are only paths — the bytes went straight to storage under the caller's
+   * own folder, which is the one thing the storage policy allows. Pinning the
+   * prefix to the caller's id here as well means a forged path cannot attach
+   * somebody else's screenshot to a message, even though the reader would be
+   * refused it anyway.
+   */
+  const prefix = `${found.user.id}/`;
+  const shots = Array.isArray(body.shots)
+    ? body.shots
+        .filter((s): s is string => typeof s === "string" && s.startsWith(prefix))
+        .slice(0, MAX_SHOTS)
+    : [];
+
   const { error } = await found.client.from("feedback").insert({
     account_id: found.user.id,
     message,
     category,
+    shots,
   });
 
   if (error) {
@@ -105,7 +130,9 @@ export async function GET(request: Request) {
 
   const { data, error } = await found.client
     .from("feedback")
-    .select("id, message, category, handled_at, created_at, account_id, author:profiles(name, email)")
+    .select(
+      "id, message, category, handled_at, created_at, account_id, shots, author:profiles(name, email)",
+    )
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -114,10 +141,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Could not load." }, { status: 502 });
   }
 
+  /*
+   * Screenshots come back as links rather than paths: the bucket is private, so
+   * an <img src> needs a signed URL. One call for every path on the page — the
+   * alternative is a round trip per image, and an inbox is a page of them.
+   */
+  const paths = [...new Set((data ?? []).flatMap((raw) => (raw as Row).shots ?? []))];
+  const links = new Map<string, string>();
+  if (paths.length > 0) {
+    const { data: signed } = await found.client.storage
+      .from(SHOTS_BUCKET)
+      .createSignedUrls(paths, SHOT_TTL_SECONDS);
+    for (const item of signed ?? []) {
+      // A path whose object is gone comes back with an error and no url; it is
+      // skipped rather than rendered as a broken image.
+      if (item.path && item.signedUrl) links.set(item.path, item.signedUrl);
+    }
+  }
+
   const items = (data ?? []).map((raw) => {
     const row = raw as Row;
     const author = one(row.author);
     return {
+      shots: (row.shots ?? []).map((p) => links.get(p)).filter((u): u is string => Boolean(u)),
       id: row.id,
       message: row.message,
       category: row.category,

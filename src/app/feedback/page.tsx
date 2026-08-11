@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { apiFetch } from "@/lib/supabase/client";
+import { MAX_SHOTS, removeShot, uploadShot, type Shot } from "@/lib/shots";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 
 /** Categories the form offers. Free text carries the meaning; this is for sorting. */
@@ -16,6 +17,8 @@ type Item = {
   handled: boolean;
   at: number;
   mine: boolean;
+  /** Signed links, valid for the hour after the list was loaded. */
+  shots?: string[];
 };
 
 export default function FeedbackPage() {
@@ -34,6 +37,9 @@ function FeedbackInner() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [mine, setMine] = useState<Item[]>([]);
+  const [shots, setShots] = useState<Shot[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   /** The student's own messages, so sending does not feel like posting into a void. */
   const load = useCallback(async () => {
@@ -53,6 +59,37 @@ function FeedbackInner() {
   }, [load]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  /**
+   * Uploads happen as the files are chosen, not on send.
+   *
+   * A photo takes a moment to shrink and post, and doing that inside submit
+   * would leave the student looking at a dead button with no idea whether the
+   * message went. This way the thumbnail appearing is the progress bar, and by
+   * the time they finish typing the upload is long done.
+   */
+  async function attach(files: FileList) {
+    const room = MAX_SHOTS - shots.length;
+    if (room <= 0) return;
+
+    setUploading(true);
+    setError(null);
+    for (const file of [...files].slice(0, room)) {
+      try {
+        const shot = await uploadShot(file);
+        setShots((current) => [...current, shot]);
+      } catch {
+        setError(t("feedback.shotFailed"));
+      }
+    }
+    setUploading(false);
+  }
+
+  function detach(shot: Shot) {
+    setShots((current) => current.filter((s) => s.path !== shot.path));
+    URL.revokeObjectURL(shot.preview);
+    void removeShot(shot.path);
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!message.trim() || sending) return;
@@ -61,7 +98,11 @@ function FeedbackInner() {
     setError(null);
     const response = await apiFetch("/api/feedback", {
       method: "POST",
-      body: JSON.stringify({ message: message.trim(), category }),
+      body: JSON.stringify({
+        message: message.trim(),
+        category,
+        shots: shots.map((s) => s.path),
+      }),
     });
     setSending(false);
 
@@ -72,6 +113,9 @@ function FeedbackInner() {
     }
 
     setMessage("");
+    // The uploads belong to the message now; the previews are what get cleared.
+    for (const shot of shots) URL.revokeObjectURL(shot.preview);
+    setShots([]);
     setSent(true);
     void load();
   }
@@ -116,6 +160,53 @@ function FeedbackInner() {
           <p className="num text-micro text-faint mt-1.5">{message.trim().length} / 4000</p>
         </div>
 
+        {/* Screenshots. Most bug reports are a description of something on
+            screen, and the screen says it in one go. */}
+        <div>
+          <label className="label">{t("feedback.shots")}</label>
+          <p className="text-micro text-muted mt-0.5">{t("feedback.shotsBody")}</p>
+
+          {shots.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {shots.map((shot) => (
+                <li key={shot.path} className="fb-shot">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={shot.preview} alt="" />
+                  <button
+                    type="button"
+                    className="fb-shot-x"
+                    aria-label={t("feedback.shotRemove")}
+                    title={t("feedback.shotRemove")}
+                    onClick={() => detach(shot)}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <button
+            type="button"
+            className="btn btn-sm mt-3"
+            disabled={uploading || shots.length >= MAX_SHOTS}
+            onClick={() => fileInput.current?.click()}
+          >
+            {uploading ? t("feedback.shotUploading") : t("feedback.shotAdd")}
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.length) void attach(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
         {error && (
           <p className="notice notice-error" role="alert">
             {error}
@@ -157,6 +248,20 @@ function FeedbackInner() {
                 <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">
                   {item.message}
                 </p>
+                {item.shots && item.shots.length > 0 && (
+                  <ul className="mt-2.5 flex flex-wrap gap-2">
+                    {item.shots.map((url) => (
+                      <li key={url} className="fb-shot">
+                        {/* Opens full size: a thumbnail of a screenshot is not
+                            readable, and reading it is the whole point. */}
+                        <a href={url} target="_blank" rel="noreferrer">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt="" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>

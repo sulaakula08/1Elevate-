@@ -23,6 +23,8 @@ type Item = {
   authorName: string | null;
   authorEmail: string | null;
   mine: boolean;
+  /** Signed links to the screenshots the student attached, if any. */
+  shots?: string[];
 };
 
 type Filter = "open" | "all";
@@ -147,6 +149,20 @@ export function FeedbackInbox() {
               >
                 {item.message}
               </p>
+              {/* What the student was looking at. Click for full size — the
+                  thumbnail is there to say one exists, not to be read. */}
+              {item.shots && item.shots.length > 0 && (
+                <ul className="mt-2.5 flex flex-wrap gap-2">
+                  {item.shots.map((url) => (
+                    <li key={url} className="fb-shot">
+                      <a href={url} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>

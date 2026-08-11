@@ -88,6 +88,8 @@ type Ctx = {
   /** Resolves once the database has answered, so the editor can report a failure. */
   saveQuestion: (question: Question) => Promise<{ ok: true } | { ok: false; error: string }>;
   deleteQuestion: (id: string) => void;
+  /** Several at once, for the admin's delete-by-number field. */
+  deleteQuestions: (ids: string[]) => void;
   replaceCustomQuestions: (questions: Question[]) => void;
 
   resetAll: () => void;
@@ -390,12 +392,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [account?.email, custom, persistCustom, refreshBank],
   );
 
-  const deleteQuestion = useCallback<Ctx["deleteQuestion"]>(
-    (id) => {
-      persistCustom(custom.filter((q) => q.id !== id));
-      void apiFetch(`/api/questions?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  /**
+   * Removes a set of questions in one go.
+   *
+   * Deleting in a loop over `deleteQuestion` would not work: each call filters
+   * the same captured `custom` array, so the last write puts back everything the
+   * earlier ones removed and only one question actually disappears locally.
+   */
+  const deleteQuestions = useCallback<Ctx["deleteQuestions"]>(
+    (ids) => {
+      const doomed = new Set(ids);
+      if (doomed.size === 0) return;
+      persistCustom(custom.filter((q) => !doomed.has(q.id)));
+      for (const id of doomed) {
+        void apiFetch(`/api/questions?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      }
     },
     [custom, persistCustom],
+  );
+
+  const deleteQuestion = useCallback<Ctx["deleteQuestion"]>(
+    (id) => deleteQuestions([id]),
+    [deleteQuestions],
   );
 
   /**
@@ -451,6 +469,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     recordMock,
     saveQuestion,
     deleteQuestion,
+    deleteQuestions,
     replaceCustomQuestions: replaceCustom,
     resetAll,
   };

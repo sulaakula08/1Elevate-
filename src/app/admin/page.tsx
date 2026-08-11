@@ -11,6 +11,7 @@ import { domainsFor, skillsFor } from "@/data/taxonomy";
 import { PeopleManager } from "@/components/PeopleManager";
 import { SectionControls } from "@/components/admin/SectionControls";
 import { GenerateQuestions } from "@/components/admin/GenerateQuestions";
+import { DeleteByNumber } from "@/components/admin/DeleteByNumber";
 import { FeedbackInbox } from "@/components/admin/FeedbackInbox";
 import { UsageStats } from "@/components/admin/UsageStats";
 import { QuestionView } from "@/components/QuestionView";
@@ -47,6 +48,17 @@ function formatWhen(at: number): string {
 
 /** How many of the newest questions the list shows before it is expanded. */
 const RECENT_COUNT = 5;
+
+/**
+ * The page's sections.
+ *
+ * Everything an admin can do used to sit on one column: the editor, the bank,
+ * the generator, the section switches, the roster, the usage figures and the
+ * feedback inbox, in that order. Reaching the inbox meant scrolling past all of
+ * it, and nothing on the way was related to what you came for. One at a time.
+ */
+const TABS = ["questions", "generate", "sections", "people", "usage", "feedback"] as const;
+type Tab = (typeof TABS)[number];
 
 /** Reading & Writing is the default section, so its first domain seeds a draft. */
 const RW_FIRST = domainsFor("sat-rw")[0];
@@ -98,6 +110,7 @@ export default function AdminPage() {
 function AdminInner() {
   const { t, tx } = useI18n();
   const { account, bank, saveQuestion, deleteQuestion, replaceCustomQuestions } = useApp();
+  const [tab, setTab] = useState<Tab>("questions");
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -277,6 +290,24 @@ function AdminInner() {
         {t("admin.title")}
       </PageTitle>
 
+      {/* One row of sections, in the order an admin needs them: write, then
+          generate, then run, then people, then read what came back. */}
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("admin.title")}>
+        {TABS.map((value) => (
+          <button
+            key={value}
+            role="tab"
+            aria-selected={tab === value}
+            className={`chip ${tab === value ? "chip-on" : ""}`}
+            onClick={() => setTab(value)}
+          >
+            {t(`admin.tab.${value}`)}
+          </button>
+        ))}
+      </div>
+
+      {tab === "questions" && (
+      <>
       {/*
         The editor folds away.
 
@@ -546,6 +577,9 @@ function AdminInner() {
       </form>
       </div>
 
+      {/* Bulk removal, above the list it removes from. */}
+      {customQuestions.length > 0 && <DeleteByNumber questions={customQuestions} />}
+
       <section>
         <h2 className="label-xs mb-4">
           {t("admin.yourQuestions")}
@@ -624,21 +658,22 @@ function AdminInner() {
           </button>
         )}
       </section>
+      </>
+      )}
 
-      {/* How the product is being used, then who is using it, then what they
-          have said about it. Each panel decides for itself whether the caller
-          may see it — the API refuses a student, the policies refuse a student. */}
-      <UsageStats />
+      {/* Each panel decides for itself whether the caller may see it — the API
+          refuses a student, the policies refuse a student. */}
+      {tab === "generate" && <GenerateQuestions />}
+
+      {tab === "sections" && <SectionControls />}
 
       {/* Role management. Visible to admins as a read-only roster; only the
           owner sees the buttons, and only the database can actually grant. */}
-      <GenerateQuestions />
+      {tab === "people" && <PeopleManager />}
 
-      <SectionControls />
+      {tab === "usage" && <UsageStats />}
 
-      <PeopleManager />
-
-      <FeedbackInbox />
+      {tab === "feedback" && <FeedbackInbox />}
 
       {toDelete && (
         <ConfirmDialog

@@ -530,8 +530,17 @@ create table if not exists public.feedback (
              check (category in ('bug', 'content', 'idea', 'other')),
   -- Set by an admin once it has been dealt with, so a long list stays workable.
   handled_at timestamptz,
+  -- Screenshots, as object paths in the feedback-shots bucket below. A bug
+  -- report is usually a description of something on screen, and the screen
+  -- itself says it in one go: the paths live here, the bytes live in storage.
+  shots      text[] not null default '{}'
+             check (array_length(shots, 1) is null or array_length(shots, 1) <= 3),
   created_at timestamptz not null default now()
 );
+
+-- Existing installs predate the column.
+alter table public.feedback
+  add column if not exists shots text[] not null default '{}';
 
 create index if not exists feedback_created_at_idx
   on public.feedback (created_at desc);
@@ -557,6 +566,54 @@ create policy "feedback: update admin"
   on public.feedback for update
   using (public.is_admin())
   with check (public.is_admin());
+
+-- --------------------------------------------------- feedback screenshots --
+-- A private bucket, read through short-lived signed links the API mints. Not
+-- public: a screenshot of a bug is a screenshot of that student's own screen,
+-- and an unguessable URL is not a permission.
+--
+-- Every object lives under the uploader's own id — 9f3c…/8b21….jpg — which is
+-- what makes the policies below expressible: the first path segment is the
+-- owner, so `storage.foldername(name)[1]` is who may touch it.
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'feedback-shots',
+  'feedback-shots',
+  false,
+  5242880,
+  array['image/png', 'image/jpeg', 'image/webp']
+)
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "shots: insert own" on storage.objects;
+create policy "shots: insert own"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'feedback-shots'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "shots: read own or admin" on storage.objects;
+create policy "shots: read own or admin"
+  on storage.objects for select
+  using (
+    bucket_id = 'feedback-shots'
+    and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+  );
+
+-- An upload that was never attached to a message is the student's to remove;
+-- one that was is part of the record, and the message cannot be edited either.
+drop policy if exists "shots: delete own" on storage.objects;
+create policy "shots: delete own"
+  on storage.objects for delete
+  using (
+    bucket_id = 'feedback-shots'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
 
 -- ------------------------------------------------------- reset statistics --
 -- Wipes every student's practice history: attempts, mock results and the

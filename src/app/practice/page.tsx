@@ -66,6 +66,19 @@ function BankInner() {
   const stats = useMemo(() => bankStats(bank), [bank]);
 
   /**
+   * The counts every control below quotes, narrowed to the chosen section.
+   *
+   * Picking Math and still reading the whole bank's difficulty spread — 300
+   * hard questions when Math holds 40 — described a bank the student was not
+   * looking at. The section chips keep the unnarrowed totals, because that is
+   * exactly what they are choosing between.
+   */
+  const scoped = useMemo(
+    () => (section ? statsFor(stats, section) : stats),
+    [stats, section],
+  );
+
+  /**
    * One pass over the attempt log instead of a scan per question: the bank is
    * small today, but this page filters on every keystroke of the controls.
    */
@@ -218,6 +231,8 @@ function BankInner() {
   const filtersOn =
     section !== null || level !== null || status !== "all" || search !== "" || length !== null;
   const poolSolved = pool.filter((q) => solvedIds.has(q.id)).length;
+  // The review queue, counted inside the current filters for the same reason.
+  const queuedHere = pool.filter((q) => queued.has(q.id)).length;
   // Set membership, not a nested scan: this runs on every keystroke of the
   // topic search, over the whole attempt log.
   const poolIds = new Set(pool.map((q) => q.id));
@@ -264,7 +279,7 @@ function BankInner() {
               dot
             >
               {t(`diff.${value}`)}
-              <span className="qb-count">{stats.byLevel[value]}</span>
+              <span className="qb-count">{scoped.byLevel[value]}</span>
             </Chip>
           ))}
         </Filter>
@@ -308,10 +323,10 @@ function BankInner() {
           {poolAccuracy !== null && (
             <Stat label={t("study.accuracy")} value={pct(poolAccuracy)} />
           )}
-          {queued.size > 0 && (
-            <Stat label={t("study.inReview")} value={String(queued.size)} tone="var(--danger)" />
+          {queuedHere > 0 && (
+            <Stat label={t("study.inReview")} value={String(queuedHere)} tone="var(--danger)" />
           )}
-          <Stat label={t("study.topicsLabel")} value={String(stats.topics)} />
+          <Stat label={t("study.topicsLabel")} value={String(scoped.topics)} />
         </div>
         {filtersOn && (
           <button
