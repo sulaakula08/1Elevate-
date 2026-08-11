@@ -902,6 +902,1445 @@
   }
 }
 
+/* ---------------- practice exam workspace ----------------
+   Practice uses the same logic as the shared test runner, but passage-bearing
+   Reading & Writing questions get a calm, two-page reading surface. All rules
+   are scoped so review cards and the question bank retain their own layout. */
+@layer components {
+  .practice-test-shell.test-shell {
+    /* The testing surface stays paper-white even when the surrounding study
+       dashboard uses dark mode; the violet brand token remains inherited. */
+    --background: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f6f6f4;
+    --surface-hover: #f8f8f6;
+    --foreground: #171719;
+    --muted: #67676b;
+    --faint: #8a8a8f;
+    --line: #e8e8e5;
+    --line-strong: #cdcdc8;
+    --ink: #171719;
+    --ink-contrast: #ffffff;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    width: 100vw;
+    height: 100dvh;
+    min-height: 0;
+    max-width: none;
+    margin: 0;
+    overflow: hidden;
+    background: var(--background);
+    color: var(--foreground);
+  }
+
+  .practice-test-shell .test-bar {
+    flex: 0 0 96px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    padding: 0 1.75rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .practice-test-shell .test-bar-left,
+  .practice-test-shell .test-bar-right,
+  .practice-test-shell .test-timer-actions,
+  .practice-test-shell .test-foot-controls,
+  .practice-test-shell .test-foot-help,
+  .practice-test-shell .test-foot-actions {
+    display: flex;
+    align-items: center;
+  }
+
+  .practice-test-shell .test-bar-left {
+    gap: 4.25rem;
+  }
+
+  .practice-test-shell .test-bar-right {
+    justify-content: flex-end;
+    gap: 0.35rem;
+    margin-right: 12rem;
+  }
+
+  .practice-test-shell .test-header-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 2.35rem;
+    padding: 0 0.15rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.95rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 150ms ease;
+  }
+
+  .practice-test-shell .test-header-btn:hover {
+    color: var(--foreground);
+  }
+
+  .practice-test-shell .test-header-btn > span {
+    margin-top: -0.08em;
+    font-size: 1.45rem;
+    font-weight: 300;
+    line-height: 1;
+  }
+
+  .practice-test-shell .test-directions-panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    z-index: 30;
+    width: min(22rem, calc(100vw - 2rem));
+    padding: 1rem;
+  }
+
+  .practice-test-shell .test-timer {
+    position: static;
+    transform: none;
+    min-width: 6rem;
+    gap: 0.25rem;
+  }
+
+  .practice-test-shell .test-clock {
+    font-size: 1.75rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .practice-test-shell .test-timer-actions {
+    gap: 0.4rem;
+  }
+
+  .practice-test-shell .test-timer-play,
+  .practice-test-shell .test-timer-hide,
+  .practice-test-shell .test-timer-show {
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .practice-test-shell .test-timer-play {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-color: var(--ink);
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--ink-contrast);
+  }
+
+  .practice-test-shell .test-timer-hide,
+  .practice-test-shell .test-timer-show {
+    min-width: 3.2rem;
+    height: 1.75rem;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+  }
+
+  .practice-test-shell .tool-btn {
+    height: 2.35rem;
+    padding: 0 0.4rem;
+    border-color: transparent;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .practice-test-shell .tool-btn:hover {
+    background: transparent;
+    color: var(--foreground);
+  }
+
+  .practice-test-shell .tool-btn svg,
+  .practice-test-shell .test-mark-btn svg,
+  .practice-test-shell .test-cross-tool svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .practice-test-shell .test-section-progress {
+    flex: 0 0 1px;
+    height: 1px;
+    border-radius: 0;
+  }
+
+  .practice-test-shell .test-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .practice-test-shell.has-reading-pane .test-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .practice-test-shell .test-passage-pane,
+  .practice-test-shell .test-question {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .practice-test-shell .test-passage-pane {
+    border-right: 1px solid var(--line);
+  }
+
+  .practice-test-shell .test-passage-inner {
+    width: 100%;
+    max-width: 48rem;
+    margin: 0 auto;
+    max-width: none;
+    padding: 2.5rem 3rem 3rem clamp(7rem, 9.4vw, 11.25rem);
+  }
+
+  .practice-test-shell .test-passage-pane .q-passage {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--foreground);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.32rem;
+    line-height: 1.48;
+  }
+
+  .practice-test-shell .test-question {
+    width: 100%;
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 1rem clamp(2rem, 4vw, 4.75rem) 3rem;
+  }
+
+  .practice-test-shell.has-reading-pane .test-question {
+    max-width: none;
+    margin: 0;
+    padding-right: clamp(7rem, 9vw, 11rem);
+    padding-left: 1.25rem;
+  }
+
+  .practice-test-shell .test-question-status {
+    display: flex;
+    align-items: center;
+    min-height: 3rem;
+    margin-top: 1.25rem;
+    padding: 0 0.1rem;
+    border-radius: 0.5rem;
+    background: var(--surface-2);
+  }
+
+  .practice-test-shell .q-number {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.6rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+
+  .practice-test-shell .test-mark-btn,
+  .practice-test-shell .test-cross-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.6rem;
+    padding: 0 0.7rem;
+    border: 0;
+    background: transparent;
+    color: var(--foreground);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .practice-test-shell .test-cross-tool {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  .practice-test-shell .test-mark-btn:hover,
+  .practice-test-shell .test-cross-tool:hover {
+    color: var(--brand);
+  }
+
+  .practice-test-shell .test-question-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+    min-height: 2rem;
+    margin-top: 0.65rem;
+    color: var(--faint);
+    font-size: 0.69rem;
+    font-weight: 600;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
+  }
+
+  .practice-test-shell .test-question-meta > span + span::before {
+    content: "·";
+    margin-right: 0.75rem;
+    color: var(--line-strong);
+  }
+
+  .practice-test-shell .test-question-meta .pl-ai-badge::before,
+  .practice-test-shell .test-question-meta .ml-auto::before {
+    content: none;
+  }
+
+  .practice-test-shell .test-difficulty {
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .practice-test-shell .test-question-content {
+    width: 100%;
+    max-width: 42.5rem;
+    margin-top: 1.1rem;
+  }
+
+  .practice-test-shell .q-view-exam {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .practice-test-shell .q-view-exam .q-prompt {
+    color: var(--foreground);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.25rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .practice-test-shell .q-view-exam .q-answer-list {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  /* Elimination controls sit outside the answer edge, as in the test UI;
+     switching the tool on must not make every answer card narrower. */
+  .practice-test-shell .q-view-exam .q-answer-list:has(.cross-btn) {
+    width: calc(100% + 3.5rem);
+  }
+
+  .practice-test-shell .q-view-exam .q-choice {
+    min-height: 4rem;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0.9rem;
+    border-color: color-mix(in srgb, var(--foreground) 74%, var(--line));
+    border-radius: 0.85rem;
+    background: var(--surface);
+    box-shadow: none;
+  }
+
+  .practice-test-shell .q-view-exam .q-choice:hover:not(:disabled) {
+    border-color: var(--foreground);
+    background: var(--surface-hover);
+  }
+
+  .practice-test-shell .q-view-exam .q-choice-on {
+    border-color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 3.5%, var(--surface));
+    box-shadow: none;
+  }
+
+  .practice-test-shell .q-view-exam .q-mark {
+    width: 2.05rem;
+    height: 2.05rem;
+    border-color: color-mix(in srgb, var(--foreground) 72%, var(--line));
+    border-radius: 999px;
+    color: var(--foreground);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.95rem;
+  }
+
+  .practice-test-shell .q-view-exam .q-text {
+    color: var(--foreground);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    line-height: 1.4;
+  }
+
+  .practice-test-shell .q-view-exam > .text-micro.text-faint {
+    display: none;
+  }
+
+  .practice-test-shell .q-view-exam .cross-btn {
+    width: 2.05rem;
+    height: 2.05rem;
+    border-color: var(--foreground);
+    color: var(--foreground);
+    font-size: 0.78rem;
+  }
+
+  .practice-test-shell .q-explanation {
+    scroll-margin-top: 1rem;
+  }
+
+  .practice-test-shell .test-result-message {
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .practice-test-shell .test-pane {
+    position: absolute;
+    z-index: 15;
+    inset: 1rem auto 1rem 1rem;
+    width: min(28rem, calc(100% - 2rem));
+    height: auto;
+    box-shadow: var(--overlay);
+  }
+
+  .practice-test-shell .test-foot {
+    position: relative;
+    bottom: auto;
+    z-index: 20;
+    flex: 0 0 106px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0 1.5rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .practice-test-shell .test-foot-progress {
+    justify-self: start;
+    margin-left: clamp(1rem, 11.25vw, 13.5rem);
+    transform: translateY(-0.55rem);
+  }
+
+  .practice-test-shell .test-foot-controls {
+    justify-self: start;
+    gap: 0.65rem;
+    transform: translate(-2rem, -0.55rem);
+  }
+
+  .practice-test-shell .test-foot-help {
+    gap: 0.4rem;
+  }
+
+  .practice-test-shell .test-foot-actions {
+    gap: 0.4rem;
+  }
+
+  .practice-test-shell .test-progress-btn,
+  .practice-test-shell .test-learning-btn,
+  .practice-test-shell .test-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 0.7rem;
+    background: var(--surface);
+    color: var(--foreground);
+    font-size: 0.875rem;
+    font-weight: 520;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+  }
+
+  .practice-test-shell .test-progress-btn {
+    min-width: 10rem;
+    border-color: var(--ink);
+    border-radius: 0.7rem;
+    background: var(--ink);
+    color: var(--ink-contrast);
+  }
+
+  .practice-test-shell .test-learning-btn {
+    border-radius: 0.65rem;
+    color: var(--muted);
+  }
+
+  .practice-test-shell .test-learning-primary {
+    border-color: color-mix(in srgb, var(--brand) 25%, var(--line));
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+
+  .practice-test-shell .test-nav-primary:not(:disabled) {
+    border-color: color-mix(in srgb, var(--brand) 35%, var(--line-strong));
+    color: var(--brand);
+  }
+
+  .practice-test-shell .test-progress-btn:hover,
+  .practice-test-shell .test-learning-btn:hover:not(:disabled),
+  .practice-test-shell .test-nav-btn:hover:not(:disabled) {
+    border-color: var(--brand);
+  }
+
+  .practice-test-shell .test-learning-btn:disabled,
+  .practice-test-shell .test-nav-btn:disabled {
+    background: var(--surface-2);
+    color: var(--faint);
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+
+  @media (max-width: 62rem) {
+    .practice-test-shell .test-bar {
+      flex-basis: 72px;
+    }
+
+    .practice-test-shell .test-bar-right {
+      margin-right: 0;
+    }
+
+    .practice-test-shell.has-reading-pane .test-body {
+      display: block;
+      overflow-y: auto;
+    }
+
+    .practice-test-shell .test-passage-pane,
+    .practice-test-shell .test-question {
+      overflow: visible;
+      scrollbar-gutter: auto;
+    }
+
+    .practice-test-shell .test-passage-pane {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .practice-test-shell .test-passage-inner,
+    .practice-test-shell .test-question {
+      max-width: 48rem;
+      margin: 0 auto;
+      padding: 2.25rem clamp(1.5rem, 5vw, 3rem);
+    }
+
+    .practice-test-shell.has-reading-pane .test-question {
+      max-width: 48rem;
+      margin: 0 auto;
+      padding: 2.25rem clamp(1.5rem, 5vw, 3rem);
+    }
+
+    .practice-test-shell .test-foot {
+      grid-template-columns: auto 1fr;
+    }
+
+    .practice-test-shell .test-foot-progress {
+      margin-left: 0;
+      transform: none;
+    }
+
+    .practice-test-shell .test-foot-controls {
+      justify-self: end;
+      transform: none;
+    }
+  }
+
+  @media (max-width: 44rem) {
+    .practice-test-shell .test-bar {
+      grid-template-columns: 1fr auto;
+      padding-inline: 0.85rem;
+    }
+
+    .practice-test-shell .test-bar-left .relative,
+    .practice-test-shell .test-bar-right .tool-btn span,
+    .practice-test-shell .test-cross-tool span,
+    .practice-test-shell .test-question-meta .test-difficulty {
+      display: none;
+    }
+
+    .practice-test-shell .test-timer {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .practice-test-shell .test-bar-right {
+      grid-column: 2;
+    }
+
+    .practice-test-shell .test-passage-inner,
+    .practice-test-shell .test-question {
+      padding: 2.25rem 1.25rem;
+    }
+
+    .practice-test-shell.has-reading-pane .test-question {
+      padding: 2.25rem 1.25rem;
+    }
+
+    .practice-test-shell .test-question-status {
+      min-height: 2.75rem;
+    }
+
+    .practice-test-shell .q-number {
+      width: 2.65rem;
+      height: 2.65rem;
+    }
+
+    .practice-test-shell .test-foot {
+      flex-basis: 118px;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      gap: 0.45rem 0.75rem;
+      padding: 0.65rem 0.85rem;
+    }
+
+    .practice-test-shell .test-foot-controls {
+      display: contents;
+    }
+
+    .practice-test-shell .test-foot-help {
+      justify-self: end;
+    }
+
+    .practice-test-shell .test-foot-actions {
+      grid-column: 1 / -1;
+      justify-self: stretch;
+    }
+
+    .practice-test-shell .test-foot-actions > * {
+      flex: 1;
+    }
+
+    .practice-test-shell .test-progress-btn {
+      min-width: 0;
+    }
+
+    .practice-test-shell .test-learning-btn,
+    .practice-test-shell .test-nav-btn,
+    .practice-test-shell .test-progress-btn {
+      min-height: 2.4rem;
+      padding-inline: 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    .practice-test-shell .test-learning-btn:not(.test-learning-primary) {
+      display: none;
+    }
+
+    .practice-test-shell .q-view-exam .q-answer-list:has(.cross-btn) {
+      width: 100%;
+    }
+  }
+}
+
+/* High-fidelity DSAT interaction pass. Kept as a final, scoped layer so the
+   shared question cards and the mock-test runner retain their existing skin. */
+@layer components {
+  :root[data-theme="dark"] .practice-test-shell.test-shell {
+    --background: #151517;
+    --surface: #19191c;
+    --surface-2: #222226;
+    --surface-hover: #252529;
+    --foreground: #f3f3f1;
+    --muted: #b8b8bd;
+    --faint: #8f8f96;
+    --line: #343438;
+    --line-strong: #56565d;
+    --ink: #f3f3f1;
+    --ink-contrast: #151517;
+  }
+
+  .practice-test-shell,
+  .practice-test-shell button,
+  .practice-test-shell input,
+  .practice-test-shell textarea {
+    font-family: var(--font-sans), Arial, sans-serif;
+  }
+
+  .practice-test-shell .test-clock-slot {
+    display: grid;
+    place-items: center;
+    width: 6.25rem;
+    height: 1.85rem;
+  }
+
+  .practice-test-shell .test-bar-right {
+    margin-right: 8rem;
+  }
+
+  .practice-test-shell .test-clock {
+    font-family: var(--font-sans), Arial, sans-serif;
+    font-size: 1.64rem;
+    font-weight: 450;
+    line-height: 1;
+    letter-spacing: -0.035em;
+  }
+
+  .practice-test-shell .test-clock-hidden {
+    width: 1.2rem;
+    height: 1.2rem;
+    color: var(--muted);
+  }
+
+  .practice-test-shell .test-timer-hide {
+    min-width: 3.3rem;
+    height: 1.7rem;
+    padding-inline: 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 400;
+  }
+
+  .practice-test-shell .tool-btn.tool-btn-on {
+    border-color: var(--brand);
+    border-radius: 0.5rem;
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+
+  .practice-test-shell .tool-btn.tool-btn-on:hover {
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+
+  .practice-test-shell .test-more-wrap,
+  .practice-test-shell .test-info-wrap {
+    position: relative;
+  }
+
+  .practice-test-shell .test-more-menu {
+    position: absolute;
+    top: calc(100% + 0.55rem);
+    right: 0;
+    z-index: 65;
+    width: 14.5rem;
+    padding: 0.35rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--surface);
+    box-shadow: 0 12px 34px rgb(0 0 0 / 16%);
+  }
+
+  .practice-test-shell .test-more-menu button {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    min-height: 2.55rem;
+    padding: 0.55rem 0.7rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--foreground);
+    font-size: 0.82rem;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .practice-test-shell .test-more-menu button:hover {
+    background: var(--surface-2);
+  }
+
+  .practice-test-shell.has-reading-pane .test-body {
+    grid-template-columns: minmax(0, var(--passage-ratio, 50%)) minmax(0, calc(100% - var(--passage-ratio, 50%)));
+  }
+
+  .practice-test-shell .test-body.is-resizing,
+  .practice-test-shell .test-body.is-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
+  }
+
+  .practice-test-shell .test-split-handle {
+    position: absolute;
+    top: 50%;
+    left: var(--passage-ratio, 50%);
+    z-index: 12;
+    display: grid;
+    place-items: center;
+    width: 14px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #d0d0ce;
+    border-radius: 4px;
+    background: #eeeeec;
+    color: #777773;
+    cursor: col-resize;
+    transform: translate(-50%, -50%);
+    touch-action: none;
+  }
+
+  .practice-test-shell .test-split-handle::before {
+    content: "";
+    position: absolute;
+    top: -50vh;
+    bottom: -50vh;
+    left: 50%;
+    width: 1px;
+    z-index: -1;
+    background: var(--line);
+  }
+
+  .practice-test-shell .test-split-handle > span,
+  .practice-test-shell .test-split-handle > span::before,
+  .practice-test-shell .test-split-handle > span::after {
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .practice-test-shell .test-split-handle > span {
+    position: relative;
+  }
+
+  .practice-test-shell .test-split-handle > span::before,
+  .practice-test-shell .test-split-handle > span::after {
+    content: "";
+    position: absolute;
+    left: 0;
+  }
+
+  .practice-test-shell .test-split-handle > span::before { top: -5px; }
+  .practice-test-shell .test-split-handle > span::after { top: 5px; }
+
+  .practice-test-shell .test-passage-pane {
+    border-right: 0;
+  }
+
+  .practice-test-shell .test-passage-inner {
+    padding-right: clamp(3.75rem, 5vw, 6rem);
+  }
+
+  .practice-test-shell .test-passage-pane .q-passage,
+  .practice-test-shell .q-view-exam .q-prompt,
+  .practice-test-shell .q-view-exam .q-text,
+  .practice-test-shell .q-view-exam .q-mark,
+  .practice-test-shell .q-view-exam .cross-btn,
+  .practice-test-shell .q-view-exam .q-explanation {
+    font-family: Georgia, "Times New Roman", Times, serif;
+  }
+
+  .practice-test-shell .test-passage-pane .q-passage {
+    font-size: 1.19rem;
+    line-height: 1.48;
+  }
+
+  .practice-test-shell .q-view-exam .q-prompt {
+    font-size: 1.17rem;
+    line-height: 1.4;
+  }
+
+  .practice-test-shell .q-view-exam {
+    gap: 0.9rem;
+  }
+
+  .practice-test-shell .test-question-content {
+    max-width: 43.4rem;
+  }
+
+  .practice-test-shell .q-view-exam .q-answer-list {
+    gap: 0.72rem;
+  }
+
+  .practice-test-shell .q-choice-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+  }
+
+  .practice-test-shell .q-view-exam .q-choice {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 3.75rem;
+    gap: 0.78rem;
+    padding: 0.58rem 0.82rem;
+    border: 1px solid #2b2b2b;
+    border-radius: 0.72rem;
+  }
+
+  :root[data-theme="dark"] .practice-test-shell .q-view-exam .q-choice {
+    border-color: #b8b8bc;
+  }
+
+  .practice-test-shell .q-view-exam .q-choice-on {
+    border-color: color-mix(in srgb, var(--brand) 72%, #2b2b2b);
+    background: color-mix(in srgb, var(--brand) 5%, var(--surface));
+  }
+
+  .practice-test-shell .q-view-exam .q-choice-has-action {
+    padding-right: 5.8rem;
+  }
+
+  .practice-test-shell .q-view-exam .q-mark {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid #2b2b2b;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  :root[data-theme="dark"] .practice-test-shell .q-view-exam .q-mark {
+    border-color: #b8b8bc;
+  }
+
+  .practice-test-shell .q-view-exam .q-text {
+    font-size: 1.035rem;
+    line-height: 1.38;
+  }
+
+  .practice-test-shell .q-inline-action {
+    position: absolute;
+    right: 0.7rem;
+    top: 50%;
+    z-index: 2;
+    min-width: 4.4rem;
+    height: 2.35rem;
+    padding: 0 0.8rem;
+    border: 1px solid var(--brand);
+    border-radius: 0.65rem;
+    background: var(--brand);
+    color: var(--brand-contrast);
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transform: translateY(-50%);
+  }
+
+  .practice-test-shell .q-choice-row.has-cross-control .q-inline-action {
+    right: 3.45rem;
+  }
+
+  .practice-test-shell .q-inline-action.is-explain {
+    background: var(--surface);
+    color: var(--brand);
+  }
+
+  .practice-test-shell .q-view-exam .q-answer-list:has(.cross-btn, .cross-undo) {
+    width: calc(100% + 3.5rem);
+  }
+
+  .practice-test-shell .q-view-exam .cross-btn {
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid #2b2b2b;
+    color: var(--foreground);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .practice-test-shell .q-view-exam .cross-btn::after {
+    inset: 48% -4px auto -4px;
+    border-top: 1px solid currentColor;
+    transform: scaleX(1);
+  }
+
+  .practice-test-shell .cross-undo {
+    flex: 0 0 2.75rem;
+    width: 2.75rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-sans), Arial, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 400;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  .practice-test-shell .q-choice-struck {
+    opacity: 0.4;
+    text-decoration-color: var(--foreground);
+  }
+
+  .practice-test-shell .test-report-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.4rem;
+    margin-left: auto;
+    padding: 0 0.35rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.76rem;
+    cursor: pointer;
+  }
+
+  .practice-test-shell .test-report-btn:hover { color: var(--foreground); }
+  .practice-test-shell .test-report-btn svg { width: 1rem; height: 1rem; }
+  .practice-test-shell .test-cross-tool { margin-left: 0; }
+
+  .practice-test-shell .test-info-btn {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--faint);
+    cursor: pointer;
+  }
+
+  .practice-test-shell .test-info-popover {
+    position: absolute;
+    bottom: calc(100% + 0.65rem);
+    left: 0;
+    z-index: 64;
+    width: 18rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--surface);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 15%);
+  }
+
+  .practice-test-shell .test-popover-title {
+    margin-bottom: 0.65rem;
+    font-size: 0.82rem;
+    font-weight: 650;
+  }
+
+  .practice-test-shell .test-info-popover dl { display: grid; gap: 0.45rem; }
+  .practice-test-shell .test-info-popover dl > div {
+    display: grid;
+    grid-template-columns: 6.2rem 1fr;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+  .practice-test-shell .test-info-popover dt { color: var(--faint); }
+  .practice-test-shell .test-info-popover dd { color: var(--foreground); }
+
+  .practice-test-shell .test-learning-btn svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .practice-test-shell .test-foot-controls {
+    transform: translate(-5.75rem, -0.55rem);
+  }
+
+  .test-highlight-palette {
+    position: fixed;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.45rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid #d8d8d5;
+    border-radius: 0.62rem;
+    background: #ffffff;
+    color: #252528;
+    box-shadow: 0 7px 22px rgb(0 0 0 / 20%);
+    transform: translateX(-50%);
+  }
+
+  .test-highlight-palette.is-above { transform: translate(-50%, -100%); }
+  .test-highlight-color {
+    width: 1.55rem;
+    height: 1.55rem;
+    border: 1px solid rgb(0 0 0 / 18%);
+    border-radius: 0.32rem;
+    cursor: pointer;
+  }
+  .test-highlight-color.is-amber { background: #ffe784; }
+  .test-highlight-color.is-blue { background: #a9def7; }
+  .test-highlight-color.is-rose { background: #f8b8cf; }
+  .test-highlight-separator { width: 1px; height: 1.45rem; background: #ddddda; }
+  .test-highlight-remove {
+    display: grid;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border: 0;
+    border-radius: 0.35rem;
+    background: transparent;
+    color: #55555a;
+    cursor: pointer;
+  }
+  .test-highlight-remove:hover:not(:disabled) { background: #f1f1ef; }
+  .test-highlight-remove:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .practice-test-shell .test-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgb(0 0 0 / 34%);
+  }
+
+  .practice-test-shell .test-compact-modal,
+  .practice-test-shell .test-report-modal {
+    width: min(26rem, 100%);
+    max-height: min(42rem, calc(100dvh - 2rem));
+    overflow: auto;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 0.85rem;
+    background: var(--surface);
+    color: var(--foreground);
+    box-shadow: 0 20px 60px rgb(0 0 0 / 26%);
+  }
+
+  .practice-test-shell .test-report-modal { width: min(30rem, 100%); }
+  .practice-test-shell .test-modal-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.9rem;
+  }
+  .practice-test-shell .test-modal-head h2 { font-size: 1rem; font-weight: 650; }
+  .practice-test-shell .test-modal-head button {
+    margin-left: auto;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+
+  .practice-test-shell .test-shortcut-list { display: grid; gap: 0.25rem; }
+  .practice-test-shell .test-shortcut-list > div {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    align-items: center;
+    min-height: 2.65rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.8rem;
+  }
+  .practice-test-shell kbd {
+    padding: 0.15rem 0.35rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 0.3rem;
+    background: var(--surface-2);
+    font: inherit;
+  }
+
+  .practice-test-shell .test-report-modal legend,
+  .practice-test-shell .test-report-details > span {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .practice-test-shell .test-report-reasons { display: grid; gap: 0.2rem; }
+  .practice-test-shell .test-report-reasons label {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 2.3rem;
+    padding: 0.3rem 0.45rem;
+    border-radius: 0.45rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .practice-test-shell .test-report-reasons label:hover { background: var(--surface-2); }
+  .practice-test-shell .test-report-reasons input { accent-color: var(--brand); }
+  .practice-test-shell .test-report-details { display: block; margin-top: 0.9rem; }
+  .practice-test-shell .test-report-details textarea {
+    width: 100%;
+    min-height: 5.5rem;
+    resize: vertical;
+    padding: 0.65rem 0.7rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 0.55rem;
+    background: var(--surface);
+    color: var(--foreground);
+    font-size: 0.82rem;
+  }
+  .practice-test-shell .test-report-error { margin-top: 0.65rem; color: var(--danger); font-size: 0.75rem; }
+  .practice-test-shell .test-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .practice-test-shell .test-modal-actions button,
+  .practice-test-shell .test-report-sent button {
+    min-height: 2.35rem;
+    padding: 0 0.85rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 0.55rem;
+    background: var(--surface);
+    color: var(--foreground);
+    cursor: pointer;
+  }
+  .practice-test-shell .test-modal-actions .test-modal-primary,
+  .practice-test-shell .test-report-sent .test-modal-primary {
+    border-color: var(--brand);
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+  .practice-test-shell .test-report-sent { display: grid; gap: 1rem; font-size: 0.84rem; }
+  .practice-test-shell .test-report-sent button { justify-self: end; }
+
+  @media (max-width: 62rem) {
+    .practice-test-shell .test-split-handle { display: none; }
+    .practice-test-shell.has-reading-pane .test-body { display: block; }
+    .practice-test-shell .test-bar-right { margin-right: 0; }
+    .practice-test-shell .test-foot-controls { transform: none; }
+  }
+
+  @media (max-width: 44rem) {
+    .practice-test-shell .test-report-btn span { display: none; }
+    .practice-test-shell .test-report-btn { padding-inline: 0.25rem; }
+    .practice-test-shell .test-info-btn { width: 2.4rem; height: 2.4rem; }
+    .practice-test-shell .q-view-exam .q-answer-list:has(.cross-btn, .cross-undo) { width: 100%; }
+    .practice-test-shell .q-choice-row.has-cross-control .q-inline-action { right: 3.35rem; }
+  }
+}
+
+/* Final density pass: the interaction model is settled, so this block only
+   tightens the Reading & Writing surface to the calmer Bluebook/OnePrep scale. */
+@layer components {
+  .practice-test-shell .test-passage-pane .q-passage {
+    font-size: 1.0625rem;
+    line-height: 1.48;
+  }
+
+  .practice-test-shell .q-view-exam .q-prompt {
+    font-size: 1.0625rem;
+    line-height: 1.42;
+  }
+
+  .practice-test-shell .q-view-exam {
+    gap: 0.72rem;
+  }
+
+  .practice-test-shell .q-view-exam .q-answer-list {
+    gap: 0.65rem;
+  }
+
+  .practice-test-shell .q-view-exam .q-choice {
+    min-height: 3.375rem;
+    gap: 0.7rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.68rem;
+  }
+
+  .practice-test-shell .q-view-exam .q-text {
+    font-size: 0.96875rem;
+    line-height: 1.38;
+  }
+
+  .practice-test-shell .q-view-exam .q-mark {
+    width: 1.875rem;
+    height: 1.875rem;
+    font-size: 0.875rem;
+  }
+
+  .practice-test-shell .q-view-exam .cross-btn {
+    width: 1.875rem;
+    height: 1.875rem;
+    font-size: 0.72rem;
+  }
+
+  .practice-test-shell .q-view-exam .q-choice-has-action {
+    padding-right: 5.2rem;
+  }
+
+  .practice-test-shell .q-inline-action {
+    min-width: 4rem;
+    height: 2.125rem;
+    padding-inline: 0.7rem;
+    border-radius: 0.58rem;
+    font-size: 0.78rem;
+  }
+
+  .practice-test-shell .q-choice-row.has-cross-control .q-inline-action {
+    right: 3.25rem;
+  }
+
+  .practice-test-shell .test-question-content {
+    margin-top: 0.8rem;
+  }
+
+  .practice-test-shell .test-question-status {
+    min-height: 2.75rem;
+    margin-top: 0.75rem;
+    padding-inline: 0.05rem;
+    border-radius: 0.45rem;
+  }
+
+  .practice-test-shell .q-number {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.52rem;
+    font-size: 1rem;
+  }
+
+  .practice-test-shell .test-mark-btn {
+    min-height: 2.35rem;
+    gap: 0.4rem;
+    padding-inline: 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .practice-test-shell .test-report-btn {
+    min-height: 2.2rem;
+    gap: 0.3rem;
+    padding-inline: 0.28rem;
+    font-size: 0.7rem;
+  }
+
+  .practice-test-shell .test-cross-tool {
+    justify-content: center;
+    width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+  }
+
+  .practice-test-shell .test-cross-tool svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    stroke-width: 1.65;
+  }
+
+  @media (min-width: 62.001rem) {
+    .practice-test-shell .test-bar {
+      flex-basis: 76px;
+      gap: 0.75rem;
+    }
+
+    .practice-test-shell .test-bar-right {
+      gap: 0.35rem;
+      margin-right: 9.5rem;
+    }
+
+    .practice-test-shell .tool-btn {
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.08rem;
+      width: 3.55rem;
+      height: 3.15rem;
+      padding: 0.18rem 0.35rem;
+      border-radius: 0.48rem;
+      font-size: 0.7rem;
+      line-height: 1.05;
+    }
+
+    .practice-test-shell .tool-btn svg {
+      width: 1.35rem;
+      height: 1.35rem;
+    }
+
+    .practice-test-shell .tool-btn span {
+      display: block;
+      font-size: 0.7rem;
+      line-height: 1.05;
+    }
+
+    .practice-test-shell .test-timer {
+      min-width: 5.5rem;
+      gap: 0.08rem;
+    }
+
+    .practice-test-shell .test-clock-slot {
+      width: 5.5rem;
+      height: 1.55rem;
+    }
+
+    .practice-test-shell .test-clock {
+      font-size: 1.5rem;
+      line-height: 0.95;
+    }
+
+    .practice-test-shell .test-timer-actions {
+      gap: 0.3rem;
+    }
+
+    .practice-test-shell .test-timer-play {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .practice-test-shell .test-timer-hide {
+      min-width: 3rem;
+      height: 1.5rem;
+      padding-inline: 0.55rem;
+      font-size: 0.68rem;
+    }
+
+    .practice-test-shell .test-passage-inner {
+      padding-top: 2.25rem;
+      padding-right: clamp(6.5rem, 8vw, 9.5rem);
+      padding-bottom: 2.5rem;
+    }
+
+    .practice-test-shell .test-question {
+      padding-top: 0.7rem;
+      padding-bottom: 2.5rem;
+    }
+
+    .practice-test-shell .test-foot {
+      flex-basis: 60px;
+      min-height: 60px;
+      gap: 0;
+      padding-inline: 1.5rem;
+    }
+
+    .practice-test-shell .test-foot-progress {
+      margin-left: clamp(1rem, 11.25vw, 13.5rem);
+      transform: none;
+    }
+
+    .practice-test-shell .test-foot-controls {
+      justify-self: stretch;
+      width: calc(100% + 5rem);
+      margin-left: -5rem;
+      padding-right: clamp(8rem, 12.5vw, 15rem);
+      transform: none;
+    }
+
+    .practice-test-shell .test-foot-help,
+    .practice-test-shell .test-foot-actions {
+      gap: 0.5rem;
+    }
+
+    .practice-test-shell .test-foot-actions {
+      margin-left: auto;
+    }
+
+    .practice-test-shell .test-progress-btn,
+    .practice-test-shell .test-learning-btn,
+    .practice-test-shell .test-nav-btn {
+      min-height: 2.5rem;
+      padding-inline: 0.85rem;
+      border-radius: 0.58rem;
+      font-size: 0.8rem;
+    }
+
+    .practice-test-shell .test-info-btn {
+      width: 2.375rem;
+      height: 2.375rem;
+    }
+  }
+}
+
 /* The highlighter's marks are styled from useHighlighter: ::highlight() is the
    only way to reach them, and the build's CSS parser drops rules it does not
    recognise, so the rules go in through the CSSOM instead.
@@ -1131,6 +2570,36 @@ body[data-exam] .test-foot {
 .mdx-chart {
   margin: 1rem 0;
   max-width: 32rem;
+}
+
+/* Border colours must be unlayered to beat globals.css's unlayered universal
+   border reset. Geometry stays in the scoped component layer above. */
+.practice-test-shell .test-bar-right > .tool-btn,
+.practice-test-shell .test-bar-right .test-more-btn {
+  border-color: transparent;
+}
+.practice-test-shell .test-bar-right > .tool-btn.tool-btn-on {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--brand-contrast);
+}
+.practice-test-shell .q-view-exam .q-choice,
+.practice-test-shell .q-view-exam .q-mark,
+.practice-test-shell .q-view-exam .cross-btn {
+  border-color: #2b2b2b;
+}
+.practice-test-shell .q-view-exam .q-choice-on {
+  border-color: color-mix(in srgb, var(--brand) 72%, #2b2b2b);
+}
+.practice-test-shell .q-view-exam .q-choice-right { border-color: var(--success); }
+.practice-test-shell .q-view-exam .q-choice-wrong { border-color: var(--danger); }
+:root[data-theme="dark"] .practice-test-shell .q-view-exam .q-choice,
+:root[data-theme="dark"] .practice-test-shell .q-view-exam .q-mark,
+:root[data-theme="dark"] .practice-test-shell .q-view-exam .cross-btn {
+  border-color: #b8b8bc;
+}
+:root[data-theme="dark"] .practice-test-shell .q-view-exam .q-choice-on {
+  border-color: var(--brand);
 }
 .mdx-chart svg {
   display: block;

@@ -74,6 +74,7 @@ export const STUDY_COPY: CopyDict = {
   "ptool.color.amber": { en: "Amber" },
   "ptool.color.green": { en: "Green" },
   "ptool.color.blue": { en: "Blue" },
+  "ptool.color.rose": { en: "Pink" },
   "ptool.color.violet": { en: "Violet" },
   "ptool.calculator": { en: "Calculator" },
   "ptool.calcTitle": { en: "Calculator" },
