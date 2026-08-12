@@ -63,6 +63,8 @@ type ProfileResponse = {
 type Ctx = {
   /** False until localStorage has been read (avoids SSR/hydration mismatches). */
   ready: boolean;
+  /** True once the shared question bank has either loaded or definitively failed. */
+  bankReady: boolean;
   account: Account | null;
   /**
    * Empty now that profiles live in Supabase. Kept so the account switcher and
@@ -99,6 +101,7 @@ const AppContext = createContext<Ctx | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [bankReady, setBankReady] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
   const [data, setData] = useState<UserData>(EMPTY_USER_DATA);
   const [custom, setCustom] = useState<Question[]>([]);
@@ -144,17 +147,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const client = supabase();
     if (!client) {
+      setBankReady(true);
       setReady(true);
       return;
     }
 
     async function adopt(hasSession: boolean) {
+      setBankReady(false);
       const profile = hasSession ? await loadProfile() : null;
       if (!live) return;
 
       setAccount(profile);
       if (!profile) {
         setData(EMPTY_USER_DATA);
+        setBankReady(true);
         setReady(true);
         return;
       }
@@ -183,6 +189,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         saveCustomQuestions(body.questions);
       } catch {
         // Offline: the cached bank stays in use.
+      } finally {
+        if (live) setBankReady(true);
       }
     }
 
@@ -454,6 +462,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value: Ctx = {
     ready,
+    bankReady,
     account,
     accounts: [],
     authConfigured: supabaseReady(),

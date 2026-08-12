@@ -55,10 +55,22 @@ export function StudyActivity({ attempts }: { attempts: Attempt[] }) {
     <div className="act">
       <p className="act-lede">
         {days > 0 ? (
-          <>
-            <span className="num act-streak">{days}</span>{" "}
-            <span>{t("home.actStreak")}</span>
-          </>
+          <span className="act-streak-wrap">
+            <svg className="act-flame" viewBox="0 0 24 24" aria-hidden>
+              <path
+                className="act-flame-outer"
+                d="M13.2 2.4c.5 3.6-1.9 4.8-3.4 6.8-1.2 1.6-1.3 3.2-.3 4.5.2-1.6 1.2-2.7 2.5-3.9.1 2.3 2.4 3.2 2.4 5.7 0 1.5-.9 2.8-2.3 3.3 2.8-.1 5.3-2.1 5.8-4.9.7-4.1-1.7-8.2-4.7-11.5Z"
+              />
+              <path
+                className="act-flame-core"
+                d="M10.4 20.5c-2.5-.7-4.3-2.8-4.3-5.4 0-2.2 1.2-4.1 2.8-5.8-.2 2.7 1 3.6 1.8 4.7.9 1.2 1 2.4.4 3.4-.5.8-.9 1.7-.7 3.1Z"
+              />
+            </svg>
+            <span>
+              <span className="num act-streak">{days}</span>{" "}
+              <span>{t("home.actStreak")}</span>
+            </span>
+          </span>
         ) : (
           <span className="text-muted">{t("home.actNoStreak")}</span>
         )}

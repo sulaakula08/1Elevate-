@@ -75,6 +75,23 @@
   /* Focus ring, brand-tinted so it reads as ours rather than as the browser's. */
   --ring: color-mix(in srgb, var(--brand) 28%, transparent);
 
+  /* The application rail owns a violet surface in either theme. Keeping its
+     complete contrast system here prevents page-surface tokens from being
+     repurposed piecemeal inside navigation components. */
+  --sidebar-bg: #5b50c8;
+  --sidebar-fg: #ffffff;
+  --sidebar-muted: #dedbf7;
+  --sidebar-faint: #c4bfea;
+  --sidebar-hover: rgba(255, 255, 255, 0.1);
+  --sidebar-active: rgba(255, 255, 255, 0.18);
+  --sidebar-divider: rgba(255, 255, 255, 0.2);
+  --sidebar-accent: #c9c4ff;
+  --sidebar-avatar: #292176;
+  --sidebar-focus: #ffffff;
+
+  --streak-flame: #f05a28;
+  --streak-flame-core: #ffc247;
+
   --success: #157347;
   --success-soft: #eaf5ef;
   --danger: #b4232f;
@@ -173,6 +190,20 @@
   --accent-soft: #1a1930;
   --brand-soft: #1c1b33;
   --ring: color-mix(in srgb, var(--accent) 34%, transparent);
+
+  --sidebar-bg: #373078;
+  --sidebar-fg: #fbfaff;
+  --sidebar-muted: #d2cef1;
+  --sidebar-faint: #aaa5d4;
+  --sidebar-hover: rgba(255, 255, 255, 0.1);
+  --sidebar-active: rgba(255, 255, 255, 0.17);
+  --sidebar-divider: rgba(255, 255, 255, 0.17);
+  --sidebar-accent: #bcb6ff;
+  --sidebar-avatar: #191542;
+  --sidebar-focus: #e8e5ff;
+
+  --streak-flame: #ff7448;
+  --streak-flame-core: #ffd166;
 
   --success: #4ec98a;
   --success-soft: #10241a;
@@ -1489,11 +1520,13 @@ p {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding: 1rem 0.75rem;
-    border-right: 1px solid var(--line);
-    background: var(--surface);
+    gap: 0;
+    padding: 0.875rem 0.75rem 0.75rem;
+    border-right: 1px solid color-mix(in srgb, var(--sidebar-bg) 78%, black);
+    background: var(--sidebar-bg);
+    color: var(--sidebar-fg);
     overflow-y: auto;
+    scrollbar-color: var(--sidebar-divider) transparent;
     transition: width 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
   /* Collapsed rail: icons only. Wide enough that a 2.25rem target still has
@@ -1507,8 +1540,16 @@ p {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.25rem 0.375rem 0;
-    margin-bottom: 0.75rem;
+    min-height: 2.5rem;
+    padding: 0 0.375rem;
+    margin-bottom: 0.625rem;
+  }
+  .side-brand {
+    color: var(--sidebar-fg);
+  }
+  .side-brand svg {
+    --brand: var(--sidebar-accent);
+    color: var(--sidebar-fg);
   }
   /* Collapsed: the mark and the toggle stack, so both survive 4rem. */
   .sidebar-tight .side-head {
@@ -1518,11 +1559,21 @@ p {
     padding-inline: 0;
     padding-bottom: 0.75rem;
     margin-bottom: 0.5rem;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--sidebar-divider);
   }
   .side-toggle {
     margin-left: auto;
     flex-shrink: 0;
+    color: var(--sidebar-muted);
+    background: transparent;
+  }
+  .side-toggle:hover {
+    color: var(--sidebar-fg);
+    background: var(--sidebar-hover);
+  }
+  .sidebar :is(a, button):focus-visible {
+    outline-color: var(--sidebar-focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--sidebar-focus) 24%, transparent);
   }
   .sidebar-tight .side-toggle {
     margin-left: 0;
@@ -1535,7 +1586,22 @@ p {
     padding-bottom: 0.625rem;
     border-bottom: 1px solid var(--line);
     font-size: var(--t-2xs);
-    color: var(--faint);
+    color: var(--sidebar-faint);
+  }
+  .side-exam {
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--sidebar-divider);
+  }
+  .side-exam-name {
+    font-size: var(--t-sm);
+    font-weight: 600;
+    color: var(--sidebar-fg);
+  }
+  .side-exam-target {
+    margin-top: 0.125rem;
+    font-size: var(--t-2xs);
+    color: var(--sidebar-faint);
   }
   .sidebar-tight .side-link {
     justify-content: center;
@@ -1552,60 +1618,119 @@ p {
     gap: 0.125rem;
   }
   .side-cluster + .side-cluster {
-    margin-top: 0.875rem;
+    margin-top: 0.625rem;
   }
   /* Tools, not study — the one place the rail admits a rule. */
   .side-cluster-tools {
-    margin-top: 1.125rem;
-    padding-top: 0.875rem;
-    border-top: 1px solid var(--line);
+    margin-top: 0.875rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--sidebar-divider);
   }
   .side-link {
     position: relative;
     display: flex;
     align-items: center;
+    min-height: 2.375rem;
     gap: 0.625rem;
-    padding: 0.5rem 0.625rem;
+    padding: 0.4375rem 0.625rem;
     border-radius: var(--radius-sm);
     font-size: var(--t-sm);
     font-weight: 500;
-    color: var(--muted);
+    color: var(--sidebar-muted);
     transition:
       background 150ms ease,
       color 150ms ease;
   }
   .side-link:hover {
-    background: var(--surface-hover);
-    color: var(--foreground);
+    background: var(--sidebar-hover);
+    color: var(--sidebar-fg);
   }
-  /*
-   * Selected, without the purple pill.
-   *
-   * A brand-tinted full-width pill with brand-coloured text was the loudest
-   * thing in the shell and spent the accent on "which page am I on" — a
-   * question the student already knows the answer to. Selection is now a
-   * neutral surface, ink text at a heavier weight, and one 3px brand marker on
-   * the leading edge. The accent still says "here", at a twentieth of the area.
-   */
+  /* The translucent row and lavender marker work together, so selection stays
+     immediately visible without turning every destination into a heavy pill. */
   .side-link-on,
   .side-link-on:hover {
-    background: var(--surface-selected);
-    color: var(--foreground);
+    background: var(--sidebar-active);
+    color: var(--sidebar-fg);
     font-weight: 600;
   }
   .side-link-on::before {
     content: "";
     position: absolute;
-    left: 0;
+    left: 0.1875rem;
     top: 50%;
     translate: 0 -50%;
     width: 3px;
     height: 1.125rem;
     border-radius: 0 3px 3px 0;
-    background: var(--brand);
+    background: var(--sidebar-accent);
   }
   .sidebar-tight .side-link-on::before {
     height: 1.5rem;
+  }
+  .side-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: auto;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--sidebar-divider);
+  }
+  .side-account {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.375rem;
+    border-radius: var(--radius-sm);
+    color: var(--sidebar-fg);
+    transition: background 150ms ease;
+  }
+  .side-account:hover,
+  .side-settings:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-fg);
+  }
+  .side-avatar {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--radius-pill);
+    background: var(--sidebar-avatar);
+    color: var(--sidebar-fg);
+    font-size: var(--t-2xs);
+    font-weight: 650;
+  }
+  .side-account-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .side-settings {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    color: var(--sidebar-muted);
+    transition:
+      background 150ms ease,
+      color 150ms ease;
+  }
+  .side-profile-tight {
+    flex-direction: column;
+    padding-top: 0.625rem;
+  }
+  .side-profile-tight .side-account {
+    flex: none;
+    padding: 0.25rem;
   }
   /* A section closed to students, marked in the rail only staff still see it
      in. An amber dot, for the same reason the closed screen uses one: the
@@ -2346,62 +2471,4 @@ body[data-exam] .notif-dock {
 }
 .env-badge[data-unsafe] {
   border-color: var(--danger);
-}
-
-/* ---------------------------------------------------------------------------
-   Landing cursor
-
-   The component that owns this attribute only mounts on the signed-out home
-   page. Keeping the native-cursor override here lets it cover the public shell
-   (top bar and footer too) without leaking into any product route.
-   --------------------------------------------------------------------------- */
-@media (pointer: fine) and (hover: hover) and (prefers-reduced-motion: no-preference) {
-  html[data-landing-cursor],
-  html[data-landing-cursor] body,
-  html[data-landing-cursor] body * {
-    cursor: none !important;
-  }
-
-  html[data-landing-cursor] .adaptive-cursor-shell {
-    display: block;
-  }
-}
-
-.adaptive-cursor-shell {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 2147483647;
-  display: none;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.adaptive-cursor {
-  translate: -50% -50%;
-  width: 17px;
-  height: 17px;
-  border-radius: 999px;
-  background: var(--foreground);
-  opacity: 0.94;
-  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--background) 22%, transparent);
-  transition:
-    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 150ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: width, height, transform;
-  contain: layout style paint;
-}
-
-.adaptive-cursor[data-kind="text"] {
-  background: var(--accent);
-  opacity: 1;
-  box-shadow: none;
-}
-
-.adaptive-cursor[data-kind="disabled"] {
-  background: var(--faint);
-  opacity: 0.58;
-  box-shadow: none;
 }

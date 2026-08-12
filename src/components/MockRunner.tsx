@@ -400,7 +400,8 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
             <QuestionNavigator
               total={section.questions.length}
               current={questionIndex}
-              answered={answeredFlags}
+              selected={answeredFlags}
+              outcomes={section.questions.map(() => null)}
               marked={markedFlags}
               onGo={setQuestionIndex}
               onClose={() => setNavOpen(false)}

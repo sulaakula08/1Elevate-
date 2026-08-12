@@ -8,7 +8,8 @@ import { IconFlag } from "./TestIcons";
 type Props = {
   total: number;
   current: number;
-  answered: boolean[];
+  selected: boolean[];
+  outcomes: ("correct" | "incorrect" | null)[];
   marked: boolean[];
   onGo: (index: number) => void;
   onClose: () => void;
@@ -18,7 +19,15 @@ type Props = {
  * The "3 of 159" popover: the whole section at a glance, so a student can jump
  * back to anything they flagged instead of remembering where it was.
  */
-export function QuestionNavigator({ total, current, answered, marked, onGo, onClose }: Props) {
+export function QuestionNavigator({
+  total,
+  current,
+  selected,
+  outcomes,
+  marked,
+  onGo,
+  onClose,
+}: Props) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -54,30 +63,51 @@ export function QuestionNavigator({ total, current, answered, marked, onGo, onCl
     >
       <p className="text-sm font-medium text-center">{t("ptool.navTitle")}</p>
 
-      <div className="flex items-center justify-center gap-4 mt-3 pb-3 border-b text-micro text-muted">
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-3 pb-3 border-b text-micro text-muted">
         <span className="flex items-center gap-1.5">
           <span className="nav-key nav-key-current" aria-hidden />
           {t("ptool.navCurrent")}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="nav-key nav-key-done" aria-hidden />
-          {t("ptool.navAnswered")}
+          <span className="nav-key nav-key-correct" aria-hidden>✓</span>
+          Correct
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="nav-key nav-key-todo" aria-hidden />
-          {t("ptool.navUnanswered")}
+          <span className="nav-key nav-key-incorrect" aria-hidden>×</span>
+          Incorrect
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="nav-key nav-key-selected" aria-hidden />
+          Selected
         </span>
       </div>
 
       <div className="grid grid-cols-8 gap-1.5 mt-3 max-h-[40vh] overflow-y-auto">
         {Array.from({ length: total }, (_, i) => {
-          const state = i === current ? "current" : answered[i] ? "done" : "todo";
+          const outcome = outcomes[i];
+          const states = [
+            i === current ? "nav-cell-current" : "",
+            selected[i] && !outcome ? "nav-cell-selected" : "",
+            outcome === "correct" ? "nav-cell-correct" : "",
+            outcome === "incorrect" ? "nav-cell-incorrect" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          const description = [
+            `Question ${i + 1}`,
+            i === current ? "current" : "",
+            outcome ?? (selected[i] ? "answer selected" : "not answered"),
+            marked[i] ? "marked for review" : "",
+          ]
+            .filter(Boolean)
+            .join(", ");
           return (
             <button
               key={i}
               type="button"
-              className={`nav-cell nav-cell-${state}`}
-              aria-current={i === current}
+              className={`nav-cell ${states}`}
+              aria-current={i === current ? "step" : undefined}
+              aria-label={description}
               onClick={() => {
                 onGo(i);
                 onClose();
@@ -86,7 +116,12 @@ export function QuestionNavigator({ total, current, answered, marked, onGo, onCl
               {marked[i] && (
                 <IconFlag size={10} filled className="absolute -top-1.5 -right-1 text-[var(--s-orange)]" />
               )}
-              {i + 1}
+              <span>{i + 1}</span>
+              {outcome && (
+                <span className="nav-cell-outcome" aria-hidden>
+                  {outcome === "correct" ? "✓" : "×"}
+                </span>
+              )}
             </button>
           );
         })}

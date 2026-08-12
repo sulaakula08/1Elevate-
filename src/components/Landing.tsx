@@ -9,23 +9,15 @@ import { Stats } from "./landing/Stats";
 import { Steps } from "./landing/Steps";
 import { Subjects } from "./landing/Subjects";
 import { useLandingMotion } from "./useLandingMotion";
-import { AdaptiveCursor } from "./AdaptiveCursor";
 
-/**
- * The signed-out marketing page. Each section is its own component; this file
- * is only the running order and the GSAP scope.
- *
- * The scope ref matters: GSAP selectors are resolved inside this subtree, so
- * the landing sequence can never reach the app shell or another route's markup.
- */
+/** The signed-out marketing page and the scope for its entrance motion. */
 export function Landing({ bank }: { bank: Question[] }) {
   const scope = useRef<HTMLDivElement>(null);
   useLandingMotion(scope);
 
   return (
     <div className="max-w-5xl mx-auto" ref={scope}>
-      <AdaptiveCursor />
-      <Hero />
+      <Hero bank={bank} />
       <Stats />
       <Features />
       <Steps />

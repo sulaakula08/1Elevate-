@@ -1,80 +1,64 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
+import type { Question } from "@/data/types";
 import { useI18n } from "@/lib/i18n";
-import { HeroScoreChart } from "../HeroScoreChart";
-import { LogoAnimation } from "../LogoAnimation";
+import { HeroProductDemo } from "./HeroProductDemo";
 
 /**
- * The one thing a visitor sees first: a single headline, one dominant action,
- * and a score chart that shows what the product is for.
- *
- * GSAP drives this section (see useLandingMotion), so the animated elements
- * carry `data-motion` hooks and no CSS animation classes — two animation
- * systems on one element fight over its transform.
+ * The first screen explains the product's mechanism and proves it with the
+ * same question component students use in practice.
  */
-export function Hero() {
+export function Hero({ bank }: { bank: Question[] }) {
   const { t } = useI18n();
 
-  // Two lines: the promise, then the differentiator in the brand gradient.
-  const title = t("hero.title");
-  const accent = t("hero.titleB");
+  const sampleQuestion = useMemo(() => {
+    const candidates = bank
+      .filter(
+        (question) =>
+          question.subjectId === "sat-math" &&
+          !question.passage &&
+          question.choices.length === 4 &&
+          question.prompt.en.trim().length >= 35 &&
+          question.prompt.en.trim().length <= 260,
+      )
+      .sort((a, b) => a.prompt.en.length - b.prompt.en.length || a.id.localeCompare(b.id));
+
+    return candidates[0] ?? bank.find((question) => question.choices.length >= 2);
+  }, [bank]);
 
   return (
-    <section className="relative pt-10 sm:pt-14 lg:pt-16 pb-12 sm:pb-16" data-motion="hero">
-      <div className="glow" aria-hidden />
-      <div className="relative grid lg:grid-cols-[1fr_0.85fr] gap-10 sm:gap-12 lg:gap-16 items-center">
+    <section className="hero-section relative" data-motion="hero">
+      <div className="relative grid lg:grid-cols-[0.78fr_1.22fr] gap-8 lg:gap-12 items-center">
         <div className="min-w-0">
-          {/*
-            One block, not fifty-two characters.
-
-            The per-character reveal meant the first line spent its opening
-            second as a row of glyphs at different opacities and offsets — the
-            first impression of the product was a headline that looked broken.
-            The line now fades as a unit, fast, and is legible from the first
-            frame it is painted.
-          */}
-          <h1 className="display t-display" data-motion="headline">
-            {title}
+          <p className="t-label hero-kicker">{t("hero.kicker")}</p>
+          <h1 className="display t-display mt-4" data-motion="headline">
+            {t("hero.title")}
             <br />
-            <span className="hero-title-accent inline-block">{accent}</span>
+            <span className="hero-title-accent">{t("hero.titleB")}</span>
           </h1>
 
-          <p className="lede mt-5 max-w-[34rem]" data-motion="lede">
+          <p className="lede mt-5 max-w-[32rem]" data-motion="lede">
             {t("landing.sub")}
           </p>
 
-          {/* One dominant action. The second link is deliberately quieter: same
-              height, no fill, no border, so it never competes for the click. */}
-          <div className="mt-7 sm:mt-8 flex flex-wrap items-center gap-x-3 gap-y-2.5">
+          <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link href="/signup" className="btn btn-primary btn-lg" data-motion="action">
               {t("landing.start")}
             </Link>
-            <Link href="/login" className="btn btn-lg btn-ghost" data-motion="action">
-              {t("auth.signIn")}
-            </Link>
+            <a href="#sample-question" className="btn btn-lg" data-motion="action">
+              {t("hero.tryQuestion")}
+            </a>
           </div>
 
           <p className="mt-3.5 text-sm text-faint" data-motion="fine-print">
             {t("landing.noCard")}
           </p>
-
-          <div className="fade-in mt-9 pt-7 border-t" style={{ animationDelay: "380ms" }}>
-            <LogoAnimation size="clamp(2rem, 5.5vw, 2.75rem)" />
-            <p className="text-micro text-faint mt-2">{t("landing.markCaption")}</p>
-          </div>
         </div>
 
-        {/* Two wrappers, because two animations write y to the card: the intro
-            rise (time-based) and the parallax drift (scroll-based). On one
-            element they would overwrite each other; nested, each owns its own
-            transform and the browser composes them. */}
-        <div data-motion="hero-card" style={{ willChange: "transform" }}>
-          <div data-motion="hero-card-in">
-            {/* Capped and centred until the two-column grid takes over, so the
-                card never blows up to full width on a tablet. */}
-            <HeroScoreChart className="mx-auto w-full max-w-[27rem] lg:max-w-none" />
-          </div>
+        <div data-motion="hero-card-in" className="min-w-0">
+          <HeroProductDemo key={sampleQuestion?.id ?? "loading"} question={sampleQuestion} />
         </div>
       </div>
     </section>
