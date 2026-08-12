@@ -81,6 +81,8 @@ type Props = {
 
 export function DesmosCalculator({ onResolved }: Props) {
   const host = useRef<HTMLDivElement>(null);
+  /** Desmos lays out once; a resized container needs telling. */
+  const calc = useRef<DesmosInstance | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,17 +111,29 @@ export function DesmosCalculator({ onResolved }: Props) {
           // The app's own theme, so the panel does not glare in a dark room.
           invertedColors: document.documentElement.dataset.theme === "dark",
         });
+        calc.current = instance;
         onResolved(true);
       } catch {
         onResolved(false);
       }
     });
 
+    /*
+     * The panel is resizable, and Desmos lays its graph out once against the
+     * size it found at startup. Without this the plot keeps the old dimensions
+     * inside a bigger box — axes cut off, or a band of empty panel down one
+     * side — which reads as the resize not having worked.
+     */
+    const observer = new ResizeObserver(() => calc.current?.resize?.());
+    if (host.current) observer.observe(host.current);
+
     return () => {
       cancelled = true;
+      observer.disconnect();
       // Desmos attaches listeners and a render loop of its own; without this
       // they outlive the panel and keep running for the rest of the session.
       instance?.destroy();
+      calc.current = null;
     };
   }, [onResolved]);
 
