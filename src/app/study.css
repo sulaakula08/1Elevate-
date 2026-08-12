@@ -758,6 +758,10 @@
       grid-template-columns: 22rem 1fr;
     }
   }
+  /* Resizable, because a graph is the one tool whose useful size depends
+     entirely on what is being graphed. The default is a starting point rather
+     than a decision, and the browser's own grip does the dragging: it already
+     works with a trackpad, a touch screen and a keyboard. */
   .test-pane {
     display: flex;
     flex-direction: column;
@@ -766,6 +770,13 @@
     border-radius: var(--radius);
     background: var(--surface);
     overflow: hidden;
+    resize: both;
+    /* Bounded both ways: too small to read and large enough to bury the
+       question are both worse than not resizing at all. */
+    min-width: 17rem;
+    min-height: 13rem;
+    max-width: min(52rem, 92vw);
+    max-height: 88vh;
   }
   .test-question {
     min-width: 0;
