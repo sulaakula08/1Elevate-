@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SAT, getSubject, subjectColor, subjectGradient, subjectsFor } from "@/data/exams";
 import { SubjectScene } from "@/components/three/SubjectScene";
 import type { Difficulty, Question } from "@/data/types";
@@ -14,10 +15,11 @@ import {
   reviewQueue,
   shuffle,
 } from "@/lib/stats";
-import { PracticeRunner } from "@/components/PracticeRunner";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { ProgressBar, Reveal } from "@/components/motion";
 import { SectionGate } from "@/components/SectionGate";
+import { usePracticeSession } from "@/components/practice/PracticeSession";
+import { practiceQuestionPath } from "@/lib/practice-routes";
 
 /**
  * How many questions a session draws. `null` means "everything that matches the
@@ -51,7 +53,8 @@ export default function PracticePage() {
 function BankInner() {
   const { t, tx } = useI18n();
   const { bank, data } = useApp();
-  const [session, setSession] = useState<{ questions: Question[]; title: string } | null>(null);
+  const { startSession } = usePracticeSession();
+  const router = useRouter();
   /** null = every section / mixed difficulty, which is how the real exam presents them. */
   const [section, setSection] = useState<string | null>(null);
   const [level, setLevel] = useState<Difficulty | null>(null);
@@ -207,25 +210,11 @@ function BankInner() {
     const ordered = [...shuffle(priority), ...shuffle(rest)];
     let questions = length === null ? ordered : ordered.slice(0, length);
     if (!level) questions = [...questions].sort((a, b) => a.difficulty - b.difficulty);
-    setSession({ questions, title });
-  }
-
-  if (session) {
-    const first = session.questions[0];
-    return (
-      <PracticeRunner
-        questions={session.questions}
-        mode="practice"
-        title={session.title}
-        onExit={() => setSession(null)}
-        onRestart={() =>
-          start(
-            (q) => q.subjectId === first?.subjectId && q.topic === first?.topic,
-            session.title,
-          )
-        }
-      />
-    );
+    const first = questions[0];
+    const path = first ? practiceQuestionPath(first) : null;
+    if (!path) return;
+    startSession({ questions, title });
+    router.push(path);
   }
 
   const filtersOn =

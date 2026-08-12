@@ -47,13 +47,18 @@ import {
 
 type Props = {
   questions: Question[];
+  /** Stable id represented by the active question route. */
+  activeQuestionId?: string;
   mode: QuizMode;
   title: string;
+  /** Route-aware navigation. Omitted by non-practice consumers such as Review. */
+  onQuestionChange?: (questionId: string) => void;
   onExit: () => void;
   onRestart?: () => void;
 };
 
 type Tool = "calculator" | "reference" | null;
+type AnswerOutcome = "correct" | "incorrect";
 
 const REPORT_REASONS = [
   "Problem with question",
@@ -88,11 +93,6 @@ function clock(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-/** Replace one slot without mutating the array. */
-function setAt<T>(list: T[], index: number, value: T): T[] {
-  return list.map((item, i) => (i === index ? value : item));
-}
-
 /**
  * Older Reading & Writing rows keep the stimulus and question in two prompt
  * paragraphs instead of the optional passage field. Normalize that shape only
@@ -107,7 +107,15 @@ function setAt<T>(list: T[], index: number, value: T): T[] {
  * the spot, the explanation is right there, and the tutor is one click away.
  * Time is measured but never enforced.
  */
-export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Props) {
+export function PracticeRunner({
+  questions,
+  activeQuestionId,
+  mode,
+  title,
+  onQuestionChange,
+  onExit,
+  onRestart,
+}: Props) {
   const { t } = useI18n();
   const { recordAttempts, theme, toggleTheme } = useApp();
   const { settings } = useSettings();
@@ -115,13 +123,17 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
   useExamMode();
   const count = questions.length;
 
-  const [index, setIndex] = useState(0);
+  const [localIndex, setLocalIndex] = useState(0);
+  const routedIndex = activeQuestionId
+    ? questions.findIndex((candidate) => candidate.id === activeQuestionId)
+    : -1;
+  const index = routedIndex >= 0 ? routedIndex : localIndex;
   /** Which way the last move went, so the slide points the right way. */
   const [direction, setDirection] = useState(1);
-  const [answers, setAnswers] = useState<(number | null)[]>(() => Array(count).fill(null));
-  const [revealed, setRevealed] = useState<boolean[]>(() => Array(count).fill(false));
-  const [marked, setMarked] = useState<boolean[]>(() => Array(count).fill(false));
-  const [crossed, setCrossed] = useState<number[][]>(() => questions.map(() => []));
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [outcomes, setOutcomes] = useState<Record<string, AnswerOutcome>>({});
+  const [marked, setMarked] = useState<Record<string, boolean>>({});
+  const [crossed, setCrossed] = useState<Record<string, number[]>>({});
 
   const [tool, setTool] = useState<Tool>(null);
   const [highlightMode, setHighlightMode] = useState(false);
@@ -138,13 +150,14 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
   const [reportBusy, setReportBusy] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [reportSent, setReportSent] = useState(false);
-  const [explanationOpen, setExplanationOpen] = useState<boolean[]>(() =>
-    Array(count).fill(false),
-  );
+  const [explanationOpen, setExplanationOpen] = useState<Record<string, boolean>>({});
   const [splitRatio, setSplitRatio] = useState(50);
   const [resizing, setResizing] = useState(false);
 
-  const [elapsed, setElapsed] = useState(0);
+  const [timer, setTimer] = useState<{ questionId: string; seconds: number }>(() => ({
+    questionId: activeQuestionId ?? questions[0]?.id ?? "",
+    seconds: 0,
+  }));
   const [paused, setPaused] = useState(false);
   // Seeded from the preference, then owned by the session: a student who
   // hides the clock in Settings can still show it for one module.
@@ -152,17 +165,21 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
   const [streak, setStreak] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [completedAtQuestionId, setCompletedAtQuestionId] = useState<string | null>(null);
 
   const question = questions[index];
-  const selected = answers[index] ?? null;
-  const isRevealed = revealed[index];
+  const questionId = question?.id ?? "";
+  const selected = question ? answers[question.id] ?? null : null;
+  const outcome = question ? outcomes[question.id] : undefined;
+  const isRevealed = outcome !== undefined;
+  const elapsed = timer.questionId === questionId ? timer.seconds : 0;
+  const done = Boolean(question && completedAtQuestionId === question.id);
   const readingParts = question ? readingDisplayParts(question) : null;
   const hasReadingPane = Boolean(readingParts);
 
   const correctCount = useMemo(
-    () => answers.filter((a, i) => revealed[i] && a === questions[i].answer).length,
-    [answers, revealed, questions],
+    () => questions.filter((candidate) => outcomes[candidate.id] === "correct").length,
+    [outcomes, questions],
   );
 
   const questionRef = useRef<HTMLDivElement>(null);
@@ -180,15 +197,23 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
   useEffect(() => {
     if (paused || done) return;
-    const id = window.setInterval(() => setElapsed((s) => s + 1), 1000);
+    const id = window.setInterval(
+      () =>
+        setTimer((current) =>
+          current.questionId === questionId
+            ? { ...current, seconds: current.seconds + 1 }
+            : { questionId, seconds: 1 },
+        ),
+      1000,
+    );
     return () => window.clearInterval(id);
-  }, [paused, done]);
+  }, [paused, done, questionId]);
 
   // Per-question timing for the attempt record, stamped after render.
   const startedAt = useRef(0);
   useEffect(() => {
     startedAt.current = Date.now();
-  }, [index]);
+  }, [questionId]);
 
   useEffect(() => {
     if (!resizing) return;
@@ -232,16 +257,19 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
   const select = useCallback(
     (choice: number) => {
-      if (revealed[index]) return;
-      setAnswers((list) => setAt(list, index, choice));
+      if (!question || outcomes[question.id]) return;
+      setAnswers((current) => ({ ...current, [question.id]: choice }));
     },
-    [index, revealed],
+    [outcomes, question],
   );
 
   const check = useCallback(() => {
     if (selected === null || isRevealed) return;
     const isCorrect = selected === question.answer;
-    setRevealed((list) => setAt(list, index, true));
+    setOutcomes((current) => ({
+      ...current,
+      [question.id]: isCorrect ? "correct" : "incorrect",
+    }));
     if (isCorrect) {
       setStreak((s) => {
         const next = s + 1;
@@ -266,10 +294,10 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
         ms: startedAt.current ? Date.now() - startedAt.current : 0,
       },
     ]);
-  }, [selected, isRevealed, question, index, recordAttempts, mode, t]);
+  }, [selected, isRevealed, question, recordAttempts, mode, t]);
 
   const openExplanation = useCallback(() => {
-    setExplanationOpen((list) => setAt(list, index, true));
+    setExplanationOpen((current) => ({ ...current, [question.id]: true }));
     window.requestAnimationFrame(() =>
       window.requestAnimationFrame(() =>
         questionRef.current
@@ -277,7 +305,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
           ?.scrollIntoView({ behavior: "smooth", block: "start" }),
       ),
     );
-  }, [index]);
+  }, [question]);
 
   const submitReport = useCallback(
     async (event: FormEvent) => {
@@ -320,20 +348,22 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
     (next: number) => {
       if (next < 0 || next >= count) return;
       setDirection(next > index ? 1 : -1);
-      setIndex(next);
+      const nextQuestion = questions[next];
+      if (onQuestionChange) onQuestionChange(nextQuestion.id);
+      else setLocalIndex(next);
     },
-    [count, index],
+    [count, index, onQuestionChange, questions],
   );
 
   const next = useCallback(() => {
-    if (index + 1 >= count) setDone(true);
+    if (index + 1 >= count) setCompletedAtQuestionId(question.id);
     else goTo(index + 1);
-  }, [index, count, goTo]);
+  }, [index, count, goTo, question]);
 
   /* ---------------- results ---------------- */
 
   if (done || !question) {
-    const attempted = revealed.filter(Boolean).length || count;
+    const attempted = questions.filter((candidate) => outcomes[candidate.id]).length || count;
     const accuracy = attempted ? correctCount / attempted : 0;
     const great = accuracy >= 0.8;
     return (
@@ -377,27 +407,29 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
     : null;
 
   const toggleCross = (choice: number) =>
-    setCrossed((list) =>
-      setAt(
-        list,
-        index,
-        list[index].includes(choice)
-          ? list[index].filter((crossedChoice) => crossedChoice !== choice)
-          : [...list[index], choice],
-      ),
-    );
+    setCrossed((current) => {
+      const choices = current[question.id] ?? [];
+      return {
+        ...current,
+        [question.id]: choices.includes(choice)
+          ? choices.filter((crossedChoice) => crossedChoice !== choice)
+          : [...choices, choice],
+      };
+    });
 
   const questionPanel = (
     <main className="test-question">
       <div className="test-question-status">
         <span className="q-number num">{index + 1}</span>
         <button
-          className={`test-mark-btn ${marked[index] ? "is-marked" : ""}`}
-          aria-pressed={marked[index]}
-          onClick={() => setMarked((list) => setAt(list, index, !list[index]))}
+          className={`test-mark-btn ${marked[question.id] ? "is-marked" : ""}`}
+          aria-pressed={Boolean(marked[question.id])}
+          onClick={() =>
+            setMarked((current) => ({ ...current, [question.id]: !current[question.id] }))
+          }
         >
-          <IconFlag filled={marked[index]} />
-          {marked[index] ? t("ptool.marked") : t("ptool.mark")}
+          <IconFlag filled={Boolean(marked[question.id])} />
+          {marked[question.id] ? t("ptool.marked") : t("ptool.mark")}
         </button>
 
         <button
@@ -457,7 +489,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
             revealed={isRevealed}
             disabled={isRevealed}
             crossOutMode={crossOutMode}
-            crossedOut={crossed[index]}
+            crossedOut={crossed[question.id] ?? []}
             onToggleCross={toggleCross}
             showPassage={!hasReadingPane}
             variant="exam"
@@ -469,7 +501,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
                   ? openExplanation
                   : undefined
             }
-            showExplanation={hasReadingPane ? explanationOpen[index] : isRevealed}
+            showExplanation={hasReadingPane ? Boolean(explanationOpen[question.id]) : isRevealed}
           />
         </motion.div>
       </AnimatePresence>
@@ -744,8 +776,9 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
               <QuestionNavigator
                 total={count}
                 current={index}
-                answered={answers.map((a) => a !== null)}
-                marked={marked}
+                selected={questions.map((candidate) => answers[candidate.id] !== undefined)}
+                outcomes={questions.map((candidate) => outcomes[candidate.id] ?? null)}
+                marked={questions.map((candidate) => Boolean(marked[candidate.id]))}
                 onGo={goTo}
                 onClose={() => setNavOpen(false)}
               />

@@ -884,17 +884,38 @@
     border-color: var(--brand);
     color: var(--brand);
   }
-  .nav-cell-done {
-    border-style: solid;
-    border-color: var(--brand);
-    background: var(--brand);
-    color: #fff;
-  }
   .nav-cell-current {
     border-style: solid;
     border-color: var(--foreground);
     color: var(--foreground);
     font-weight: 600;
+    box-shadow: inset 0 0 0 1px var(--foreground);
+  }
+  .nav-cell-selected {
+    border-style: solid;
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+  .nav-cell-correct {
+    border-style: solid;
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--success);
+  }
+  .nav-cell-incorrect {
+    border-style: solid;
+    border-color: var(--danger);
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+  .nav-cell-outcome {
+    position: absolute;
+    right: 0.16rem;
+    bottom: 0.02rem;
+    font-size: 0.65rem;
+    line-height: 1;
+    font-weight: 800;
   }
   .nav-key {
     width: 0.85rem;
@@ -902,14 +923,34 @@
     border: 1px dashed var(--line-strong);
     border-radius: var(--radius-sm);
   }
-  .nav-key-done {
+  .nav-key-correct,
+  .nav-key-incorrect {
     border-style: solid;
-    border-color: var(--brand);
-    background: var(--brand);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    line-height: 1;
+    font-weight: 800;
+  }
+  .nav-key-correct {
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--success);
+  }
+  .nav-key-incorrect {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+    color: var(--danger);
   }
   .nav-key-current {
     border-style: solid;
     border-color: var(--foreground);
+  }
+  .nav-key-selected {
+    border-style: solid;
+    border-color: var(--brand);
+    background: var(--brand-soft);
   }
 }
 
