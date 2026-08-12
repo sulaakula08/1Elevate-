@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useExamMode } from "@/lib/exam-mode";
+import { readingDisplayParts } from "@/lib/reading-parts";
 import { useSettings } from "@/lib/settings";
 import { apiFetch } from "@/lib/supabase/client";
 import { generatedIds } from "@/lib/generation/provenance";
@@ -96,23 +97,6 @@ function setAt<T>(list: T[], index: number, value: T): T[] {
  * paragraphs instead of the optional passage field. Normalize that shape only
  * for display; the original question still goes to scoring, storage and Elevate.
  */
-function readingDisplayParts(question: Question) {
-  if (question.subjectId === "sat-math") return null;
-  if (question.passage) return { passage: question.passage, prompt: question.prompt };
-
-  const blocks = question.prompt.en
-    .trim()
-    .split(/\r?\n\s*\r?\n/)
-    .map((block) => block.trim())
-    .filter(Boolean);
-
-  if (blocks.length < 2) return null;
-  return {
-    passage: { en: blocks.slice(0, -1).join("\n\n") },
-    prompt: { en: blocks[blocks.length - 1] },
-  };
-}
-
 /**
  * Practice, in the shape of the real digital test app: the same tool rail, the
  * same per-question controls (mark for review, cross out a choice) and the same

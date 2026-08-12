@@ -2440,12 +2440,57 @@ body[data-exam] .test-foot {
     width: min(24rem, 100%);
     text-align: center;
   }
-  .mk-ring {
+  /* ---------------- the loading ring ----------------
+     Three layers, all driven by keyframes so the browser can run them off the
+     main thread: the wait as a sweeping arc, a short arc chasing it so there is
+     motion in the first half second when the sweep has barely started, and a
+     halo behind them both. Nothing here is animated from JavaScript — the
+     previous version set stroke-dashoffset every frame *and* declared a 300ms
+     transition on it, so each frame restarted an ease from a stale value. */
+  .mk-ring-holder {
+    position: relative;
+    width: 6rem;
+    height: 6rem;
     margin-inline: auto;
-    transform: rotate(-90deg);
   }
-  .mk-ring circle {
-    transition: stroke-dashoffset 300ms linear;
+  .mk-ring-glow {
+    position: absolute;
+    inset: -20%;
+    border-radius: var(--radius-pill);
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--brand) 26%, transparent) 0%,
+      transparent 68%
+    );
+    animation: mk-halo 2.4s ease-in-out infinite;
+  }
+  .mk-ring {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .mk-ring-track {
+    stroke: var(--line);
+  }
+  /* Starts empty and fills over exactly the wait. `forwards` matters: without it
+     the arc snaps back to empty on the last frame, right as the test opens. */
+  .mk-ring-arc {
+    stroke-dasharray: var(--circ);
+    stroke-dashoffset: var(--circ);
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: rotate(-90deg);
+    animation: mk-sweep var(--spin) linear forwards;
+  }
+  /* A 14-unit dash going round on its own clock, dimmer than the sweep so it
+     reads as movement rather than as a second measurement. */
+  .mk-ring-chase {
+    stroke: color-mix(in srgb, var(--brand-2) 65%, transparent);
+    stroke-dasharray: 14 calc(var(--circ) - 14);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: mk-chase 1.1s linear infinite;
   }
   .mk-steps {
     margin-top: 2rem;
@@ -2863,5 +2908,67 @@ body[data-exam] .test-foot {
   }
   .rv-clear:hover {
     color: var(--foreground);
+  }
+}
+
+/* Unlayered: keyframes belong outside the component layer, and these three are
+   referenced from it. */
+@keyframes mk-sweep {
+  from {
+    stroke-dashoffset: var(--circ);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mk-chase {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}
+@keyframes mk-halo {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
+@layer components {
+  /* ---------------- mock-only bits of the shared test shell ---------------- */
+
+  /* Which module you are in, beside the directions button. Practice has no need
+     for this — it runs one set — but in a mock it is the difference between
+     "Reading & Writing 1" and the module after the break. */
+  .practice-test-shell .test-module-label {
+    display: none;
+    align-items: center;
+    min-width: 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  @media (min-width: 52rem) {
+    .practice-test-shell .test-module-label {
+      display: inline-flex;
+    }
+  }
+
+  /* The hairline under the bar. In practice it is a ProgressBar component and
+     draws its own fill; the mock's is a plain element whose child is the clock's
+     remaining share, so it needs the fill rule spelling out. */
+  .practice-test-shell .test-section-progress > span {
+    display: block;
+    height: 100%;
+    /* The clock ticks once a second; easing the width over that second is what
+       makes it read as draining rather than stepping. */
+    transition: width 1000ms linear;
   }
 }
