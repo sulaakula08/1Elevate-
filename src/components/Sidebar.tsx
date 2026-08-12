@@ -4,9 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SAT } from "@/data/exams";
 import type { Account } from "@/lib/storage";
-import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
-import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
 import { useClosedHrefs } from "./SectionGate";
 import {
@@ -62,9 +60,7 @@ export function Sidebar({
   onToggle?: () => void;
 }) {
   const { t, tx } = useI18n();
-  const { data } = useApp();
   const pathname = usePathname();
-  const days = streak(data.attempts);
   const closed = useClosedHrefs();
   const staff = account.role !== "student";
 
@@ -97,7 +93,7 @@ export function Sidebar({
       <div className={`side-head ${collapsed ? "side-head-tight" : ""}`}>
         {/* The mark stays when the rail collapses. Losing it left a 4rem column
             of anonymous icons with nothing saying whose product this is. */}
-        <Link href="/" className="min-w-0" aria-label="1Elevate">
+        <Link href="/" className="side-brand min-w-0" aria-label="1Elevate">
           <Logo compact={collapsed} />
         </Link>
         {onToggle && (
@@ -139,9 +135,9 @@ export function Sidebar({
           "1400" on its own says nothing. The target lives on /account and in the
           dashboard goal panel, both of which explain it. */}
       {!collapsed && (
-        <div className="px-1.5 pb-3 mb-1 border-b">
-          <p className="text-sm font-medium">{tx(SAT.name)}</p>
-          <p className="text-2xs text-faint mt-0.5">
+        <div className="side-exam">
+          <p className="side-exam-name">{tx(SAT.name)}</p>
+          <p className="side-exam-target">
             {t("home.targetScore")} <span className="num">{account.targetScore}</span> /{" "}
             <span className="num">{SAT.maxScore}</span>
           </p>
@@ -162,32 +158,19 @@ export function Sidebar({
         </div>
       </nav>
 
-      {/* account row */}
-      <div
-        className={`mt-auto pt-3 border-t flex gap-2.5 ${
-          collapsed ? "flex-col items-center" : "items-center"
-        }`}
-      >
+      {/* One account footer: profile remains the primary target and settings is
+          a related control inside the same compact block. */}
+      <div className={`side-profile ${collapsed ? "side-profile-tight" : ""}`}>
         <Link
           href="/account"
-          className={`flex items-center gap-2.5 min-w-0 rounded-lg hover:bg-surface-2 transition-colors ${
-            collapsed ? "p-1" : "flex-1 px-1 py-1.5"
-          }`}
+          className="side-account"
           title={collapsed ? account.name : undefined}
         >
-          <span
-            className="grid place-items-center w-8 h-8 rounded-[var(--radius-pill)] text-2xs font-semibold shrink-0"
-            style={{ background: "var(--ink)", color: "var(--ink-contrast)" }}
-          >
+          <span className="side-avatar">
             {account.name.slice(0, 2).toUpperCase()}
           </span>
           {!collapsed && (
-            <span className="min-w-0">
-              <span className="block text-sm font-medium truncate">{account.name}</span>
-              <span className="block text-2xs text-faint">
-                {days > 0 ? `🔥 ${days}` : (account.email || "SAT")}
-              </span>
-            </span>
+            <span className="side-account-name">{account.name}</span>
           )}
         </Link>
         {/* Settings, not a single toggle. The theme switch that used to live
@@ -195,7 +178,7 @@ export function Sidebar({
             preference on it and the rest hidden is a worse map than a door. */}
         <Link
           href="/settings"
-          className="bar-btn shrink-0"
+          className="side-settings"
           aria-label={t("nav.settings")}
           title={t("nav.settings")}
         >

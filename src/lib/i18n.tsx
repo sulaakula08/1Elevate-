@@ -312,10 +312,10 @@ const D: Dict = {
   },
 
   /* ---------------- landing ---------------- */
-  "landing.sub": { en: "A question bank on the official blueprint, timed mock exams, analytics that find your weak topics — and Elevate, an AI assistant that explains any task the moment you get stuck.",
+  "landing.sub": { en: "1Elevate turns missed questions into a focused next step — with SAT practice, timed mocks, clear explanations and weak-topic tracking in one system.",
   },
   "landing.start": { en: "Start free" },
-  "landing.noCard": { en: "No card, no email confirmation — 30 seconds and you're in.",
+  "landing.noCard": { en: "No card required. Create your profile in about 30 seconds.",
   },
   "landing.subjectsHeadline": { en: "Two sections. Two very different kinds of thinking.",
   },

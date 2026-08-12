@@ -526,6 +526,24 @@
     font-size: var(--t-sm);
     color: var(--foreground);
   }
+  .act-streak-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .act-flame {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    overflow: visible;
+    filter: drop-shadow(0 3px 6px color-mix(in srgb, var(--streak-flame) 20%, transparent));
+  }
+  .act-flame-outer {
+    fill: var(--streak-flame);
+  }
+  .act-flame-core {
+    fill: var(--streak-flame-core);
+  }
   .act-streak {
     font-size: var(--t-h3);
     font-weight: 600;
