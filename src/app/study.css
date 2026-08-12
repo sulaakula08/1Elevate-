@@ -2790,3 +2790,17 @@ body[data-exam] .test-foot {
     }
   }
 }
+
+@layer components {
+  /* The highlighter's colour row inside the practice shell. Sits between the
+     work area and the footer rather than in the tool bar: the bar is already
+     full at this width, and a row that pushes the question down is easier to
+     find than one that squeezes in beside six other controls. */
+  .test-highlight-bar {
+    flex-shrink: 0;
+    padding: 0 1.25rem 0.5rem;
+  }
+  .test-highlight-bar > p {
+    margin-top: 0;
+  }
+}

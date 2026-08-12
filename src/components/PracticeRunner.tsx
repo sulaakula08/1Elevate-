@@ -21,6 +21,7 @@ import { ReferenceSheet } from "./test/ReferenceSheet";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { useHighlighter } from "./test/useHighlighter";
 import { ContextualHighlightPalette } from "./test/ContextualHighlightPalette";
+import { HighlightControls } from "./test/HighlightControls";
 import {
   IconBug,
   IconCalculator,
@@ -724,6 +725,21 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
         {questionPanel}
       </div>
+
+      {/*
+        Two ways to choose a colour, because they answer different moments.
+
+        The row appears as soon as the tool is on: it is where you set the colour
+        you are about to draw in, and it works on every question. The floating
+        palette only exists on a passage, where the flow is select-then-colour —
+        which is also why it was the only colour UI practice had, and why a
+        student on a Math question could not change colour at all.
+      */}
+      {highlightMode && (
+        <div className="test-highlight-bar">
+          <HighlightControls highlighter={highlighter} />
+        </div>
+      )}
 
       {hasReadingPane && <ContextualHighlightPalette highlighter={highlighter} />}
 
