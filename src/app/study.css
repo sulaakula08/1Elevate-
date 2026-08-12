@@ -2804,3 +2804,64 @@ body[data-exam] .test-foot {
     margin-top: 0;
   }
 }
+
+@layer components {
+  /* ---------------- review queue filters ----------------
+     One row of controls instead of four rows of chips. The queue is the page;
+     the filters are a tool, so they take a tool's worth of space. */
+  .rv-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  /* Three selects at most, side by side on a laptop and stacked on a phone. */
+  .rv-filter-panel {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  @media (min-width: 44rem) {
+    .rv-filter-panel {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  /* An active filter, and its own way off. Reads as a statement of what is on
+     rather than as one option among sixteen. */
+  .rv-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    max-width: 18rem;
+    padding: 0.25rem 0.625rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.75rem;
+    font-weight: 550;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rv-pill:hover {
+    border-color: var(--brand);
+  }
+  .rv-clear {
+    background: none;
+    border: 0;
+    padding: 0.25rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .rv-clear:hover {
+    color: var(--foreground);
+  }
+}

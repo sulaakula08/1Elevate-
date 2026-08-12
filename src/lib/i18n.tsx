@@ -541,6 +541,7 @@ const D: Dict = {
   "review.due": { en: "in the queue" },
   "review.skillsDue": { en: "skills involved" },
   "review.weakest": { en: "most often wrong" },
+  "review.narrow": { en: "Narrow it down" },
   "review.filterDomain": { en: "Domain" },
   "review.filterSkill": { en: "Skill" },
   "review.allDomains": { en: "All domains" },
