@@ -87,7 +87,7 @@ if (linked === null) {
     "\n  Refusing to run: no project is linked, so there is no way to tell what\n" +
       "  this command would touch.\n\n" +
       "  Link the development project first:\n" +
-      "    npx supabase link --project-ref <dev-project-ref>\n",
+      "    npx supabase link --project-ref djrnqwthwzzzcgjaxwel\n",
   );
   process.exit(1);
 }
@@ -100,7 +100,7 @@ if (linked === PRODUCTION_PROJECT_REF) {
       "  The command you ran can write to, reset or seed the database it is\n" +
       "  pointed at, and it is pointed at the one with real students in it.\n\n" +
       "  If you meant to work on development, relink:\n" +
-      "    npx supabase link --project-ref <dev-project-ref>\n\n" +
+      "    npx supabase link --project-ref djrnqwthwzzzcgjaxwel\n\n" +
       "  If you genuinely need to apply a migration to production, do it\n" +
       "  deliberately and not through a convenience script — see DATABASE.md,\n" +
       "  'Getting a migration into production'.\n",

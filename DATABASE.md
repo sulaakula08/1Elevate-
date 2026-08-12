@@ -29,7 +29,7 @@ Project refs:
 | Project | Ref |
 | --- | --- |
 | Production | `mkxebolzrqwfuvpevtsu` |
-| Development | `<dev-project-ref>` |
+| Development | `djrnqwthwzzzcgjaxwel` — `ap-northeast-2`, Postgres 17.6 |
 
 Refs are not secrets — they are the subdomain of a URL that ships in every
 browser bundle. Keys are secrets and appear nowhere in this repo.
@@ -113,7 +113,7 @@ When a migration has been applied to dev, reviewed, and merged to `main`:
 npx supabase link --project-ref mkxebolzrqwfuvpevtsu
 npx supabase migration list          # read it. confirm exactly what is pending
 npx supabase db push                 # applies only what production has not had
-npx supabase link --project-ref <dev-project-ref>   # link back, immediately
+npx supabase link --project-ref djrnqwthwzzzcgjaxwel   # link back, immediately
 ```
 
 Relink to dev in the same sitting. A repo left linked to production is the
