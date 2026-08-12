@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Question } from "@/data/types";
+import { useApp } from "@/lib/app-state";
 import { useExamMode } from "@/lib/exam-mode";
+import { useFullscreen } from "@/lib/fullscreen";
 import { readingDisplayParts } from "@/lib/reading-parts";
 import { useSettings } from "@/lib/settings";
 import { generatedIds } from "@/lib/generation/provenance";
@@ -23,6 +25,10 @@ import {
   IconCrossOut,
   IconClock,
   IconFlag,
+  IconFullscreen,
+  IconMoon,
+  IconMore,
+  IconSun,
   IconHighlight,
   IconReference,
 } from "./test/TestIcons";
@@ -67,6 +73,8 @@ function formatClock(seconds: number): string {
 export function MockRunner({ sections, onFinish, onExit }: Props) {
   const { t } = useI18n();
   const { settings } = useSettings();
+  const { theme, toggleTheme } = useApp();
+  const fullscreen = useFullscreen();
   useExamMode();
 
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -84,6 +92,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
   const [crossOutMode, setCrossOutMode] = useState(false);
   const [directionsOpen, setDirectionsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   // Seeded from the preference, then owned by the session: a student who
   // hides the clock in Settings can still show it for one module.
   const [timerHidden, setTimerHidden] = useState(settings.hideTimer);
@@ -143,6 +152,24 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
     },
     [sections],
   );
+
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (event: PointerEvent) => {
+      if (!moreRef.current?.contains(event.target as Node)) setMoreOpen(false);
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onEscape);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onEscape);
+    };
+  }, [moreOpen]);
 
   useEffect(() => {
     if (!resizing) return;
@@ -338,6 +365,50 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
               </button>
             </>
           )}
+
+          {/* Practice's More menu, with the two entries that belong in a timed
+              test. Fullscreen is the one a student actually wants here: the real
+              test app fills the screen, and a browser's tabs and bookmarks bar
+              are the difference between practising and sitting an exam. */}
+          <div className="test-more-wrap" ref={moreRef}>
+            <button
+              className="tool-btn test-more-btn"
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
+              onClick={() => setMoreOpen((value) => !value)}
+            >
+              <IconMore />
+              <span>{t("ptool.more")}</span>
+            </button>
+            {moreOpen && (
+              <div className="test-more-menu scale-in" role="menu">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    void fullscreen.toggle();
+                    setMoreOpen(false);
+                  }}
+                >
+                  <IconFullscreen />
+                  <span>
+                    {t(fullscreen.isFullscreen ? "ptool.exitFullscreen" : "ptool.fullscreen")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    toggleTheme();
+                    setMoreOpen(false);
+                  }}
+                >
+                  {theme === "dark" ? <IconSun /> : <IconMoon />}
+                  <span>{t(theme === "dark" ? "nav.lightMode" : "nav.darkMode")}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

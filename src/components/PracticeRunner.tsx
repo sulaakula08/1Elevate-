@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useExamMode } from "@/lib/exam-mode";
+import { useFullscreen } from "@/lib/fullscreen";
 import { readingDisplayParts } from "@/lib/reading-parts";
 import { useSettings } from "@/lib/settings";
 import { apiFetch } from "@/lib/supabase/client";
@@ -110,6 +111,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
   const { t } = useI18n();
   const { recordAttempts, theme, toggleTheme } = useApp();
   const { settings } = useSettings();
+  const fullscreen = useFullscreen();
   useExamMode();
   const count = questions.length;
 
@@ -276,15 +278,6 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
       ),
     );
   }, [index]);
-
-  const toggleFullscreen = useCallback(async () => {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await document.documentElement.requestFullscreen();
-    } finally {
-      setMoreOpen(false);
-    }
-  }, []);
 
   const submitReport = useCallback(
     async (event: FormEvent) => {
@@ -590,17 +583,20 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
               onClick={() => setMoreOpen((value) => !value)}
             >
               <IconMore />
-              <span>More</span>
+              <span>{t("ptool.more")}</span>
             </button>
             {moreOpen && (
               <div className="test-more-menu scale-in" role="menu">
-                <button type="button" role="menuitem" onClick={() => void toggleFullscreen()}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    void fullscreen.toggle();
+                    setMoreOpen(false);
+                  }}
+                >
                   <IconFullscreen />
-                  <span>
-                    {typeof document !== "undefined" && document.fullscreenElement
-                      ? "Exit fullscreen"
-                      : "Fullscreen"}
-                  </span>
+                  <span>{t(fullscreen.isFullscreen ? "ptool.exitFullscreen" : "ptool.fullscreen")}</span>
                 </button>
                 <button
                   type="button"
