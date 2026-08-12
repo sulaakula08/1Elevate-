@@ -9,6 +9,7 @@ import { difficultyColor, reviewQueue } from "@/lib/stats";
 import { PracticeRunner } from "@/components/PracticeRunner";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { RichText } from "@/lib/math/markdown";
+import { Select } from "@/components/Select";
 import { Reveal } from "@/components/motion";
 import { SectionGate } from "@/components/SectionGate";
 
@@ -239,7 +240,7 @@ function ReviewInner() {
               see is a filter you will not think to remove. */}
           {domain && (
             <button className="rv-pill" onClick={() => { setDomain(null); setSkill(null); }}>
-              {domain} <span aria-hidden>✕</span>
+              {domain === "—" ? t("review.noDomain") : domain} <span aria-hidden>✕</span>
             </button>
           )}
           {skill && (
@@ -263,59 +264,58 @@ function ReviewInner() {
           <div className="rv-filter-panel fade-in">
             <label className="block">
               <span className="label">{t("review.filterDomain")}</span>
-              <select
-                className="field"
+              <Select
+                label={t("review.filterDomain")}
                 value={domain ?? ""}
-                onChange={(event) => {
-                  setDomain(event.target.value || null);
+                onChange={(next) => {
+                  setDomain(next || null);
                   setSkill(null);
                 }}
-              >
-                <option value="">{t("review.allDomains")}</option>
-                {options.domains.map(([name, count]) => (
-                  <option key={name} value={name}>
-                    {name} ({count})
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: t("review.allDomains") },
+                  ...options.domains.map(([name, count]) => ({
+                    value: name,
+                    // A question saved before domains existed has none; "—" as a
+                    // label reads as a rendering fault rather than as a bucket.
+                    label: name === "—" ? t("review.noDomain") : name,
+                    hint: count,
+                  })),
+                ]}
+              />
             </label>
 
             <label className="block">
               <span className="label">{t("review.filterSkill")}</span>
-              <select
-                className="field"
+              <Select
+                label={t("review.filterSkill")}
                 value={skill ?? ""}
-                onChange={(event) => setSkill(event.target.value || null)}
-              >
-                <option value="">{t("review.allSkills")}</option>
-                {options.skills.map(([name, count]) => (
-                  <option key={name} value={name}>
-                    {name} ({count})
-                  </option>
-                ))}
-              </select>
+                onChange={(next) => setSkill(next || null)}
+                options={[
+                  { value: "", label: t("review.allSkills") },
+                  ...options.skills.map(([name, count]) => ({
+                    value: name,
+                    label: name,
+                    hint: count,
+                  })),
+                ]}
+              />
             </label>
 
             <label className="block">
               <span className="label">{t("quiz.difficulty")}</span>
-              <select
-                className="field"
-                value={level ?? ""}
-                onChange={(event) =>
-                  setLevel(event.target.value ? (Number(event.target.value) as Difficulty) : null)
-                }
-              >
-                <option value="">{t("diff.all")}</option>
-                {LEVELS.map((value) => {
-                  const count = queue.filter((q) => q.difficulty === value).length;
-                  if (count === 0) return null;
-                  return (
-                    <option key={value} value={value}>
-                      {t(`diff.${value}`)} ({count})
-                    </option>
-                  );
-                })}
-              </select>
+              <Select
+                label={t("quiz.difficulty")}
+                value={level === null ? "" : String(level)}
+                onChange={(next) => setLevel(next ? (Number(next) as Difficulty) : null)}
+                options={[
+                  { value: "", label: t("diff.all") },
+                  ...LEVELS.map((value) => ({
+                    value: String(value),
+                    label: t(`diff.${value}`),
+                    hint: queue.filter((q) => q.difficulty === value).length,
+                  })).filter((option) => option.hint > 0),
+                ]}
+              />
             </label>
           </div>
         )}
