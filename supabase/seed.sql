@@ -23,9 +23,16 @@
 -- its author up by email, so the two halves stay independent and this file is
 -- re-runnable without knowing what ids step 1 happened to generate.
 --
--- Every address is @1elevate.test. `.test` is reserved by RFC 2606 and can never
--- be a real domain, so no fixture can collide with, or send mail to, a real
--- person.
+-- Every address is @1elevate.dev, and no mail is ever sent to one.
+--
+-- The obvious choice was @1elevate.test, because `.test` is reserved by RFC 2606
+-- and cannot resolve. Supabase rejects it: GoTrue's address validator refuses
+-- both `.test` and example.com outright, so a seed built on them cannot create a
+-- single account. `.dev` passes that validator.
+--
+-- What keeps it safe is not the domain but the method: seed-auth.mjs creates
+-- these through the Admin API with email_confirm set, which sends nothing. The
+-- addresses exist only in the dev project's auth.users table.
 
 do $$
 declare
@@ -42,13 +49,13 @@ declare
   c_reported    uuid;
   day_offset int;
 begin
-  select id into ada    from auth.users where email = 'ada.dev@1elevate.test';
-  select id into bruno  from auth.users where email = 'bruno.dev@1elevate.test';
-  select id into olivia from auth.users where email = 'olivia.dev@1elevate.test';
+  select id into ada    from auth.users where email = 'ada.dev@1elevate.dev';
+  select id into bruno  from auth.users where email = 'bruno.dev@1elevate.dev';
+  select id into olivia from auth.users where email = 'olivia.dev@1elevate.dev';
 
   if ada is null or bruno is null or olivia is null then
     raise exception
-      'Seed users missing. Run `npm run db:seed:auth` first — it creates the three @1elevate.test accounts this file attaches fixtures to.';
+      'Seed users missing. Run `npm run db:seed:auth` first — it creates the three @1elevate.dev accounts this file attaches fixtures to.';
   end if;
 
   -- ---------------------------------------------------------------- profiles --

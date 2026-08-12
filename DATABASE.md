@@ -125,7 +125,7 @@ Seeding is a **development-only** operation. There is no supported way to seed
 production and there must never be one.
 
 ```bash
-npm run db:seed:auth    # creates the three @1elevate.test Auth users
+npm run db:seed:auth    # creates the three @1elevate.dev Auth users
 npm run db:seed         # attaches Community + learning fixtures to them
 ```
 
@@ -141,12 +141,17 @@ Seeded accounts, all sharing `DEV_SEED_PASSWORD`:
 
 | Email | Role | For |
 | --- | --- | --- |
-| `ada.dev@1elevate.test` | student | Student A. Has 40 days of history, so the dashboard, heatmap and weak areas are populated |
-| `bruno.dev@1elevate.test` | student | Student B. The other side of every cross-user permission test |
-| `olivia.dev@1elevate.test` | **owner** | Admin surfaces: Moderation, People, Sections |
+| `ada.dev@1elevate.dev` | student | Student A. Has 40 days of history, so the dashboard, heatmap and weak areas are populated |
+| `bruno.dev@1elevate.dev` | student | Student B. The other side of every cross-user permission test |
+| `olivia.dev@1elevate.dev` | **owner** | Admin surfaces: Moderation, People, Sections |
 
-`.test` is reserved by RFC 2606 and can never be a real domain, so no fixture can
-collide with or mail a real person.
+No mail is ever sent to these addresses: `seed-auth.mjs` creates them through the
+Admin API with `email_confirm` set, which sends nothing, and they exist only in
+the dev project's `auth.users`.
+
+`@1elevate.test` would have been the tidier choice — `.test` is reserved by RFC
+2606 and cannot resolve — but Supabase's address validator rejects both `.test`
+and `example.com`, so a seed built on either cannot create a single account.
 
 The fixtures cover one post of every type the model allows, comments, reactions,
 a save, an open report so the moderation queue is not empty, two bank questions,

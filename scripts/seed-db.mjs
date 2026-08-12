@@ -109,5 +109,5 @@ if (!response.ok) {
 }
 
 console.log(
-  `\n  Seeded. Sign in as ada.dev@1elevate.test with your DEV_SEED_PASSWORD.\n`,
+  `\n  Seeded. Sign in as ada.dev@1elevate.dev with your DEV_SEED_PASSWORD.\n`,
 );

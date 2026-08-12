@@ -67,12 +67,32 @@ if (ref === null) {
   die(`Could not read a Supabase project ref from ${url}. Refusing to guess.`);
 }
 
-if (!serviceKey) {
+const publishableKey =
+  env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+/**
+ * Two ways to create the accounts, and the difference is worth knowing.
+ *
+ *   Admin API, with the service key — the better one. It confirms the address on
+ *   creation, so the account works regardless of the project's confirmation
+ *   setting, and re-running is idempotent.
+ *
+ *   Public signup, with the publishable key — the fallback. It is the same call
+ *   the sign-up form makes, so it only works when the dev project has email
+ *   confirmation switched off, which dev should have anyway.
+ *
+ * The fallback exists because the service key is the one credential a developer
+ * has no other reason to put in .env.local, and being unable to seed for want of
+ * it is a poor trade when the publishable key is already there and sufficient.
+ *
+ * Either way this cannot touch production: the ref check above ran first.
+ */
+const mode = serviceKey && !serviceKey.startsWith("<") ? "admin" : "signup";
+
+if (mode === "signup" && !publishableKey) {
   die(
-    "SUPABASE_SECRET_KEY is not set in .env.local.\n" +
-      "  Creating a user needs the service key (Project Settings -> API -> secret key)\n" +
-      "  of the DEVELOPMENT project. It bypasses every policy, so never use the\n" +
-      "  production one here.",
+    "Neither SUPABASE_SECRET_KEY nor NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is usable.\n" +
+      "  Set at least the publishable key of the DEVELOPMENT project in .env.local.",
   );
 }
 if (!password) {
@@ -90,37 +110,56 @@ if (password.length < 6) die("DEV_SEED_PASSWORD must be at least 6 characters (S
  * `role` is not something the Auth API knows about.
  */
 const USERS = [
-  { email: "ada.dev@1elevate.test", name: "Ada Dev" },
-  { email: "bruno.dev@1elevate.test", name: "Bruno Dev" },
-  { email: "olivia.dev@1elevate.test", name: "Olivia Dev" },
+  { email: "ada.dev@1elevate.dev", name: "Ada Dev" },
+  { email: "bruno.dev@1elevate.dev", name: "Bruno Dev" },
+  { email: "olivia.dev@1elevate.dev", name: "Olivia Dev" },
 ];
 
+const activeKey = mode === "admin" ? serviceKey : publishableKey;
 const headers = {
-  apikey: serviceKey,
-  authorization: `Bearer ${serviceKey}`,
+  apikey: activeKey,
+  authorization: `Bearer ${activeKey}`,
   "content-type": "application/json",
 };
 
 console.log(`\n  Development project: ${ref}`);
-console.log(`  Creating ${USERS.length} test users…\n`);
+console.log(
+  `  Creating ${USERS.length} test users via ${
+    mode === "admin" ? "the Admin API" : "public signup (no service key set)"
+  }…\n`,
+);
 
 let created = 0;
 let existing = 0;
 
 for (const user of USERS) {
-  const response = await fetch(`${url}/auth/v1/admin/users`, {
+  const endpoint = mode === "admin" ? "/auth/v1/admin/users" : "/auth/v1/signup";
+  const payload =
+    mode === "admin"
+      ? {
+          email: user.email,
+          password,
+          // Confirmed on creation, so a dev account can sign in immediately
+          // without anyone opening a mailbox. Whether new sign-ups need
+          // confirmation is a separate dashboard setting; this only concerns
+          // these three.
+          email_confirm: true,
+          // Read by the handle_new_user trigger to populate profiles.name.
+          user_metadata: { name: user.name },
+        }
+      : {
+          email: user.email,
+          password,
+          // Same field the sign-up form sends, and the same field the trigger
+          // reads. `data` rather than `user_metadata` is the public endpoint's
+          // spelling of it.
+          data: { name: user.name },
+        };
+
+  const response = await fetch(`${url}${endpoint}`, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      email: user.email,
-      password,
-      // Confirmed on creation, so a dev account can sign in immediately without
-      // anyone opening a mailbox. Whether new sign-ups need confirmation is a
-      // separate dashboard setting; this only concerns these three.
-      email_confirm: true,
-      // Read by the handle_new_user trigger to populate profiles.name.
-      user_metadata: { name: user.name },
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (response.ok) {
