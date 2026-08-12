@@ -64,11 +64,18 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# If enabled, seeds the database after migrations during a db reset.
-enabled = true
-# Specifies an ordered list of seed files to load during db reset.
-# Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+# Off, and there is no seed.sql, because seeding this project is not a SQL-file
+# job. Two of the fixtures cannot be expressed here at all: the Auth users need
+# the Admin API (a password hash and an auth.identities row are the Auth
+# service's business), and promoting the dev owner writes profiles.role, which
+# no key but the service key may touch.
+#
+# So seeding lives in scripts/seed-auth.mjs and scripts/seed-db.mjs, run as
+# `npm run db:seed:auth` then `npm run db:seed`. A seed.sql alongside them would
+# be a second copy of the same fixtures, free to drift from the one that is
+# actually run. See DATABASE.md -> Seeding.
+enabled = false
+sql_paths = []
 
 [db.network_restrictions]
 # Enable management of network restrictions.

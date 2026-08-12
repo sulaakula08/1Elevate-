@@ -2,7 +2,7 @@
 /**
  * Creates the three development Auth users.
  *
- * Separate from supabase/seed.sql because Auth users are not really SQL rows.
+ * Separate from seed-db.mjs because Auth users are not really SQL rows.
  * Creating one properly means a bcrypt password hash and a matching
  * auth.identities row, both of which are the Auth service's private business —
  * hand-rolling them with crypt() works until Supabase changes its internals, and
@@ -106,8 +106,8 @@ if (!password) {
 if (password.length < 6) die("DEV_SEED_PASSWORD must be at least 6 characters (Supabase minimum).");
 
 /**
- * The cast. Roles are not set here — seed.sql promotes Olivia to owner, because
- * `role` is not something the Auth API knows about.
+ * The cast. Roles are not set here — seed-db.mjs promotes Olivia to owner,
+ * because `role` is not something the Auth API knows about.
  */
 const USERS = [
   { email: "ada.dev@1elevate.dev", name: "Ada Dev" },

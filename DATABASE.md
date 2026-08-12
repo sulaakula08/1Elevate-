@@ -132,10 +132,24 @@ npm run db:seed         # attaches Community + learning fixtures to them
 In that order — the fixtures look their authors up by email and raise a clear
 error if the accounts are missing.
 
-The split exists because Auth users are not really SQL rows: a working account
-needs a password hash and an `auth.identities` row, both internal to the Auth
-service. `scripts/seed-auth.mjs` calls the Admin API instead of guessing at the
-internals.
+Both are scripts rather than a `seed.sql`, and that is not a preference:
+
+- **Auth users are not SQL rows.** A working account needs a password hash and a
+  matching `auth.identities` row, both internal to the Auth service.
+  `seed-auth.mjs` calls the Admin API rather than guessing at the internals with
+  `crypt()`, which works right up until Supabase changes them.
+- **There is no way to run arbitrary SQL against a hosted project from here.**
+  `db push` applies migrations and nothing else, `db reset` is local-only,
+  `db push --include-seed` crashes the installed CLI, the Management API's query
+  endpoint needs a token `supabase login` keeps in the OS keyring, and a direct
+  connection needs the database password. What is available is the service key,
+  and PostgREST — which is what `seed-db.mjs` uses.
+- **The dev owner cannot be made any other way.** `profiles.role` is unwritable
+  by any ordinary key by design; the service key is the only route.
+
+Both scripts refuse to run when the target is production, checked before any
+request is sent. Re-running either is safe: the users are idempotent, and the
+community fixtures are skipped when posts already exist.
 
 Seeded accounts, all sharing `DEV_SEED_PASSWORD`:
 
