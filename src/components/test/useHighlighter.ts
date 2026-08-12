@@ -8,7 +8,21 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
  * the original immediate-highlight behaviour.
  */
 
-export const HIGHLIGHT_COLORS = ["amber", "blue", "rose"] as const;
+/**
+ * Six hues, ordered as a spectrum so the palette reads as a row of colours
+ * rather than a set of options. Three (yellow, blue, pink) are what the real
+ * test app offers; the other three are here because a student marking a passage
+ * for two different reasons needs more than three, and every name below is an
+ * existing `--s-*` token, so both themes already define it.
+ */
+export const HIGHLIGHT_COLORS = [
+  "amber",
+  "green",
+  "cyan",
+  "blue",
+  "violet",
+  "rose",
+] as const;
 export type HighlightColor = (typeof HIGHLIGHT_COLORS)[number];
 
 export type HighlightSelection = {
@@ -37,7 +51,9 @@ function ensureStyles() {
   el.id = STYLE_ID;
   el.textContent = HIGHLIGHT_COLORS.map(
     (color) =>
-      `::highlight(${NAME(color)}){background-color:color-mix(in srgb, var(--s-${color}) 42%, transparent);}`,
+      // --hl-*, not --s-*: the subject tokens are text-contrast colours, and in
+      // light mode amber is a brown. See globals.css.
+      `::highlight(${NAME(color)}){background-color:color-mix(in srgb, var(--hl-${color}) 55%, transparent);}`,
   ).join("");
   document.head.appendChild(el);
 }

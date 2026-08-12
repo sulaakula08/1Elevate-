@@ -109,6 +109,19 @@
   --lvl-3: #be123c;
   --lvl-3-soft: #ffe8ed;
 
+  /* Highlighter inks, separate from the subject palette.
+     The subject tokens are chosen for text contrast, so in light mode they are
+     dark and saturated — `--s-amber` is #b45309, a brown. Washed over a passage
+     at 42% that reads as a stain, not as a highlighter. These are pen colours:
+     bright, low-contrast against the text they sit under, and legible with black
+     type on top. */
+  --hl-amber: #ffd83f;
+  --hl-green: #79e08d;
+  --hl-cyan: #63d7f0;
+  --hl-blue: #7ab6ff;
+  --hl-violet: #b79cff;
+  --hl-rose: #ff9dbe;
+
   /* Subject palette. Each subject owns a hue so colour always means something. */
   --s-violet: #7c3aed;
   --s-violet-soft: #f3edff;
@@ -191,6 +204,16 @@
   --lvl-2-soft: #2b2110;
   --lvl-3: #fb7185;
   --lvl-3-soft: #2e1319;
+
+  /* On a near-black page the wash has to be bright enough to register at 42%
+     while leaving near-white text readable, so these run a little deeper than
+     the light-mode pens rather than lighter. */
+  --hl-amber: #c99a14;
+  --hl-green: #35a95c;
+  --hl-cyan: #2596bd;
+  --hl-blue: #3f7fdc;
+  --hl-violet: #7f63f0;
+  --hl-rose: #d95d87;
 
   /* Lighter hues + very dark tints so colour reads on a dark canvas. */
   --s-violet: #a78bfa;

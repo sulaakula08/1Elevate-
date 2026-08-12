@@ -1955,6 +1955,9 @@
     position: fixed;
     z-index: 90;
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: min(20rem, calc(100vw - 1.5rem));
     align-items: center;
     gap: 0.35rem;
     min-height: 2.45rem;
@@ -1968,16 +1971,20 @@
   }
 
   .test-highlight-palette.is-above { transform: translate(-50%, -100%); }
+  /* The face comes from --swatch, set per button, so adding a colour is a line
+     in one map rather than a new CSS class. */
   .test-highlight-color {
     width: 1.55rem;
     height: 1.55rem;
     border: 1px solid rgb(0 0 0 / 18%);
     border-radius: 0.32rem;
+    background: var(--swatch, #ffe784);
     cursor: pointer;
+    transition: transform 140ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
-  .test-highlight-color.is-amber { background: #ffe784; }
-  .test-highlight-color.is-blue { background: #a9def7; }
-  .test-highlight-color.is-rose { background: #f8b8cf; }
+  .test-highlight-color:hover {
+    transform: scale(1.12);
+  }
   .test-highlight-separator { width: 1px; height: 1.45rem; background: #ddddda; }
   .test-highlight-remove {
     display: grid;

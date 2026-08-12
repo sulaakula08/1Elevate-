@@ -28,7 +28,7 @@ export function HighlightControls({
             aria-label={t(`ptool.color.${c}`)}
             title={t(`ptool.color.${c}`)}
             className={`hl-swatch ${highlighter.color === c ? "hl-swatch-on" : ""}`}
-            style={{ ["--swatch" as string]: `var(--s-${c})` }}
+            style={{ ["--swatch" as string]: `var(--hl-${c})` }}
             onClick={() => highlighter.setColor(c)}
           />
         ))}
