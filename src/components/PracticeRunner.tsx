@@ -16,6 +16,7 @@ import { AiTutor } from "./AiTutor";
 import { ProgressBar, Toast } from "./motion";
 import { ProgressMark, SuccessTick } from "./illustrations";
 import { CalculatorPanel } from "./test/CalculatorPanel";
+import { FloatingTool } from "./test/FloatingTool";
 import { ReferenceSheet } from "./test/ReferenceSheet";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { useHighlighter } from "./test/useHighlighter";
@@ -660,40 +661,27 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
 
       <ProgressBar value={count ? index / count : 0} className="test-section-progress" />
 
+      {/* The tools are windows now: dragged by their header, resized by the
+          browser's grip. A docked column covered the figure on the very Math
+          questions the calculator is for. */}
+      {tool && (
+        <FloatingTool
+          id={tool}
+          title={tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
+          hint={t("ptool.dragHint")}
+          closeLabel={t("tutor.close")}
+          onClose={() => setTool(null)}
+        >
+          {tool === "calculator" ? <CalculatorPanel /> : <ReferenceSheet />}
+        </FloatingTool>
+      )}
+
       {/* ---------------- work area ---------------- */}
       <div
         className={`test-body ${resizing ? "is-resizing" : ""}`}
         ref={questionRef}
         style={{ ["--passage-ratio" as string]: `${splitRatio}%` }}
       >
-        <AnimatePresence initial={false}>
-          {tool && (
-            <motion.aside
-              key={tool}
-              className="test-pane"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={SLIDE}
-            >
-            <div className="flex items-center gap-2 px-3 h-11 border-b">
-              <p className="text-sm font-medium">
-                {tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
-              </p>
-              <button
-                className="btn btn-ghost btn-sm ml-auto"
-                onClick={() => setTool(null)}
-                aria-label={t("tutor.close")}
-              >
-                ✕
-              </button>
-            </div>
-              <div className="flex-1 min-h-0">
-                {tool === "calculator" ? <CalculatorPanel /> : <ReferenceSheet />}
-              </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
 
         {hasReadingPane && (
           <section

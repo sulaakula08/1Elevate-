@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
 import { NotificationsBell } from "./NotificationsBell";
+import { ThemeToggle } from "./ThemeToggle";
 import { useClosedHrefs } from "./SectionGate";
 import {
   NavAdmin,
@@ -62,6 +63,7 @@ export function MobileHeader() {
             </span>
           )}
 
+          <ThemeToggle className="w-8 h-8" />
           <NotificationsBell />
 
           <Link

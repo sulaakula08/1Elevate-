@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui";
 import { QuestionView } from "./QuestionView";
 import { BreakScreen } from "./test/BreakScreen";
 import { CalculatorPanel } from "./test/CalculatorPanel";
+import { FloatingTool } from "./test/FloatingTool";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { ReferenceSheet } from "./test/ReferenceSheet";
 import { useHighlighter } from "./test/useHighlighter";
@@ -287,28 +288,23 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
         />
       </div>
 
-      {/* ---------------- work area ---------------- */}
-      <div className={`test-body ${tool ? "test-body-split" : ""}`}>
-        {tool && (
-          <aside className="test-pane fade-in">
-            <div className="flex items-center gap-2 px-3 h-11 border-b">
-              <p className="text-sm font-medium">
-                {tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
-              </p>
-              <button
-                className="btn btn-ghost btn-sm ml-auto"
-                onClick={() => setTool(null)}
-                aria-label={t("tutor.close")}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="flex-1 min-h-0">
-              {tool === "calculator" ? <CalculatorPanel /> : <ReferenceSheet />}
-            </div>
-          </aside>
-        )}
+      {/* The tools are windows now: dragged by their header, resized by the
+          browser's grip. A docked column covered the figure on the very Math
+          questions the calculator is for. */}
+      {tool && (
+        <FloatingTool
+          id={tool}
+          title={tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
+          hint={t("ptool.dragHint")}
+          closeLabel={t("tutor.close")}
+          onClose={() => setTool(null)}
+        >
+          {tool === "calculator" ? <CalculatorPanel /> : <ReferenceSheet />}
+        </FloatingTool>
+      )}
 
+      {/* ---------------- work area ---------------- */}
+      <div className="test-body">
         <main className="test-question">
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="q-number num">{questionIndex + 1}</span>

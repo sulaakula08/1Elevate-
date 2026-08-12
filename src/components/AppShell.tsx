@@ -5,6 +5,7 @@ import { useApp } from "@/lib/app-state";
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "@/lib/storage";
 import { NotificationsBell } from "./NotificationsBell";
 import { Sidebar } from "./Sidebar";
+import { ThemeToggle } from "./ThemeToggle";
 import { MobileHeader, MobileTabs } from "./MobileBar";
 import { TopBar } from "./TopBar";
 import { Footer } from "./Footer";
@@ -118,7 +119,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             Desktop only: phones have it in their own header already.
           */}
-          <div className="notif-dock hidden md:flex">
+          <div className="notif-dock hidden md:flex items-center gap-1.5">
+            {/* The theme control sits with the bell rather than back in the rail:
+                the rail's spare slot is Settings now, and a preference flipped
+                several times a day should not be two clicks away. */}
+            <ThemeToggle />
             <NotificationsBell />
           </div>
           {children}

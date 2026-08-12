@@ -89,6 +89,7 @@ export const STUDY_COPY: CopyDict = {
   "ptool.marked": { en: "Marked for review" },
   "ptool.crossOut": { en: "Cross out answer choices" },
   "ptool.undoCross": { en: "Undo cross out" },
+  "ptool.dragHint": { en: "Drag to move · pull the corner to resize" },
   "ptool.hide": { en: "Hide" },
   "ptool.show": { en: "Show" },
   "ptool.pause": { en: "Pause" },

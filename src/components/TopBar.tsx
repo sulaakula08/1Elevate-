@@ -7,6 +7,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   NavAdmin,
   NavHome,
@@ -31,7 +32,7 @@ const MOBILE_TABS = LINKS.slice(0, 4);
 
 export function TopBar() {
   const { t } = useI18n();
-  const { account, theme, toggleTheme, signOut, ready, data } = useApp();
+  const { account, signOut, ready, data } = useApp();
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -127,9 +128,7 @@ export function TopBar() {
               </span>
             )}
 
-            <button className="bar-btn" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
-              {theme === "dark" ? "☀" : "☾"}
-            </button>
+            <ThemeToggle />
 
             {ready &&
               (account ? (
