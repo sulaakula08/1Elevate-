@@ -1,27 +1,32 @@
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseConfigured, tokenFrom, userClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 /**
  * The moderation queue: what students have reported, and what an admin does
- * about it.
+ * about it. Admins and owners only — every method, including the read.
  *
- * Authorisation is the database's, exactly as everywhere else in this app, and
- * that is worth stating precisely because "admin only" is easy to implement in
- * the wrong place. There is no role check in this file. Instead:
+ * Authorisation is still the database's, which is the point: the gate below
+ * asks Postgres `is_admin()`, the same function the RLS policies and the
+ * moderate_* routines call. There is no second definition of "admin" in this
+ * file to drift out of step with the first, and the database checks remain in
+ * force underneath — the gate is the outer of two doors, never the only one.
  *
- *   * GET relies on the read policy on community_reports. A student may read
- *     their own reports and nobody else's, so a student who calls this endpoint
- *     gets back only reports they filed themselves — not an error, but not other
- *     people's business either. The grouping below then has nothing to show them.
- *   * POST relies on moderate_hide() and moderate_dismiss(), which raise 42501
- *     unless is_admin() passes. A student calling POST is refused by Postgres,
- *     not by an `if` in this handler.
+ * It was not always here, and the reason it is now is worth recording. The
+ * original argument was that GET needed no role check because the read policy on
+ * community_reports already limited a student to their own reports, so the worst
+ * they could see was a report they had filed themselves. That is true and it was
+ * still wrong. What came back was not the report row: it was this endpoint's
+ * shaped response — the target's content preview, the author's display name, and
+ * the author's account UUID — assembled by the code below from tables the
+ * reporter can read. A student learned the internal id of the person they
+ * reported, which nothing else in the product discloses.
  *
- * So there is no second permission system here to drift out of step with the
- * first, and pointing a normal user's token at this route achieves nothing even
- * if the admin page that hides the panel were bypassed entirely.
+ * A queue is an admin surface. It is simpler to say so than to reason, every
+ * time a field is added to the response, about whether a reporter is entitled to
+ * that field for the one row they happen to own.
  */
 
 /** How many open targets the queue shows. A moderation backlog past this is a staffing problem. */
@@ -40,6 +45,13 @@ function unauthorized() {
   return NextResponse.json({ error: "Sign in first." }, { status: 401 });
 }
 
+function forbidden() {
+  // Deliberately the same words a student sees from the moderate_* functions, so
+  // the two refusals are indistinguishable and neither confirms that a queue
+  // exists, let alone what is in it.
+  return NextResponse.json({ error: "Only an admin can do that." }, { status: 403 });
+}
+
 async function caller(request: Request) {
   const token = tokenFrom(request);
   if (!token) return null;
@@ -48,6 +60,26 @@ async function caller(request: Request) {
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) return null;
   return { client, user: data.user };
+}
+
+/**
+ * Ask the database whether the caller is an admin or an owner.
+ *
+ * `is_admin()` is SECURITY DEFINER and covers both roles — an owner is an admin
+ * with extra powers — so this cannot fall out of step with the policies. Reading
+ * `profiles.role` here instead would be a second implementation of the same
+ * question, and the one that forgets 'owner' is exactly how an owner ends up
+ * locked out of the tools they administer.
+ *
+ * Fails closed: an error from the RPC is a no, not a yes.
+ */
+async function callerIsAdmin(client: SupabaseClient): Promise<boolean> {
+  const { data, error } = await client.rpc("is_admin");
+  if (error) {
+    if (process.env.NODE_ENV !== "production") console.error("[moderation]", error);
+    return false;
+  }
+  return data === true;
 }
 
 type ReportRow = {
@@ -85,6 +117,9 @@ export async function GET(request: Request) {
   const found = await caller(request);
   if (!found) return unauthorized();
   const { client } = found;
+
+  // Before anything is read, and before any of the shaping below runs.
+  if (!(await callerIsAdmin(client))) return forbidden();
 
   const showResolved = new URL(request.url).searchParams.get("status") === "all";
 
@@ -272,6 +307,11 @@ export async function POST(request: Request) {
   if (!supabaseConfigured()) return notConfigured();
   const found = await caller(request);
   if (!found) return unauthorized();
+
+  // The moderate_* functions check this too, and that check is the one that
+  // actually enforces it. This one is here so a student is refused before the
+  // handler parses their body or names a target back to them.
+  if (!(await callerIsAdmin(found.client))) return forbidden();
 
   let body: { action?: unknown; targetType?: unknown; targetId?: unknown };
   try {
