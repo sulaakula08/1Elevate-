@@ -79,6 +79,9 @@ export const STUDY_COPY: CopyDict = {
   "ptool.calculator": { en: "Calculator" },
   "ptool.calcTitle": { en: "Calculator" },
   "ptool.calcHint": { en: "Type a calculation, or use the keypad" },
+  "ptool.calcOffline": {
+    en: "Desmos could not be reached — this is the built-in calculator.",
+  },
   "ptool.calcError": { en: "Not a valid expression" },
   "ptool.reference": { en: "Reference" },
   "ptool.refTitle": { en: "Reference sheet" },

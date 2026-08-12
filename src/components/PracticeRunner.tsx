@@ -15,7 +15,7 @@ import { QuestionPassage, QuestionView } from "./QuestionView";
 import { AiTutor } from "./AiTutor";
 import { ProgressBar, Toast } from "./motion";
 import { ProgressMark, SuccessTick } from "./illustrations";
-import { Calculator } from "./test/Calculator";
+import { CalculatorPanel } from "./test/CalculatorPanel";
 import { ReferenceSheet } from "./test/ReferenceSheet";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { useHighlighter } from "./test/useHighlighter";
@@ -689,7 +689,7 @@ export function PracticeRunner({ questions, mode, title, onExit, onRestart }: Pr
               </button>
             </div>
               <div className="flex-1 min-h-0">
-                {tool === "calculator" ? <Calculator /> : <ReferenceSheet />}
+                {tool === "calculator" ? <CalculatorPanel /> : <ReferenceSheet />}
               </div>
             </motion.aside>
           )}

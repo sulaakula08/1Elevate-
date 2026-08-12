@@ -9,7 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import { ConfirmDialog } from "@/components/ui";
 import { QuestionView } from "./QuestionView";
 import { BreakScreen } from "./test/BreakScreen";
-import { Calculator } from "./test/Calculator";
+import { CalculatorPanel } from "./test/CalculatorPanel";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { ReferenceSheet } from "./test/ReferenceSheet";
 import { useHighlighter } from "./test/useHighlighter";
@@ -304,7 +304,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
               </button>
             </div>
             <div className="flex-1 min-h-0">
-              {tool === "calculator" ? <Calculator /> : <ReferenceSheet />}
+              {tool === "calculator" ? <CalculatorPanel /> : <ReferenceSheet />}
             </div>
           </aside>
         )}
