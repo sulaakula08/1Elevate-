@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useExamMode } from "@/lib/exam-mode";
+import { useFullscreen } from "@/lib/fullscreen";
+import { readingDisplayParts } from "@/lib/reading-parts";
 import { useSettings } from "@/lib/settings";
 import { apiFetch } from "@/lib/supabase/client";
 import { generatedIds } from "@/lib/generation/provenance";
@@ -15,11 +17,13 @@ import { QuestionPassage, QuestionView } from "./QuestionView";
 import { AiTutor } from "./AiTutor";
 import { ProgressBar, Toast } from "./motion";
 import { ProgressMark, SuccessTick } from "./illustrations";
-import { Calculator } from "./test/Calculator";
+import { CalculatorPanel } from "./test/CalculatorPanel";
+import { FloatingTool } from "./test/FloatingTool";
 import { ReferenceSheet } from "./test/ReferenceSheet";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { useHighlighter } from "./test/useHighlighter";
 import { ContextualHighlightPalette } from "./test/ContextualHighlightPalette";
+import { HighlightControls } from "./test/HighlightControls";
 import {
   IconBug,
   IconCalculator,
@@ -94,23 +98,6 @@ function clock(seconds: number): string {
  * paragraphs instead of the optional passage field. Normalize that shape only
  * for display; the original question still goes to scoring, storage and Elevate.
  */
-function readingDisplayParts(question: Question) {
-  if (question.subjectId === "sat-math") return null;
-  if (question.passage) return { passage: question.passage, prompt: question.prompt };
-
-  const blocks = question.prompt.en
-    .trim()
-    .split(/\r?\n\s*\r?\n/)
-    .map((block) => block.trim())
-    .filter(Boolean);
-
-  if (blocks.length < 2) return null;
-  return {
-    passage: { en: blocks.slice(0, -1).join("\n\n") },
-    prompt: { en: blocks[blocks.length - 1] },
-  };
-}
-
 /**
  * Practice, in the shape of the real digital test app: the same tool rail, the
  * same per-question controls (mark for review, cross out a choice) and the same
@@ -132,6 +119,7 @@ export function PracticeRunner({
   const { t } = useI18n();
   const { recordAttempts, theme, toggleTheme } = useApp();
   const { settings } = useSettings();
+  const fullscreen = useFullscreen();
   useExamMode();
   const count = questions.length;
 
@@ -148,6 +136,7 @@ export function PracticeRunner({
   const [crossed, setCrossed] = useState<Record<string, number[]>>({});
 
   const [tool, setTool] = useState<Tool>(null);
+  const [calculatorMounted, setCalculatorMounted] = useState(false);
   const [highlightMode, setHighlightMode] = useState(false);
   const [crossOutMode, setCrossOutMode] = useState(false);
   const [directionsOpen, setDirectionsOpen] = useState(false);
@@ -319,15 +308,6 @@ export function PracticeRunner({
     );
   }, [question]);
 
-  const toggleFullscreen = useCallback(async () => {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await document.documentElement.requestFullscreen();
-    } finally {
-      setMoreOpen(false);
-    }
-  }, []);
-
   const submitReport = useCallback(
     async (event: FormEvent) => {
       event.preventDefault();
@@ -413,19 +393,19 @@ export function PracticeRunner({
   }
 
   const isMath = question.subjectId === "sat-math";
+  const calculatorOpen = isMath && tool === "calculator";
+  const splitActive = hasReadingPane || calculatorOpen;
   const displayQuestion = readingParts
     ? { ...question, passage: undefined, prompt: readingParts.prompt }
     : question;
   const passageQuestion = readingParts
     ? { ...question, passage: readingParts.passage }
     : question;
-  const inlineAction: "check" | "explain" | null = hasReadingPane
-    ? !isRevealed && selected !== null
-      ? "check"
-      : isRevealed && selected !== question.answer
-        ? "explain"
-        : null
-    : null;
+  const inlineAction: "check" | "explain" | null = !isRevealed && selected !== null
+    ? "check"
+    : isRevealed && selected !== question.answer
+      ? "explain"
+      : null;
 
   const toggleCross = (choice: number) =>
     setCrossed((current) => {
@@ -522,7 +502,7 @@ export function PracticeRunner({
                   ? openExplanation
                   : undefined
             }
-            showExplanation={hasReadingPane ? Boolean(explanationOpen[question.id]) : isRevealed}
+            showExplanation={Boolean(explanationOpen[question.id])}
           />
         </motion.div>
       </AnimatePresence>
@@ -539,7 +519,16 @@ export function PracticeRunner({
   );
 
   return (
-    <div className={`test-shell practice-test-shell ${hasReadingPane ? "has-reading-pane" : ""}`}>
+    <div
+      className={[
+        "test-shell practice-test-shell",
+        hasReadingPane ? "has-reading-pane" : "",
+        isMath ? "is-math" : "",
+        calculatorOpen ? "has-math-calculator" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       {/* ---------------- tool rail ---------------- */}
       <header className="test-bar">
         <div className="test-bar-left">
@@ -611,9 +600,12 @@ export function PracticeRunner({
           {isMath && (
             <>
               <button
-                className={`tool-btn ${tool === "calculator" ? "tool-btn-on" : ""}`}
+                className={`tool-btn calculator-tool-btn ${tool === "calculator" ? "tool-btn-on" : ""}`}
                 aria-pressed={tool === "calculator"}
-                onClick={() => setTool((value) => (value === "calculator" ? null : "calculator"))}
+                onClick={() => {
+                  setCalculatorMounted(true);
+                  setTool((value) => (value === "calculator" ? null : "calculator"));
+                }}
               >
                 <IconCalculator />
                 <span>{t("ptool.calculator")}</span>
@@ -636,17 +628,20 @@ export function PracticeRunner({
               onClick={() => setMoreOpen((value) => !value)}
             >
               <IconMore />
-              <span>More</span>
+              <span>{t("ptool.more")}</span>
             </button>
             {moreOpen && (
               <div className="test-more-menu scale-in" role="menu">
-                <button type="button" role="menuitem" onClick={() => void toggleFullscreen()}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    void fullscreen.toggle();
+                    setMoreOpen(false);
+                  }}
+                >
                   <IconFullscreen />
-                  <span>
-                    {typeof document !== "undefined" && document.fullscreenElement
-                      ? "Exit fullscreen"
-                      : "Fullscreen"}
-                  </span>
+                  <span>{t(fullscreen.isFullscreen ? "ptool.exitFullscreen" : "ptool.fullscreen")}</span>
                 </button>
                 <button
                   type="button"
@@ -692,40 +687,50 @@ export function PracticeRunner({
 
       <ProgressBar value={count ? index / count : 0} className="test-section-progress" />
 
+      {/* The tools are windows now: dragged by their header, resized by the
+          browser's grip. A docked column covered the figure on the very Math
+          questions the calculator is for. */}
+      {tool === "reference" && (
+        <FloatingTool
+          id="reference"
+          title={t("ptool.refTitle")}
+          hint={t("ptool.dragHint")}
+          closeLabel={t("tutor.close")}
+          onClose={() => setTool(null)}
+        >
+          <ReferenceSheet />
+        </FloatingTool>
+      )}
+
       {/* ---------------- work area ---------------- */}
       <div
-        className={`test-body ${resizing ? "is-resizing" : ""}`}
+        className={`test-body ${splitActive ? "has-active-split" : ""} ${resizing ? "is-resizing" : ""}`}
         ref={questionRef}
         style={{ ["--passage-ratio" as string]: `${splitRatio}%` }}
       >
-        <AnimatePresence initial={false}>
-          {tool && (
-            <motion.aside
-              key={tool}
-              className="test-pane"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={SLIDE}
-            >
-            <div className="flex items-center gap-2 px-3 h-11 border-b">
-              <p className="text-sm font-medium">
-                {tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
-              </p>
+
+        {isMath && calculatorMounted && (
+          <section
+            className={`test-calculator-pane ${calculatorOpen ? "is-open" : ""}`}
+            aria-label="Desmos graphing calculator"
+            aria-hidden={!calculatorOpen}
+          >
+            <div className="test-calculator-head">
+              <strong>{t("ptool.calcTitle")}</strong>
+              <span>Graphing</span>
               <button
-                className="btn btn-ghost btn-sm ml-auto"
+                type="button"
+                aria-label="Close calculator"
                 onClick={() => setTool(null)}
-                aria-label={t("tutor.close")}
               >
-                ✕
+                ×
               </button>
             </div>
-              <div className="flex-1 min-h-0">
-                {tool === "calculator" ? <Calculator /> : <ReferenceSheet />}
-              </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
+            <div className="test-calculator-content">
+              <CalculatorPanel active={calculatorOpen} sessionKey="practice-math" />
+            </div>
+          </section>
+        )}
 
         {hasReadingPane && (
           <section
@@ -739,11 +744,15 @@ export function PracticeRunner({
           </section>
         )}
 
-        {hasReadingPane && (
+        {splitActive && (
           <div
             className="test-split-handle"
             role="separator"
-            aria-label="Resize passage and question panes"
+            aria-label={
+              hasReadingPane
+                ? "Resize passage and question panes"
+                : "Resize calculator and question panes"
+            }
             aria-orientation="vertical"
             aria-valuemin={35}
             aria-valuemax={65}
@@ -768,6 +777,21 @@ export function PracticeRunner({
 
         {questionPanel}
       </div>
+
+      {/*
+        Two ways to choose a colour, because they answer different moments.
+
+        The row appears as soon as the tool is on: it is where you set the colour
+        you are about to draw in, and it works on every question. The floating
+        palette only exists on a passage, where the flow is select-then-colour —
+        which is also why it was the only colour UI practice had, and why a
+        student on a Math question could not change colour at all.
+      */}
+      {highlightMode && (
+        <div className="test-highlight-bar">
+          <HighlightControls highlighter={highlighter} />
+        </div>
+      )}
 
       {hasReadingPane && <ContextualHighlightPalette highlighter={highlighter} />}
 
@@ -850,19 +874,9 @@ export function PracticeRunner({
             <button className="test-nav-btn" disabled={index === 0} onClick={() => goTo(index - 1)}>
               {t("ptool.previous")}
             </button>
-            {hasReadingPane ? (
-              <button className="test-nav-btn test-nav-primary" disabled={!isRevealed} onClick={next}>
-                {index + 1 >= count ? t("quiz.finish") : t("ptool.next")}
-              </button>
-            ) : !isRevealed ? (
-              <button className="test-nav-btn test-nav-primary" disabled={selected === null} onClick={check}>
-                {t("quiz.check")}
-              </button>
-            ) : (
-              <button className="test-nav-btn test-nav-primary" onClick={next}>
-                {index + 1 >= count ? t("quiz.finish") : t("ptool.next")}
-              </button>
-            )}
+            <button className="test-nav-btn test-nav-primary" disabled={!isRevealed} onClick={next}>
+              {index + 1 >= count ? t("quiz.finish") : t("ptool.next")}
+            </button>
           </div>
         </div>
       </footer>

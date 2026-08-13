@@ -758,6 +758,10 @@
       grid-template-columns: 22rem 1fr;
     }
   }
+  /* Resizable, because a graph is the one tool whose useful size depends
+     entirely on what is being graphed. The default is a starting point rather
+     than a decision, and the browser's own grip does the dragging: it already
+     works with a trackpad, a touch screen and a keyboard. */
   .test-pane {
     display: flex;
     flex-direction: column;
@@ -766,6 +770,13 @@
     border-radius: var(--radius);
     background: var(--surface);
     overflow: hidden;
+    resize: both;
+    /* Bounded both ways: too small to read and large enough to bury the
+       question are both worse than not resizing at all. */
+    min-width: 17rem;
+    min-height: 13rem;
+    max-width: min(52rem, 92vw);
+    max-height: 88vh;
   }
   .test-question {
     min-width: 0;
@@ -1985,6 +1996,9 @@
     position: fixed;
     z-index: 90;
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: min(20rem, calc(100vw - 1.5rem));
     align-items: center;
     gap: 0.35rem;
     min-height: 2.45rem;
@@ -1998,16 +2012,20 @@
   }
 
   .test-highlight-palette.is-above { transform: translate(-50%, -100%); }
+  /* The face comes from --swatch, set per button, so adding a colour is a line
+     in one map rather than a new CSS class. */
   .test-highlight-color {
     width: 1.55rem;
     height: 1.55rem;
     border: 1px solid rgb(0 0 0 / 18%);
     border-radius: 0.32rem;
+    background: var(--swatch, #ffe784);
     cursor: pointer;
+    transition: transform 140ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
-  .test-highlight-color.is-amber { background: #ffe784; }
-  .test-highlight-color.is-blue { background: #a9def7; }
-  .test-highlight-color.is-rose { background: #f8b8cf; }
+  .test-highlight-color:hover {
+    transform: scale(1.12);
+  }
   .test-highlight-separator { width: 1px; height: 1.45rem; background: #ddddda; }
   .test-highlight-remove {
     display: grid;
@@ -2382,6 +2400,202 @@
   }
 }
 
+/* ---------------- Math workspace + Desmos ----------------
+   Closed Math is one centered exam column. Opening Calculator changes only the
+   flexible workspace into the same split used by Reading & Writing. */
+@layer components {
+  .practice-test-shell.is-math:not(.has-math-calculator) .test-question {
+    width: min(60rem, max(48rem, 50vw));
+    max-width: 60rem;
+    margin-inline: auto;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .practice-test-shell.is-math .test-question-meta {
+    display: none;
+  }
+
+  .practice-test-shell.is-math .test-question-content {
+    width: 100%;
+    max-width: none;
+  }
+
+  .practice-test-shell.has-math-calculator .test-body {
+    grid-template-columns:
+      minmax(0, var(--passage-ratio, 50%))
+      minmax(0, calc(100% - var(--passage-ratio, 50%)));
+  }
+
+  .practice-test-shell .test-calculator-pane {
+    display: none;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border-right: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .practice-test-shell .test-calculator-pane.is-open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .practice-test-shell .test-calculator-head {
+    flex: 0 0 3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--foreground);
+    font-size: 0.78rem;
+  }
+
+  .practice-test-shell .test-calculator-head strong {
+    font-size: 0.84rem;
+    font-weight: 650;
+  }
+
+  .practice-test-shell .test-calculator-head > span {
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+
+  .practice-test-shell .test-calculator-head button {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    margin-left: auto;
+    border: 0;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.45rem;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .practice-test-shell .test-calculator-head button:hover {
+    background: var(--surface-2);
+    color: var(--foreground);
+  }
+
+  .practice-test-shell .test-calculator-content,
+  .practice-test-shell .calc-desmos-wrap,
+  .practice-test-shell .desmos-host {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .practice-test-shell .test-calculator-content,
+  .practice-test-shell .calc-desmos-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .practice-test-shell .calc-status {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .practice-test-shell .calc-status-error {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: stretch;
+    text-align: left;
+  }
+
+  .practice-test-shell .calc-fallback-note {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .practice-test-shell .calc-fallback-note button {
+    flex: 0 0 auto;
+    min-height: 2.2rem;
+    margin-left: auto;
+    padding: 0 0.85rem;
+    border: 1px solid var(--brand);
+    border-radius: 0.5rem;
+    background: var(--brand);
+    color: var(--brand-contrast);
+    cursor: pointer;
+  }
+
+  .practice-test-shell .calc-fallback-body {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .practice-test-shell.has-math-calculator .test-question {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0.7rem clamp(1.25rem, 2.2vw, 2.75rem) 2.5rem;
+  }
+
+  .practice-test-shell.has-math-calculator .test-question-content {
+    max-width: none;
+  }
+
+  @media (max-width: 62rem) {
+    .practice-test-shell.is-math:not(.has-math-calculator) .test-question {
+      width: min(48rem, 100%);
+      max-width: 48rem;
+      padding: 2.25rem clamp(1.5rem, 5vw, 3rem);
+    }
+
+    .practice-test-shell.has-math-calculator .test-body {
+      display: block;
+    }
+
+    .practice-test-shell.has-math-calculator .test-calculator-pane.is-open {
+      position: absolute;
+      inset: 0;
+      z-index: 11;
+    }
+
+    .practice-test-shell.has-math-calculator .test-question {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
+  @media (max-width: 44rem) {
+    .practice-test-shell.is-math:not(.has-math-calculator) .test-question {
+      padding: 2.25rem 1.25rem;
+    }
+
+    .practice-test-shell .test-calculator-head {
+      padding-inline: 0.75rem;
+    }
+  }
+}
+
 /* The highlighter's marks are styled from useHighlighter: ::highlight() is the
    only way to reach them, and the build's CSS parser drops rules it does not
    recognise, so the rules go in through the CSSOM instead.
@@ -2463,12 +2677,57 @@ body[data-exam] .test-foot {
     width: min(24rem, 100%);
     text-align: center;
   }
-  .mk-ring {
+  /* ---------------- the loading ring ----------------
+     Three layers, all driven by keyframes so the browser can run them off the
+     main thread: the wait as a sweeping arc, a short arc chasing it so there is
+     motion in the first half second when the sweep has barely started, and a
+     halo behind them both. Nothing here is animated from JavaScript — the
+     previous version set stroke-dashoffset every frame *and* declared a 300ms
+     transition on it, so each frame restarted an ease from a stale value. */
+  .mk-ring-holder {
+    position: relative;
+    width: 6rem;
+    height: 6rem;
     margin-inline: auto;
-    transform: rotate(-90deg);
   }
-  .mk-ring circle {
-    transition: stroke-dashoffset 300ms linear;
+  .mk-ring-glow {
+    position: absolute;
+    inset: -20%;
+    border-radius: var(--radius-pill);
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--brand) 26%, transparent) 0%,
+      transparent 68%
+    );
+    animation: mk-halo 2.4s ease-in-out infinite;
+  }
+  .mk-ring {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .mk-ring-track {
+    stroke: var(--line);
+  }
+  /* Starts empty and fills over exactly the wait. `forwards` matters: without it
+     the arc snaps back to empty on the last frame, right as the test opens. */
+  .mk-ring-arc {
+    stroke-dasharray: var(--circ);
+    stroke-dashoffset: var(--circ);
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: rotate(-90deg);
+    animation: mk-sweep var(--spin) linear forwards;
+  }
+  /* A 14-unit dash going round on its own clock, dimmer than the sweep so it
+     reads as movement rather than as a second measurement. */
+  .mk-ring-chase {
+    stroke: color-mix(in srgb, var(--brand-2) 65%, transparent);
+    stroke-dasharray: 14 calc(var(--circ) - 14);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: mk-chase 1.1s linear infinite;
   }
   .mk-steps {
     margin-top: 2rem;
@@ -2624,6 +2883,15 @@ body[data-exam] .test-foot {
   background: var(--brand);
   color: var(--brand-contrast);
 }
+.practice-test-shell .test-bar-right > .calculator-tool-btn.tool-btn-on {
+  border-color: color-mix(in srgb, var(--brand) 25%, transparent);
+  background: color-mix(in srgb, var(--brand) 13%, #ffffff);
+  color: var(--brand);
+}
+:root[data-theme="dark"] .practice-test-shell .test-bar-right > .calculator-tool-btn.tool-btn-on {
+  background: color-mix(in srgb, var(--brand) 22%, var(--surface));
+  color: color-mix(in srgb, var(--brand) 70%, #ffffff);
+}
 .practice-test-shell .q-view-exam .q-choice,
 .practice-test-shell .q-view-exam .q-mark,
 .practice-test-shell .q-view-exam .cross-btn {
@@ -2702,4 +2970,327 @@ body[data-exam] .test-foot {
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+/* ---------------- Desmos ----------------
+   The graphing calculator needs a sized box: it measures its own host on boot
+   and lays out to nothing if that host has no height. */
+@layer components {
+  .calc-desmos-wrap {
+    position: relative;
+    height: 100%;
+    min-height: 22rem;
+  }
+  .desmos-host {
+    width: 100%;
+    height: 100%;
+  }
+  .calc-loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  /* Says which calculator this is and why, rather than leaving a student to
+     wonder where the graph went. */
+  .calc-fallback-note {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+}
+
+/* ---------------- floating tool panel ----------------
+   The calculator and the reference sheet, as windows: moved by their header,
+   resized by the browser's own grip. Fixed rather than absolute so dragging is
+   measured against the viewport, which is also what the clamping in
+   FloatingTool assumes. */
+@layer components {
+  .float-tool {
+    position: fixed;
+    z-index: 45;
+    display: flex;
+    flex-direction: column;
+    width: 24rem;
+    height: min(30rem, 68vh);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--overlay);
+    overflow: hidden;
+    /* The native grip. Bounded both ways: too small to read and large enough to
+       bury the question are both worse than not resizing. */
+    resize: both;
+    min-width: 17rem;
+    min-height: 13rem;
+    max-width: min(52rem, 92vw);
+    max-height: 88vh;
+  }
+  /* No transition on position: a panel that eases toward the pointer feels
+     broken. The shadow lifting is the only feedback that moves. */
+  .float-tool.is-dragging {
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    user-select: none;
+  }
+  .float-tool-head {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-shrink: 0;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    cursor: grab;
+    touch-action: none;
+  }
+  .float-tool.is-dragging .float-tool-head {
+    cursor: grabbing;
+  }
+  /* Two short bars: the universal "this is a handle" mark. */
+  .float-tool-grip {
+    display: grid;
+    gap: 3px;
+    flex-shrink: 0;
+    width: 0.75rem;
+  }
+  .float-tool-grip span {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--line-strong);
+  }
+  .float-tool-body {
+    flex: 1;
+    min-height: 0;
+  }
+  /* On a phone there is nowhere to drag to: the panel takes the bottom of the
+     screen and stays there. */
+  @media (max-width: 40rem) {
+    .float-tool {
+      left: 0.5rem !important;
+      top: auto !important;
+      bottom: 4.5rem;
+      width: calc(100vw - 1rem);
+      height: 55vh;
+      resize: none;
+    }
+  }
+}
+
+@layer components {
+  /* The highlighter's colour row inside the practice shell. Sits between the
+     work area and the footer rather than in the tool bar: the bar is already
+     full at this width, and a row that pushes the question down is easier to
+     find than one that squeezes in beside six other controls. */
+  .test-highlight-bar {
+    flex-shrink: 0;
+    padding: 0 1.25rem 0.5rem;
+  }
+  .test-highlight-bar > p {
+    margin-top: 0;
+  }
+}
+
+@layer components {
+  /* ---------------- review queue filters ----------------
+     One row of controls instead of four rows of chips. The queue is the page;
+     the filters are a tool, so they take a tool's worth of space. */
+  .rv-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  /* Three selects at most, side by side on a laptop and stacked on a phone. */
+  .rv-filter-panel {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  @media (min-width: 44rem) {
+    .rv-filter-panel {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  /* An active filter, and its own way off. Reads as a statement of what is on
+     rather than as one option among sixteen. */
+  .rv-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    max-width: 18rem;
+    padding: 0.25rem 0.625rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.75rem;
+    font-weight: 550;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rv-pill:hover {
+    border-color: var(--brand);
+  }
+  .rv-clear {
+    background: none;
+    border: 0;
+    padding: 0.25rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .rv-clear:hover {
+    color: var(--foreground);
+  }
+}
+
+/* Unlayered: keyframes belong outside the component layer, and these three are
+   referenced from it. */
+@keyframes mk-sweep {
+  from {
+    stroke-dashoffset: var(--circ);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mk-chase {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}
+@keyframes mk-halo {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
+@layer components {
+  /* ---------------- mock-only bits of the shared test shell ---------------- */
+
+  /* Which module you are in, beside the directions button. Practice has no need
+     for this — it runs one set — but in a mock it is the difference between
+     "Reading & Writing 1" and the module after the break. */
+  .practice-test-shell .test-module-label {
+    display: none;
+    align-items: center;
+    min-width: 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  @media (min-width: 52rem) {
+    .practice-test-shell .test-module-label {
+      display: inline-flex;
+    }
+  }
+
+  /* The hairline under the bar. In practice it is a ProgressBar component and
+     draws its own fill; the mock's is a plain element whose child is the clock's
+     remaining share, so it needs the fill rule spelling out. */
+  .practice-test-shell .test-section-progress > span {
+    display: block;
+    height: 100%;
+    /* The clock ticks once a second; easing the width over that second is what
+       makes it read as draining rather than stepping. */
+    transition: width 1000ms linear;
+  }
+}
+
+@layer components {
+  /* ---------------- duplicate warning (question editor) ----------------
+     Amber for a near match, red for an identical one: the first is a judgement
+     the author has to make, the second is almost certainly a double paste. */
+  .dup-warn {
+    margin-top: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+    border-radius: var(--radius-sm);
+    background: var(--warning-soft);
+  }
+  .dup-warn.is-exact {
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+    background: var(--danger-soft);
+  }
+  .dup-warn-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--warning);
+  }
+  .dup-warn.is-exact .dup-warn-title {
+    color: var(--danger);
+  }
+  .dup-warn-list {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0.625rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* The whole row opens the existing question, so the target is the row. */
+  .dup-warn-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    color: var(--foreground);
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 160ms ease;
+  }
+  .dup-warn-item:hover {
+    background: var(--surface);
+  }
+  .dup-warn-id {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    color: var(--muted);
+  }
+  /* One line: the point is recognition, and a wrapped paragraph per match would
+     bury the list this is meant to be scanned as. */
+  .dup-warn-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dup-warn-score {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    color: var(--muted);
+  }
+  .dup-warn-foot {
+    margin-top: 0.5rem;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
 }

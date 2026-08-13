@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
-import { Logo } from "./Logo";
 import { EnvironmentBadge } from "./EnvironmentBadge";
+import { Logo } from "./Logo";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   NavAdmin,
   NavHome,
@@ -31,7 +32,7 @@ const MOBILE_TABS = LINKS.slice(0, 4);
 
 export function TopBar() {
   const { t } = useI18n();
-  const { account, theme, toggleTheme, signOut, ready } = useApp();
+  const { account, signOut, ready } = useApp();
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -85,8 +86,6 @@ export function TopBar() {
             </span>
           </Link>
 
-          {/* Beside the wordmark, where "which build am I looking at" belongs.
-              Renders nothing on production. */}
           <EnvironmentBadge />
 
           {/*
@@ -118,9 +117,7 @@ export function TopBar() {
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
-            <button className="bar-btn" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
-              {theme === "dark" ? "☀" : "☾"}
-            </button>
+            <ThemeToggle />
 
             {(ready || pathname === "/") &&
               (account ? (

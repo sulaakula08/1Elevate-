@@ -7,6 +7,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { Logo } from "./Logo";
 import { NotificationsBell } from "./NotificationsBell";
+import { ThemeToggle } from "./ThemeToggle";
 import { useClosedHrefs } from "./SectionGate";
 import {
   NavAdmin,
@@ -48,6 +49,7 @@ export function MobileHeader() {
         </Link>
 
         <div className="ml-auto flex items-center gap-1.5">
+          <ThemeToggle className="w-8 h-8" />
           <NotificationsBell />
 
           <Link

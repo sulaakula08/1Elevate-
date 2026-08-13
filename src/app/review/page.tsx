@@ -9,6 +9,7 @@ import { difficultyColor, reviewQueue } from "@/lib/stats";
 import { PracticeRunner } from "@/components/PracticeRunner";
 import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { RichText } from "@/lib/math/markdown";
+import { Select } from "@/components/Select";
 import { Reveal } from "@/components/motion";
 import { SectionGate } from "@/components/SectionGate";
 
@@ -39,6 +40,8 @@ function ReviewInner() {
   const [domain, setDomain] = useState<string | null>(null);
   const [skill, setSkill] = useState<string | null>(null);
   const [level, setLevel] = useState<Difficulty | null>(null);
+  /** Shut by default: the queue is the page, the filters are a tool. */
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Recomputed after the session, so mastered questions drop out of the list.
   const queue = useMemo(() => reviewQueue(data, bank), [data, bank]);
@@ -107,6 +110,7 @@ function ReviewInner() {
 
   const subjects = subjectsFor(SAT.exam);
   const filtersOn = section !== null || domain !== null || skill !== null || level !== null;
+  const activeCount = [domain, skill, level].filter((value) => value !== null).length;
 
   function clear() {
     setSection(null);
@@ -211,68 +215,109 @@ function ReviewInner() {
           })}
         </Row>
 
-        <Row label={t("review.filterDomain")}>
-          <Chip
-            on={domain === null}
-            onClick={() => {
-              setDomain(null);
-              setSkill(null);
-            }}
+        {/*
+          Domain, skill and difficulty are selects behind a disclosure, not chips.
+
+          As chips they were three rows of them — sixteen skills, most holding one
+          question — which filled the screen before the queue itself appeared and
+          made a list of 73 questions look like a control panel. A select holds
+          sixteen options in one line of layout, and the counts still come along in
+          the labels. Section stays as chips: there are two of them, and it is the
+          cut a student actually makes.
+        */}
+        <div className="rv-filter-bar">
+          <button
+            type="button"
+            className={`btn btn-sm ${filtersOpen ? "is-on" : ""}`}
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
           >
-            {t("review.allDomains")}
-          </Chip>
-          {options.domains.map(([name, count]) => (
-            <Chip
-              key={name}
-              on={domain === name}
-              onClick={() => {
-                setDomain(name);
-                setSkill(null);
-              }}
-            >
-              {name}
-              <span className="qb-count">{count}</span>
-            </Chip>
-          ))}
-        </Row>
-
-        <Row label={t("review.filterSkill")}>
-          <Chip on={skill === null} onClick={() => setSkill(null)}>
-            {t("review.allSkills")}
-          </Chip>
-          {options.skills.map(([name, count]) => (
-            <Chip key={name} on={skill === name} onClick={() => setSkill(name)}>
-              {name}
-              <span className="qb-count">{count}</span>
-            </Chip>
-          ))}
-        </Row>
-
-        <Row label={t("quiz.difficulty")}>
-          <Chip on={level === null} onClick={() => setLevel(null)}>
-            {t("diff.all")}
-          </Chip>
-          {LEVELS.map((value) => {
-            const count = queue.filter((q) => q.difficulty === value).length;
-            if (count === 0) return null;
-            return (
-              <Chip
-                key={value}
-                on={level === value}
-                onClick={() => setLevel(value)}
-                tone={difficultyColor(value)}
-              >
-                {t(`diff.${value}`)}
-                <span className="qb-count">{count}</span>
-              </Chip>
-            );
-          })}
-        </Row>
-
-        {filtersOn && (
-          <button className="btn btn-sm" onClick={clear}>
-            {t("study.clearFilters")}
+            {t("review.narrow")}
+            {activeCount > 0 && <span className="qb-count">{activeCount}</span>}
           </button>
+
+          {/* What is currently on, even with the panel shut — a filter you cannot
+              see is a filter you will not think to remove. */}
+          {domain && (
+            <button className="rv-pill" onClick={() => { setDomain(null); setSkill(null); }}>
+              {domain === "—" ? t("review.noDomain") : domain} <span aria-hidden>✕</span>
+            </button>
+          )}
+          {skill && (
+            <button className="rv-pill" onClick={() => setSkill(null)}>
+              {skill} <span aria-hidden>✕</span>
+            </button>
+          )}
+          {level && (
+            <button className="rv-pill" onClick={() => setLevel(null)}>
+              {t(`diff.${level}`)} <span aria-hidden>✕</span>
+            </button>
+          )}
+          {filtersOn && (
+            <button className="rv-clear" onClick={clear}>
+              {t("study.clearFilters")}
+            </button>
+          )}
+        </div>
+
+        {filtersOpen && (
+          <div className="rv-filter-panel fade-in">
+            <label className="block">
+              <span className="label">{t("review.filterDomain")}</span>
+              <Select
+                label={t("review.filterDomain")}
+                value={domain ?? ""}
+                onChange={(next) => {
+                  setDomain(next || null);
+                  setSkill(null);
+                }}
+                options={[
+                  { value: "", label: t("review.allDomains") },
+                  ...options.domains.map(([name, count]) => ({
+                    value: name,
+                    // A question saved before domains existed has none; "—" as a
+                    // label reads as a rendering fault rather than as a bucket.
+                    label: name === "—" ? t("review.noDomain") : name,
+                    hint: count,
+                  })),
+                ]}
+              />
+            </label>
+
+            <label className="block">
+              <span className="label">{t("review.filterSkill")}</span>
+              <Select
+                label={t("review.filterSkill")}
+                value={skill ?? ""}
+                onChange={(next) => setSkill(next || null)}
+                options={[
+                  { value: "", label: t("review.allSkills") },
+                  ...options.skills.map(([name, count]) => ({
+                    value: name,
+                    label: name,
+                    hint: count,
+                  })),
+                ]}
+              />
+            </label>
+
+            <label className="block">
+              <span className="label">{t("quiz.difficulty")}</span>
+              <Select
+                label={t("quiz.difficulty")}
+                value={level === null ? "" : String(level)}
+                onChange={(next) => setLevel(next ? (Number(next) as Difficulty) : null)}
+                options={[
+                  { value: "", label: t("diff.all") },
+                  ...LEVELS.map((value) => ({
+                    value: String(value),
+                    label: t(`diff.${value}`),
+                    hint: queue.filter((q) => q.difficulty === value).length,
+                  })).filter((option) => option.hint > 0),
+                ]}
+              />
+            </label>
+          </div>
         )}
       </div>
 

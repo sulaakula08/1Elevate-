@@ -2,23 +2,33 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Question } from "@/data/types";
+import { useApp } from "@/lib/app-state";
 import { useExamMode } from "@/lib/exam-mode";
+import { useFullscreen } from "@/lib/fullscreen";
+import { readingDisplayParts } from "@/lib/reading-parts";
 import { useSettings } from "@/lib/settings";
 import { generatedIds } from "@/lib/generation/provenance";
 import { useI18n } from "@/lib/i18n";
 import { ConfirmDialog } from "@/components/ui";
-import { QuestionView } from "./QuestionView";
+import { QuestionPassage, QuestionView } from "./QuestionView";
 import { BreakScreen } from "./test/BreakScreen";
-import { Calculator } from "./test/Calculator";
+import { CalculatorPanel } from "./test/CalculatorPanel";
+import { FloatingTool } from "./test/FloatingTool";
 import { QuestionNavigator } from "./test/QuestionNavigator";
 import { ReferenceSheet } from "./test/ReferenceSheet";
 import { useHighlighter } from "./test/useHighlighter";
 import { HighlightControls } from "./test/HighlightControls";
+import { ContextualHighlightPalette } from "./test/ContextualHighlightPalette";
 import {
   IconCalculator,
   IconChevron,
   IconCrossOut,
+  IconClock,
   IconFlag,
+  IconFullscreen,
+  IconMoon,
+  IconMore,
+  IconSun,
   IconHighlight,
   IconReference,
 } from "./test/TestIcons";
@@ -63,6 +73,8 @@ function formatClock(seconds: number): string {
 export function MockRunner({ sections, onFinish, onExit }: Props) {
   const { t } = useI18n();
   const { settings } = useSettings();
+  const { theme, toggleTheme } = useApp();
+  const fullscreen = useFullscreen();
   useExamMode();
 
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -80,6 +92,7 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
   const [crossOutMode, setCrossOutMode] = useState(false);
   const [directionsOpen, setDirectionsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   // Seeded from the preference, then owned by the session: a student who
   // hides the clock in Settings can still show it for one module.
   const [timerHidden, setTimerHidden] = useState(settings.hideTimer);
@@ -87,6 +100,9 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   /** Index of the module waiting on the other side of the break, if any. */
   const [breakBefore, setBreakBefore] = useState<number | null>(null);
+  /** The reading pane's share of the width, and whether it is being dragged. */
+  const [splitRatio, setSplitRatio] = useState(50);
+  const [resizing, setResizing] = useState(false);
 
   // Stamped after render (reading the clock during render isn't pure).
   const startedAt = useRef(0);
@@ -100,7 +116,29 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
   const onBreak = breakBefore !== null;
 
   const questionRef = useRef<HTMLDivElement>(null);
-  const highlighter = useHighlighter(questionRef, highlightMode, question?.id ?? "");
+  const passageRef = useRef<HTMLElement>(null);
+
+  /**
+   * The same two-pane split practice uses, from the same helper — a passage on
+   * the left, the question about it on the right.
+   */
+  const readingParts = question ? readingDisplayParts(question) : null;
+  const hasReadingPane = Boolean(readingParts);
+  const displayQuestion = readingParts
+    ? { ...question, passage: undefined, prompt: readingParts.prompt }
+    : question;
+  const passageQuestion = readingParts
+    ? { ...question, passage: readingParts.passage }
+    : question;
+
+  // Highlighting belongs to whichever pane holds the prose, and on a passage the
+  // flow is select-then-choose-a-colour rather than draw-immediately.
+  const highlighter = useHighlighter(
+    hasReadingPane ? passageRef : questionRef,
+    highlightMode,
+    question?.id ?? "",
+    { contextual: hasReadingPane },
+  );
 
   /** Move into a module: fresh clock, first question, tools reset. */
   const enterSection = useCallback(
@@ -114,6 +152,41 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
     },
     [sections],
   );
+
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (event: PointerEvent) => {
+      if (!moreRef.current?.contains(event.target as Node)) setMoreOpen(false);
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onEscape);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onEscape);
+    };
+  }, [moreOpen]);
+
+  useEffect(() => {
+    if (!resizing) return;
+    const move = (event: PointerEvent) => {
+      const bounds = questionRef.current?.getBoundingClientRect();
+      if (!bounds?.width) return;
+      const nextRatio = ((event.clientX - bounds.left) / bounds.width) * 100;
+      setSplitRatio(Math.min(65, Math.max(35, nextRatio)));
+    };
+    const stop = () => setResizing(false);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop, { once: true });
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+  }, [resizing]);
 
   const submitSection = useCallback(() => {
     setConfirmSubmit(false);
@@ -188,69 +261,88 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
   }
 
   return (
-    <div className="test-shell">
-      {/* ---------------- tool rail ---------------- */}
+    <div
+      className={`test-shell practice-test-shell ${hasReadingPane ? "has-reading-pane" : ""}`}
+    >
+      {/* ---------------- tool rail ----------------
+          The same bar practice uses, so the two surfaces are one interface: exit
+          and directions left, the clock in the middle, the tools right. What
+          differs is what the clock does — it counts down, and it cannot be
+          paused. */}
       <header className="test-bar">
-        <button className="btn btn-ghost btn-sm -ml-2" onClick={() => setConfirmExit(true)}>
-          ✕ {t("mock.cancelTest")}
-        </button>
-
-        <div className="relative">
-          <button
-            className="btn btn-ghost btn-sm"
-            aria-expanded={directionsOpen}
-            onClick={() => setDirectionsOpen((v) => !v)}
-          >
-            {t("ptool.directions")}
-            <IconChevron />
+        <div className="test-bar-left">
+          <button className="test-header-btn" onClick={() => setConfirmExit(true)}>
+            <span aria-hidden>✕</span> {t("mock.cancelTest")}
           </button>
-          {directionsOpen && (
-            <div
-              className="panel scale-in absolute top-full mt-2 left-0 z-30 w-[min(22rem,calc(100vw-2rem))] p-4"
-              style={{ boxShadow: "var(--overlay)" }}
+
+          <div className="relative">
+            <button
+              className="test-header-btn"
+              aria-expanded={directionsOpen}
+              onClick={() => setDirectionsOpen((value) => !value)}
             >
-              <p className="text-sm leading-relaxed text-muted">
-                {t("mock.directionsBody")}
-              </p>
-              <button className="btn btn-sm mt-3 w-full" onClick={() => setDirectionsOpen(false)}>
-                {t("tour.done")}
-              </button>
-            </div>
-          )}
+              {t("ptool.directions")}
+              <IconChevron />
+            </button>
+            {directionsOpen && (
+              <div
+                className="panel scale-in test-directions-panel"
+                style={{ boxShadow: "var(--overlay)" }}
+              >
+                <p className="text-sm leading-relaxed text-muted">{t("mock.directionsBody")}</p>
+                <button
+                  className="btn btn-sm mt-3 w-full"
+                  onClick={() => setDirectionsOpen(false)}
+                >
+                  {t("tour.done")}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <span className="test-module-label">
+            <span className="num text-faint mr-1.5">
+              {sectionIndex + 1}/{sections.length}
+            </span>
+            {section.name}
+          </span>
         </div>
 
-        {/* The clock can be hidden — some students test better without it — but
-            never paused and never stopped. */}
         <div className="test-timer">
-          {timerHidden ? (
-            <button className="btn btn-sm" onClick={() => setTimerHidden(false)}>
-              {t("ptool.show")}
-            </button>
-          ) : (
-            <>
+          <span className="test-clock-slot">
+            {timerHidden ? (
+              <IconClock className="test-clock-hidden" />
+            ) : (
               <span
-                className="num text-h2 font-medium tabular-nums leading-none"
-                style={{ color: lowTime ? "var(--danger)" : "var(--foreground)" }}
+                className="test-clock num tabular-nums"
                 role="timer"
+                style={lowTime ? { color: "var(--danger)" } : undefined}
               >
                 {formatClock(secondsLeft)}
               </span>
-              <button className="btn btn-sm h-7" onClick={() => setTimerHidden(true)}>
-                {t("ptool.hide")}
-              </button>
-            </>
-          )}
+            )}
+          </span>
+          <span className="test-timer-actions">
+            {/* No pause button, unlike practice: a mock that can be stopped is
+                not measuring anything. */}
+            <button className="test-timer-hide" onClick={() => setTimerHidden((value) => !value)}>
+              {timerHidden ? t("ptool.show") : t("ptool.hide")}
+            </button>
+          </span>
         </div>
 
-        <div className="ml-auto flex items-center gap-1">
+        <div className="test-bar-right">
           {highlighter.supported && (
             <button
               className={`tool-btn ${highlightMode ? "tool-btn-on" : ""}`}
               aria-pressed={highlightMode}
-              onClick={() => setHighlightMode((v) => !v)}
+              onClick={() => {
+                setHighlightMode((value) => !value);
+                highlighter.dismiss();
+              }}
             >
               <IconHighlight />
-              <span className="hidden sm:inline">{t("ptool.highlight")}</span>
+              <span>{t("ptool.highlight")}</span>
             </button>
           )}
           {isMath && (
@@ -258,138 +350,219 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
               <button
                 className={`tool-btn ${tool === "calculator" ? "tool-btn-on" : ""}`}
                 aria-pressed={tool === "calculator"}
-                onClick={() => setTool((v) => (v === "calculator" ? null : "calculator"))}
+                onClick={() => setTool((value) => (value === "calculator" ? null : "calculator"))}
               >
                 <IconCalculator />
-                <span className="hidden sm:inline">{t("ptool.calculator")}</span>
+                <span>{t("ptool.calculator")}</span>
               </button>
               <button
                 className={`tool-btn ${tool === "reference" ? "tool-btn-on" : ""}`}
                 aria-pressed={tool === "reference"}
-                onClick={() => setTool((v) => (v === "reference" ? null : "reference"))}
+                onClick={() => setTool((value) => (value === "reference" ? null : "reference"))}
               >
                 <IconReference />
-                <span className="hidden sm:inline">{t("ptool.reference")}</span>
+                <span>{t("ptool.reference")}</span>
               </button>
             </>
           )}
+
+          {/* Practice's More menu, with the two entries that belong in a timed
+              test. Fullscreen is the one a student actually wants here: the real
+              test app fills the screen, and a browser's tabs and bookmarks bar
+              are the difference between practising and sitting an exam. */}
+          <div className="test-more-wrap" ref={moreRef}>
+            <button
+              className="tool-btn test-more-btn"
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
+              onClick={() => setMoreOpen((value) => !value)}
+            >
+              <IconMore />
+              <span>{t("ptool.more")}</span>
+            </button>
+            {moreOpen && (
+              <div className="test-more-menu scale-in" role="menu">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    void fullscreen.toggle();
+                    setMoreOpen(false);
+                  }}
+                >
+                  <IconFullscreen />
+                  <span>
+                    {t(fullscreen.isFullscreen ? "ptool.exitFullscreen" : "ptool.fullscreen")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    toggleTheme();
+                    setMoreOpen(false);
+                  }}
+                >
+                  {theme === "dark" ? <IconSun /> : <IconMoon />}
+                  <span>{t(theme === "dark" ? "nav.lightMode" : "nav.darkMode")}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Section clock as a hairline, draining left to right. */}
-      <div className="h-[2px] overflow-hidden" style={{ background: "var(--line)" }}>
-        <div
-          className="h-full transition-[width] duration-1000 ease-linear"
+      {/* Where practice shows how far through the set you are, a mock shows how
+          much of the module's clock is left — same hairline, same place. */}
+      <div className="test-section-progress" aria-hidden>
+        <span
           style={{
             width: `${(secondsLeft / Math.max(1, section.minutes * 60)) * 100}%`,
-            background: lowTime ? "var(--danger)" : "var(--foreground)",
+            background: lowTime ? "var(--danger)" : "var(--brand)",
           }}
         />
       </div>
 
+      {/* The tools are windows now: dragged by their header, resized by the
+          browser's grip. A docked column covered the figure on the very Math
+          questions the calculator is for. */}
+      {tool && (
+        <FloatingTool
+          id={tool}
+          title={tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
+          hint={t("ptool.dragHint")}
+          closeLabel={t("tutor.close")}
+          onClose={() => setTool(null)}
+        >
+          {tool === "calculator" ? <CalculatorPanel /> : <ReferenceSheet />}
+        </FloatingTool>
+      )}
+
       {/* ---------------- work area ---------------- */}
-      <div className={`test-body ${tool ? "test-body-split" : ""}`}>
-        {tool && (
-          <aside className="test-pane fade-in">
-            <div className="flex items-center gap-2 px-3 h-11 border-b">
-              <p className="text-sm font-medium">
-                {tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
-              </p>
-              <button
-                className="btn btn-ghost btn-sm ml-auto"
-                onClick={() => setTool(null)}
-                aria-label={t("tutor.close")}
-              >
-                ✕
-              </button>
+      <div
+        className={`test-body ${resizing ? "is-resizing" : ""}`}
+        ref={questionRef}
+        style={{ ["--passage-ratio" as string]: `${splitRatio}%` }}
+      >
+        {hasReadingPane && (
+          <section className="test-passage-pane" ref={passageRef} aria-label={t("study.passage")}>
+            <div className="test-passage-inner">
+              <QuestionPassage question={passageQuestion} labelled={false} />
             </div>
-            <div className="flex-1 min-h-0">
-              {tool === "calculator" ? <Calculator /> : <ReferenceSheet />}
-            </div>
-          </aside>
+          </section>
+        )}
+
+        {hasReadingPane && (
+          <div
+            className="test-split-handle"
+            role="separator"
+            aria-label="Resize passage and question panes"
+            aria-orientation="vertical"
+            aria-valuemin={35}
+            aria-valuemax={65}
+            aria-valuenow={Math.round(splitRatio)}
+            tabIndex={0}
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              event.preventDefault();
+              setResizing(true);
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+              event.preventDefault();
+              setSplitRatio((value) =>
+                Math.min(65, Math.max(35, value + (event.key === "ArrowLeft" ? -2 : 2))),
+              );
+            }}
+          >
+            <span aria-hidden />
+          </div>
         )}
 
         <main className="test-question">
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="test-question-status">
             <span className="q-number num">{questionIndex + 1}</span>
             <button
-              className={`btn btn-ghost btn-sm ${marked[question.id] ? "is-marked" : ""}`}
+              className={`test-mark-btn ${marked[question.id] ? "is-marked" : ""}`}
               aria-pressed={Boolean(marked[question.id])}
               onClick={() =>
-                setMarked((prev) => ({ ...prev, [question.id]: !prev[question.id] }))
+                setMarked((previous) => ({ ...previous, [question.id]: !previous[question.id] }))
               }
             >
               <IconFlag filled={Boolean(marked[question.id])} />
               {marked[question.id] ? t("ptool.marked") : t("ptool.mark")}
             </button>
 
-            <span className="ml-auto flex items-center gap-2">
-              <span className="text-micro text-muted truncate">
-                <span className="num text-faint mr-1.5">
-                  {sectionIndex + 1}/{sections.length}
-                </span>
-                {section.name}
-              </span>
-              <button
-                className={`bar-btn w-8 h-8 ${crossOutMode ? "tool-btn-on" : ""}`}
-                aria-pressed={crossOutMode}
-                onClick={() => setCrossOutMode((v) => !v)}
-                title={t("ptool.crossOut")}
-                aria-label={t("ptool.crossOut")}
-              >
-                <IconCrossOut />
-              </button>
-            </span>
+            <button
+              className={`test-cross-tool ${crossOutMode ? "tool-btn-on" : ""}`}
+              aria-pressed={crossOutMode}
+              onClick={() => setCrossOutMode((value) => !value)}
+              title={t("ptool.crossOut")}
+              aria-label={t("ptool.crossOut")}
+            >
+              <IconCrossOut />
+            </button>
           </div>
 
-          {/* No difficulty badge and no explanation here: the real test tells a
-              student nothing about the item they are looking at. */}
+          {/* No domain, no difficulty and no explanation: the real test tells a
+              student nothing about the item in front of them. The only badge is
+              the one a student is entitled to — who wrote the question. */}
           {generatedIds().has(question.id) && (
-            <p className="mt-2">
+            <div className="test-question-meta">
               <span className="pl-ai-badge" title={t("plan.aiBadgeTitle")}>
                 {t("plan.aiBadge")}
               </span>
-            </p>
+            </div>
           )}
 
-          {timedOut && <p className="mt-3 text-sm text-warning">{t("mock.timeUp")}</p>}
+          {timedOut && <p className="test-result-message text-warning">{t("mock.timeUp")}</p>}
 
-          {highlightMode && <HighlightControls highlighter={highlighter} />}
-
-          <div className="mt-5" ref={questionRef}>
+          <div className="test-question-content">
             <QuestionView
-              question={question}
+              question={displayQuestion}
               selected={answers[question.id] ?? null}
-              onSelect={(choice) => setAnswers((prev) => ({ ...prev, [question.id]: choice }))}
+              onSelect={(choice) =>
+                setAnswers((previous) => ({ ...previous, [question.id]: choice }))
+              }
               crossOutMode={crossOutMode}
               crossedOut={crossed[question.id] ?? []}
               onToggleCross={(choice) =>
-                setCrossed((prev) => {
-                  const current = prev[question.id] ?? [];
+                setCrossed((previous) => {
+                  const current = previous[question.id] ?? [];
                   return {
-                    ...prev,
+                    ...previous,
                     [question.id]: current.includes(choice)
                       ? current.filter((c) => c !== choice)
                       : [...current, choice],
                   };
                 })
               }
+              showPassage={!hasReadingPane}
+              variant="exam"
             />
           </div>
         </main>
       </div>
 
-      {/* ---------------- footer ---------------- */}
-      <footer className="test-foot">
-        <span className="num hidden sm:block text-sm text-muted">
-          {answeredInSection}/{section.questions.length}
-        </span>
+      {highlightMode && (
+        <div className="test-highlight-bar">
+          <HighlightControls highlighter={highlighter} />
+        </div>
+      )}
 
-        <div className="relative mx-auto">
+      {hasReadingPane && <ContextualHighlightPalette highlighter={highlighter} />}
+
+      {/* ---------------- footer ----------------
+          Practice's footer, with the module's own buttons: the navigator in the
+          middle, how far through you are on the left, and the way forward on the
+          right — which at the end of a module is "submit", not "next". */}
+      <footer className="test-foot">
+        <div className="test-foot-progress relative">
           <button
-            className="btn btn-sm"
+            className="test-progress-btn"
             aria-expanded={navOpen}
-            onClick={() => setNavOpen((v) => !v)}
+            onClick={() => setNavOpen((value) => !value)}
+            title={section.name}
           >
             <span className="num">
               {questionIndex + 1} {t("quiz.of")} {section.questions.length}
@@ -409,26 +582,34 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            className="btn btn-sm"
-            disabled={questionIndex === 0}
-            onClick={() => setQuestionIndex((i) => i - 1)}
-          >
-            {t("ptool.previous")}
-          </button>
-          {questionIndex + 1 < section.questions.length ? (
+        <div className="test-foot-controls">
+          <div className="test-foot-help">
+            <span className="num text-sm text-muted">
+              {answeredInSection}/{section.questions.length}
+            </span>
+          </div>
+
+          <div className="test-foot-actions">
             <button
-              className="btn btn-primary btn-sm"
-              onClick={() => setQuestionIndex((i) => i + 1)}
+              className="btn btn-sm"
+              disabled={questionIndex === 0}
+              onClick={() => setQuestionIndex((value) => value - 1)}
             >
-              {t("ptool.next")}
+              {t("ptool.previous")}
             </button>
-          ) : (
-            <button className="btn btn-primary btn-sm" onClick={() => setConfirmSubmit(true)}>
-              {isLastSection ? t("quiz.finish") : t("mock.submitSection")}
-            </button>
-          )}
+            {questionIndex + 1 < section.questions.length ? (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => setQuestionIndex((value) => value + 1)}
+              >
+                {t("ptool.next")}
+              </button>
+            ) : (
+              <button className="btn btn-primary btn-sm" onClick={() => setConfirmSubmit(true)}>
+                {isLastSection ? t("quiz.finish") : t("mock.submitSection")}
+              </button>
+            )}
+          </div>
         </div>
       </footer>
 

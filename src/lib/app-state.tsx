@@ -105,7 +105,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [account, setAccount] = useState<Account | null>(null);
   const [data, setData] = useState<UserData>(EMPTY_USER_DATA);
   const [custom, setCustom] = useState<Question[]>([]);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  /**
+   * Seeded from what the boot script already decided, not from a guess.
+   *
+   * Starting at "light" meant the apply-effect below wrote `data-theme="light"`
+   * on mount — over the top of the dark the boot script had correctly stamped —
+   * and only corrected it a render later. That is a visible flash to the wrong
+   * palette on every load for anyone whose theme is dark, and it made the
+   * toggle look like it had not taken. Reading the attribute is the same source
+   * the script wrote, so the first render agrees with the first paint.
+   */
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof document === "undefined") return "light";
+    return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+  });
 
   /**
    * Loads the profile behind the current Supabase session. Returns null when

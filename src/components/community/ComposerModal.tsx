@@ -6,6 +6,7 @@ import { subjectsFor } from "@/data/exams";
 import { useI18n } from "@/lib/i18n";
 import { useCommunity, type CreatePostInput } from "@/lib/community-state";
 import { useSendDelay } from "@/lib/send-delay";
+import { Select } from "@/components/Select";
 
 const SUBJECT_TYPES: CommunityPostType[] = ["question", "explanation", "study-update", "resource"];
 
@@ -236,17 +237,17 @@ export function ComposerModal({
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
                   <span className="label">{t("community.composerSubject")}</span>
-                  <select
-                    className="field"
+                  {/* The app's own list, not the operating system's: a native
+                      option list ignores the theme entirely. */}
+                  <Select
+                    label={t("community.composerSubject")}
                     value={form.subjectId}
-                    onChange={(event) => set("subjectId", event.target.value)}
-                  >
-                    {subjectsFor("sat").map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {tx(subject.name)}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(next) => set("subjectId", next)}
+                    options={subjectsFor("sat").map((subject) => ({
+                      value: subject.id,
+                      label: tx(subject.name),
+                    }))}
+                  />
                 </label>
                 <label className="block">
                   <span className="label">{t("community.composerTopic")}</span>

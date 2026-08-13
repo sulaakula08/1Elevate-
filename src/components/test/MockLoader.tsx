@@ -10,6 +10,14 @@ import { useI18n } from "@/lib/i18n";
  * is on screen — but the point is as much ceremony as cover: the test proper
  * should not start on the same click that ended the browsing. Four labelled
  * steps make the wait legible instead of dead.
+ *
+ * The ring is animated by CSS, not by React. It used to set `stroke-dashoffset`
+ * from a requestAnimationFrame loop while a 300ms CSS transition was declared on
+ * that same property: every frame restarted an ease from a stale value, so the
+ * arc lagged, stuttered, and for the first half second looked like an empty
+ * circle. A keyframe on the compositor cannot stutter, costs no renders, and is
+ * the same three seconds either way. React is left with what it is actually
+ * needed for — moving the step labels and handing over at the end.
  */
 
 const TOTAL_MS = 3600;
@@ -21,53 +29,86 @@ const STEPS = [
   "mock.loadStep4",
 ] as const;
 
+/** Geometry shared between the SVG and the keyframe that sweeps it. */
+const RADIUS = 38;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
 export function MockLoader({ onReady }: { onReady: () => void }) {
   const { t } = useI18n();
-  const [progress, setProgress] = useState(0);
+  const [step, setStep] = useState(0);
 
-  // onReady is called from a timer, so keep the ref fresh rather than
-  // re-arming the countdown every time the parent re-renders.
+  // onReady is called from a timer, so keep the ref fresh rather than re-arming
+  // the countdown every time the parent re-renders.
   const readyRef = useRef(onReady);
   useEffect(() => {
     readyRef.current = onReady;
   }, [onReady]);
 
   useEffect(() => {
-    const started = performance.now();
-    let frame = 0;
-    const tick = () => {
-      const ratio = Math.min(1, (performance.now() - started) / TOTAL_MS);
-      setProgress(ratio);
-      if (ratio < 1) frame = requestAnimationFrame(tick);
-      else readyRef.current();
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    // One timer per step plus the handover, instead of a frame loop: four state
+    // changes over three and a half seconds is all this screen needs.
+    const perStep = TOTAL_MS / STEPS.length;
+    const timers = STEPS.slice(1).map((_, i) =>
+      window.setTimeout(() => setStep(i + 1), perStep * (i + 1)),
+    );
+    timers.push(window.setTimeout(() => readyRef.current(), TOTAL_MS));
+    return () => timers.forEach(window.clearTimeout);
   }, []);
-
-  // The last step stays "in progress" until the whole thing is done, so nothing
-  // reads as finished a beat before the screen hands over.
-  const reached = Math.min(STEPS.length - 1, Math.floor(progress * STEPS.length));
-  const radius = 34;
-  const circumference = 2 * Math.PI * radius;
 
   return (
     <div className="mk-load fade-in" role="status" aria-live="polite">
       <div className="mk-load-inner">
-        <svg className="mk-ring" width="88" height="88" viewBox="0 0 88 88" aria-hidden>
-          <circle cx="44" cy="44" r={radius} fill="none" stroke="var(--line)" strokeWidth="3" />
-          <circle
-            cx="44"
-            cy="44"
-            r={radius}
-            fill="none"
-            stroke="var(--brand)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * (1 - progress)}
-          />
-        </svg>
+        <div className="mk-ring-holder">
+          {/* A soft halo, sized off the ring. Purely light — it sits behind the
+              stroke and pulses, so the ring reads as lit rather than drawn. */}
+          <span className="mk-ring-glow" aria-hidden />
+
+          <svg
+            className="mk-ring"
+            viewBox="0 0 96 96"
+            style={{ ["--circ" as string]: CIRCUMFERENCE, ["--spin" as string]: `${TOTAL_MS}ms` }}
+            aria-hidden
+          >
+            <defs>
+              {/* Brand into its second hue, so the arc has depth along its
+                  length rather than being one flat colour. */}
+              <linearGradient id="mk-arc" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="var(--brand)" />
+                <stop offset="100%" stopColor="var(--brand-2)" />
+              </linearGradient>
+            </defs>
+
+            <circle
+              className="mk-ring-track"
+              cx="48"
+              cy="48"
+              r={RADIUS}
+              fill="none"
+              strokeWidth="3"
+            />
+            {/* Two arcs: one sweeps with the wait, the other chases it so there
+                is motion even at the moment the sweep is barely underway. */}
+            <circle
+              className="mk-ring-arc"
+              cx="48"
+              cy="48"
+              r={RADIUS}
+              fill="none"
+              stroke="url(#mk-arc)"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <circle
+              className="mk-ring-chase"
+              cx="48"
+              cy="48"
+              r={RADIUS}
+              fill="none"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
 
         <p className="display mt-7 text-h2">{t("mock.loadTitle")}</p>
         <p className="mt-2 text-sm leading-relaxed text-muted">{t("mock.loadSub")}</p>
@@ -76,9 +117,7 @@ export function MockLoader({ onReady }: { onReady: () => void }) {
           {STEPS.map((key, i) => (
             <p
               key={key}
-              className={`mk-step ${
-                i < reached ? "mk-step-done" : i === reached ? "mk-step-on" : ""
-              }`}
+              className={`mk-step ${i < step ? "mk-step-done" : i === step ? "mk-step-on" : ""}`}
             >
               <span className="mk-step-dot" aria-hidden />
               {t(key)}

@@ -224,6 +224,58 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
     leaf.mesh.geometry.computeVertexNormals();
   }
 
+
+  /* ---------------- motes ----------------
+     Dust caught in the light around the book. Two jobs: the card was a flat
+     field of colour behind a pale object, and a few specks at different depths
+     give it air — and while a page is crossing, something drifting the other
+     way makes the turn read as movement through space rather than a flat shape
+     rotating.
+
+     Points rather than meshes: one draw call for the lot, and a point sprite
+     stays round however the camera moves. Additive, because a mote is light
+     rather than an object, so the ones that overlap brighten instead of
+     stacking into a grey blob. */
+
+  const MOTES = quality.density < 0.8 ? 34 : 70;
+  const motePos = new Float32Array(MOTES * 3);
+  /** Per-mote drift speed and phase, so they never move as a block. */
+  const moteRate = new Float32Array(MOTES);
+  const motePhase = new Float32Array(MOTES);
+
+  for (let i = 0; i < MOTES; i++) {
+    // Seeded by index, so the composition is identical on every mount.
+    const r = (k: number) => {
+      const v = Math.sin((i + 1) * k) * 43758.5453;
+      return v - Math.floor(v);
+    };
+    motePos[i * 3] = (r(12.9898) - 0.5) * 5.4;
+    motePos[i * 3 + 1] = (r(78.233) - 0.5) * 3.4;
+    // Kept off the book's own plane so nothing settles on the page.
+    motePos[i * 3 + 2] = (r(37.719) - 0.5) * 2.6 + 0.6;
+    moteRate[i] = 0.05 + r(93.989) * 0.13;
+    motePhase[i] = r(21.317) * Math.PI * 2;
+  }
+
+  const moteGeo = new THREE.BufferGeometry();
+  moteGeo.setAttribute("position", new THREE.BufferAttribute(motePos, 3));
+
+  const moteMat = new THREE.PointsMaterial({
+    size: 0.055,
+    sizeAttenuation: true,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+
+  const motes = new THREE.Points(moteGeo, moteMat);
+  motes.frustumCulled = false;
+  // Outside `world`, so the pointer parallax does not swing the dust with the
+  // book — dust belongs to the room, not to the object.
+  scene.add(motes);
+
   function update(elapsed: number, delta: number, pointer: Pointer) {
     for (let i = 0; i < leaves.length; i++) {
       const leaf = leaves[i];
@@ -264,6 +316,20 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
     // composed rather than drifting to wherever the pointer last was.
     const targetY = HOME_ROT_Y + pointer.x * 0.18;
     const targetX = HOME_ROT_X - pointer.y * 0.1;
+    /* Rising, wrapping at the top, with a slow sway across. Positions are
+       written straight into the buffer: 70 points is far cheaper to move this
+       way than as 70 objects with matrices. */
+    const p = moteGeo.getAttribute("position") as THREE.BufferAttribute;
+    for (let i = 0; i < MOTES; i++) {
+      let y = p.getY(i) + moteRate[i] * delta;
+      if (y > 1.8) y = -1.8;
+      p.setY(i, y);
+      p.setX(i, motePos[i * 3] + Math.sin(elapsed * 0.32 + motePhase[i]) * 0.16);
+    }
+    p.needsUpdate = true;
+    // Breathing brightness, so the field never looks like a static texture.
+    moteMat.opacity = 0.4 + Math.sin(elapsed * 0.5) * 0.1;
+
     world.rotation.y += (targetY - world.rotation.y) * Math.min(1, delta * 3.5);
     world.rotation.x += (targetX - world.rotation.x) * Math.min(1, delta * 3.5);
   }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { SUBJECTS, getSubject } from "@/data/exams";
 import { SEED_QUESTIONS } from "@/data";
 import type { Difficulty, ExamId, LocalizedText, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
+import { findDuplicates } from "@/lib/duplicates";
 import { useI18n } from "@/lib/i18n";
 
 import { domainsFor, skillsFor } from "@/data/taxonomy";
@@ -130,7 +131,27 @@ function AdminInner() {
   const [toDelete, setToDelete] = useState<Question | null>(null);
   /** The editor starts folded: most visits here are to read, not to write. */
   const [editorOpen, setEditorOpen] = useState(false);
+  /**
+   * Set once the author has been shown the near-duplicates and said to save
+   * anyway. Reset whenever the prompt changes, so agreeing about one question
+   * does not silently cover the next.
+   */
+  const [duplicateOk, setDuplicateOk] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  /**
+   * Questions already in the bank that look like this one.
+   *
+   * Computed as the prompt changes rather than on save: an author who is told at
+   * the moment of pasting can stop, whereas one told at the end has already done
+   * the work of filling in four choices and an explanation.
+   */
+  const duplicates = useMemo(
+    () => findDuplicates(draft.prompt.en, bank, { ignoreId: draft.id || undefined }),
+    [draft.prompt.en, draft.id, bank],
+  );
+  const exactDuplicate = duplicates.some((match) => match.exact);
+
 
   if (account!.role === "student") {
     return (
@@ -187,6 +208,9 @@ function AdminInner() {
 
   function setText(field: "passage" | "prompt" | "explanation", value: string) {
     setDraft((prev) => ({ ...prev, [field]: { en: value } }));
+    // A changed prompt is a different question: the previous "save anyway" no
+    // longer applies to it.
+    if (field === "prompt") setDuplicateOk(false);
   }
 
   function setChoice(index: number, value: string) {
@@ -213,6 +237,14 @@ function AdminInner() {
     }
     if (choices.length < 2) {
       setError(t("admin.needTwoChoices"));
+      return;
+    }
+    // Refuse once, then let the author decide. An exact duplicate is almost
+    // always a double paste; a near one is sometimes a deliberate variant, and
+    // only the person writing it can tell.
+    if (duplicates.length > 0 && !duplicateOk) {
+      setError(t(exactDuplicate ? "admin.dupBlockExact" : "admin.dupBlockNear"));
+      setDuplicateOk(true);
       return;
     }
 
@@ -471,6 +503,46 @@ function AdminInner() {
           <p className="text-micro leading-relaxed text-muted mt-2">
             {t("admin.mathHint")}
           </p>
+
+          {/*
+            The duplicate warning, under the field it is about.
+
+            It appears while typing, not on save: an author told at the moment of
+            pasting can stop, while one told after filling in four choices and an
+            explanation has already done the work. Each match is a button, because
+            the useful action is almost never "write it again" — it is "open the
+            one that already exists and fix that instead".
+          */}
+          {duplicates.length > 0 && (
+            <div className={`dup-warn ${exactDuplicate ? "is-exact" : ""}`} role="alert">
+              <p className="dup-warn-title">
+                {t(exactDuplicate ? "admin.dupExactTitle" : "admin.dupNearTitle")}
+              </p>
+              <ul className="dup-warn-list">
+                {duplicates.map((match) => (
+                  <li key={match.question.id}>
+                    <button
+                      type="button"
+                      className="dup-warn-item"
+                      onClick={() => {
+                        setDraft(toDraft(match.question));
+                        setDuplicateOk(false);
+                        setError(null);
+                        setNotice(null);
+                      }}
+                    >
+                      <span className="dup-warn-id num">{match.question.id}</span>
+                      <span className="dup-warn-text">{match.question.prompt.en}</span>
+                      <span className="dup-warn-score num">
+                        {match.exact ? t("admin.dupIdentical") : `${Math.round(match.score * 100)}%`}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="dup-warn-foot">{t("admin.dupFoot")}</p>
+            </div>
+          )}
         </div>
 
         {/*
