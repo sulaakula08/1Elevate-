@@ -136,6 +136,7 @@ export function PracticeRunner({
   const [crossed, setCrossed] = useState<Record<string, number[]>>({});
 
   const [tool, setTool] = useState<Tool>(null);
+  const [calculatorMounted, setCalculatorMounted] = useState(false);
   const [highlightMode, setHighlightMode] = useState(false);
   const [crossOutMode, setCrossOutMode] = useState(false);
   const [directionsOpen, setDirectionsOpen] = useState(false);
@@ -392,19 +393,19 @@ export function PracticeRunner({
   }
 
   const isMath = question.subjectId === "sat-math";
+  const calculatorOpen = isMath && tool === "calculator";
+  const splitActive = hasReadingPane || calculatorOpen;
   const displayQuestion = readingParts
     ? { ...question, passage: undefined, prompt: readingParts.prompt }
     : question;
   const passageQuestion = readingParts
     ? { ...question, passage: readingParts.passage }
     : question;
-  const inlineAction: "check" | "explain" | null = hasReadingPane
-    ? !isRevealed && selected !== null
-      ? "check"
-      : isRevealed && selected !== question.answer
-        ? "explain"
-        : null
-    : null;
+  const inlineAction: "check" | "explain" | null = !isRevealed && selected !== null
+    ? "check"
+    : isRevealed && selected !== question.answer
+      ? "explain"
+      : null;
 
   const toggleCross = (choice: number) =>
     setCrossed((current) => {
@@ -501,7 +502,7 @@ export function PracticeRunner({
                   ? openExplanation
                   : undefined
             }
-            showExplanation={hasReadingPane ? Boolean(explanationOpen[question.id]) : isRevealed}
+            showExplanation={Boolean(explanationOpen[question.id])}
           />
         </motion.div>
       </AnimatePresence>
@@ -518,7 +519,16 @@ export function PracticeRunner({
   );
 
   return (
-    <div className={`test-shell practice-test-shell ${hasReadingPane ? "has-reading-pane" : ""}`}>
+    <div
+      className={[
+        "test-shell practice-test-shell",
+        hasReadingPane ? "has-reading-pane" : "",
+        isMath ? "is-math" : "",
+        calculatorOpen ? "has-math-calculator" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       {/* ---------------- tool rail ---------------- */}
       <header className="test-bar">
         <div className="test-bar-left">
@@ -590,9 +600,12 @@ export function PracticeRunner({
           {isMath && (
             <>
               <button
-                className={`tool-btn ${tool === "calculator" ? "tool-btn-on" : ""}`}
+                className={`tool-btn calculator-tool-btn ${tool === "calculator" ? "tool-btn-on" : ""}`}
                 aria-pressed={tool === "calculator"}
-                onClick={() => setTool((value) => (value === "calculator" ? null : "calculator"))}
+                onClick={() => {
+                  setCalculatorMounted(true);
+                  setTool((value) => (value === "calculator" ? null : "calculator"));
+                }}
               >
                 <IconCalculator />
                 <span>{t("ptool.calculator")}</span>
@@ -677,24 +690,47 @@ export function PracticeRunner({
       {/* The tools are windows now: dragged by their header, resized by the
           browser's grip. A docked column covered the figure on the very Math
           questions the calculator is for. */}
-      {tool && (
+      {tool === "reference" && (
         <FloatingTool
-          id={tool}
-          title={tool === "calculator" ? t("ptool.calcTitle") : t("ptool.refTitle")}
+          id="reference"
+          title={t("ptool.refTitle")}
           hint={t("ptool.dragHint")}
           closeLabel={t("tutor.close")}
           onClose={() => setTool(null)}
         >
-          {tool === "calculator" ? <CalculatorPanel /> : <ReferenceSheet />}
+          <ReferenceSheet />
         </FloatingTool>
       )}
 
       {/* ---------------- work area ---------------- */}
       <div
-        className={`test-body ${resizing ? "is-resizing" : ""}`}
+        className={`test-body ${splitActive ? "has-active-split" : ""} ${resizing ? "is-resizing" : ""}`}
         ref={questionRef}
         style={{ ["--passage-ratio" as string]: `${splitRatio}%` }}
       >
+
+        {isMath && calculatorMounted && (
+          <section
+            className={`test-calculator-pane ${calculatorOpen ? "is-open" : ""}`}
+            aria-label="Desmos graphing calculator"
+            aria-hidden={!calculatorOpen}
+          >
+            <div className="test-calculator-head">
+              <strong>{t("ptool.calcTitle")}</strong>
+              <span>Graphing</span>
+              <button
+                type="button"
+                aria-label="Close calculator"
+                onClick={() => setTool(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="test-calculator-content">
+              <CalculatorPanel active={calculatorOpen} sessionKey="practice-math" />
+            </div>
+          </section>
+        )}
 
         {hasReadingPane && (
           <section
@@ -708,11 +744,15 @@ export function PracticeRunner({
           </section>
         )}
 
-        {hasReadingPane && (
+        {splitActive && (
           <div
             className="test-split-handle"
             role="separator"
-            aria-label="Resize passage and question panes"
+            aria-label={
+              hasReadingPane
+                ? "Resize passage and question panes"
+                : "Resize calculator and question panes"
+            }
             aria-orientation="vertical"
             aria-valuemin={35}
             aria-valuemax={65}
@@ -834,19 +874,9 @@ export function PracticeRunner({
             <button className="test-nav-btn" disabled={index === 0} onClick={() => goTo(index - 1)}>
               {t("ptool.previous")}
             </button>
-            {hasReadingPane ? (
-              <button className="test-nav-btn test-nav-primary" disabled={!isRevealed} onClick={next}>
-                {index + 1 >= count ? t("quiz.finish") : t("ptool.next")}
-              </button>
-            ) : !isRevealed ? (
-              <button className="test-nav-btn test-nav-primary" disabled={selected === null} onClick={check}>
-                {t("quiz.check")}
-              </button>
-            ) : (
-              <button className="test-nav-btn test-nav-primary" onClick={next}>
-                {index + 1 >= count ? t("quiz.finish") : t("ptool.next")}
-              </button>
-            )}
+            <button className="test-nav-btn test-nav-primary" disabled={!isRevealed} onClick={next}>
+              {index + 1 >= count ? t("quiz.finish") : t("ptool.next")}
+            </button>
           </div>
         </div>
       </footer>

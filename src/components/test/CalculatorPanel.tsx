@@ -5,45 +5,52 @@ import { useI18n } from "@/lib/i18n";
 import { Calculator } from "./Calculator";
 import { DesmosCalculator } from "./DesmosCalculator";
 
-/**
- * The calculator the test tools open: Desmos when it can be reached, the app's
- * own when it cannot.
- *
- * The fallback is the point. Desmos is a script from another origin, and the
- * first thing this project ever saw of it was a panel stuck on "Loading
- * calculator…" with `window.Desmos: Not loaded` underneath. A student in a
- * timed section cannot do anything with that. The built-in calculator has no
- * graphing, but it evaluates an expression, which is what most SAT questions
- * actually need — and it is always there.
- */
+type Props = {
+  /** Optional so the existing mock and review surfaces can keep sharing this panel. */
+  active?: boolean;
+  sessionKey?: string;
+};
 
 type Phase = "loading" | "desmos" | "fallback";
 
-export function CalculatorPanel() {
+/** Real Desmos when available, with the existing basic calculator as an explicit fallback. */
+export function CalculatorPanel({ active = true, sessionKey = "math-calculator" }: Props = {}) {
   const { t } = useI18n();
   const [phase, setPhase] = useState<Phase>("loading");
+  const [attempt, setAttempt] = useState(0);
 
   const onResolved = useCallback((ok: boolean) => {
     setPhase(ok ? "desmos" : "fallback");
   }, []);
 
-  if (phase === "fallback") {
-    return (
-      <div className="flex flex-col h-full">
-        <p className="calc-fallback-note">{t("ptool.calcOffline")}</p>
-        <div className="flex-1 min-h-0">
-          <Calculator />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="calc-desmos-wrap">
-      {/* Mounted while loading as well as after: the host element has to exist
-          for Desmos to be built into it. */}
-      <DesmosCalculator onResolved={onResolved} />
+      <DesmosCalculator
+        key={attempt}
+        active={active}
+        sessionKey={sessionKey}
+        onResolved={onResolved}
+      />
       {phase === "loading" && <p className="calc-loading">{t("common.loading")}</p>}
+      {phase === "fallback" && (
+        <div className="calc-status calc-status-error" role="alert">
+          <div className="calc-fallback-note">
+            <span>{t("ptool.calcOffline")}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setPhase("loading");
+                setAttempt((value) => value + 1);
+              }}
+            >
+              Retry Desmos
+            </button>
+          </div>
+          <div className="calc-fallback-body">
+            <Calculator />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

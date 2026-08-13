@@ -1,8 +1,10 @@
 # The Desmos calculator
 
 The Math sections of practice, review and the mock test open the Desmos
-graphing calculator, the same one the real digital SAT provides. When it cannot
-be reached, the app's own calculator takes its place.
+graphing calculator, the same one the real digital SAT provides. In Practice it
+fills the left side of the resizable exam workspace; the current Math question
+stays in the right pane. When Desmos cannot be reached, the app's own calculator
+takes its place and is explicitly labelled as a fallback.
 
 ## Read this before real students use it
 
@@ -53,9 +55,9 @@ do nothing with that. The built-in calculator has no graphing, but it evaluates
 an expression, which is what most SAT items actually need, and it is always
 there — including with no network at all.
 
-A load that fails is not cached, so opening the panel again after a connection
-comes back gets a fresh attempt rather than the fallback for the rest of the
-session. A load that times out after 8 seconds counts as a failure.
+A load that fails is not cached, and the fallback offers a Retry Desmos action,
+so a recovered connection gets a fresh attempt. A load that times out after 10
+seconds counts as a failure.
 
 ## What was checked
 
@@ -65,5 +67,7 @@ session. A load that times out after 8 seconds counts as a failure.
 - Pointed at a version that does not exist, the panel falls back to the built-in
   calculator and explains itself.
 
-`destroy()` runs when the panel closes: Desmos attaches listeners and a render
-loop that otherwise outlive the panel for the rest of the session.
+Practice keeps the instance mounted after its first opening, so hiding the pane
+or resizing it does not erase expressions. If the runner itself remounts, its
+opaque Desmos state is restored from session memory. `destroy()` still runs on
+final unmount so Desmos listeners and its render loop cannot leak.

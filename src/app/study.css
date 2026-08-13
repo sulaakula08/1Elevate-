@@ -2400,6 +2400,202 @@
   }
 }
 
+/* ---------------- Math workspace + Desmos ----------------
+   Closed Math is one centered exam column. Opening Calculator changes only the
+   flexible workspace into the same split used by Reading & Writing. */
+@layer components {
+  .practice-test-shell.is-math:not(.has-math-calculator) .test-question {
+    width: min(60rem, 100%);
+    max-width: 60rem;
+    margin-inline: auto;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .practice-test-shell.is-math .test-question-meta {
+    display: none;
+  }
+
+  .practice-test-shell.is-math .test-question-content {
+    width: 100%;
+    max-width: none;
+  }
+
+  .practice-test-shell.has-math-calculator .test-body {
+    grid-template-columns:
+      minmax(0, var(--passage-ratio, 50%))
+      minmax(0, calc(100% - var(--passage-ratio, 50%)));
+  }
+
+  .practice-test-shell .test-calculator-pane {
+    display: none;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border-right: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .practice-test-shell .test-calculator-pane.is-open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .practice-test-shell .test-calculator-head {
+    flex: 0 0 3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--foreground);
+    font-size: 0.78rem;
+  }
+
+  .practice-test-shell .test-calculator-head strong {
+    font-size: 0.84rem;
+    font-weight: 650;
+  }
+
+  .practice-test-shell .test-calculator-head > span {
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--muted);
+  }
+
+  .practice-test-shell .test-calculator-head button {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    margin-left: auto;
+    border: 0;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.45rem;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .practice-test-shell .test-calculator-head button:hover {
+    background: var(--surface-2);
+    color: var(--foreground);
+  }
+
+  .practice-test-shell .test-calculator-content,
+  .practice-test-shell .calc-desmos-wrap,
+  .practice-test-shell .desmos-host {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .practice-test-shell .test-calculator-content,
+  .practice-test-shell .calc-desmos-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .practice-test-shell .calc-status {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .practice-test-shell .calc-status-error {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: stretch;
+    text-align: left;
+  }
+
+  .practice-test-shell .calc-fallback-note {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .practice-test-shell .calc-fallback-note button {
+    flex: 0 0 auto;
+    min-height: 2.2rem;
+    margin-left: auto;
+    padding: 0 0.85rem;
+    border: 1px solid var(--brand);
+    border-radius: 0.5rem;
+    background: var(--brand);
+    color: var(--brand-contrast);
+    cursor: pointer;
+  }
+
+  .practice-test-shell .calc-fallback-body {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .practice-test-shell.has-math-calculator .test-question {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0.7rem clamp(1.25rem, 2.2vw, 2.75rem) 2.5rem;
+  }
+
+  .practice-test-shell.has-math-calculator .test-question-content {
+    max-width: none;
+  }
+
+  @media (max-width: 62rem) {
+    .practice-test-shell.is-math:not(.has-math-calculator) .test-question {
+      width: min(48rem, 100%);
+      max-width: 48rem;
+      padding: 2.25rem clamp(1.5rem, 5vw, 3rem);
+    }
+
+    .practice-test-shell.has-math-calculator .test-body {
+      display: block;
+    }
+
+    .practice-test-shell.has-math-calculator .test-calculator-pane.is-open {
+      position: absolute;
+      inset: 0;
+      z-index: 11;
+    }
+
+    .practice-test-shell.has-math-calculator .test-question {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
+  @media (max-width: 44rem) {
+    .practice-test-shell.is-math:not(.has-math-calculator) .test-question {
+      padding: 2.25rem 1.25rem;
+    }
+
+    .practice-test-shell .test-calculator-head {
+      padding-inline: 0.75rem;
+    }
+  }
+}
+
 /* The highlighter's marks are styled from useHighlighter: ::highlight() is the
    only way to reach them, and the build's CSS parser drops rules it does not
    recognise, so the rules go in through the CSSOM instead.
@@ -2686,6 +2882,15 @@ body[data-exam] .test-foot {
   border-color: var(--brand);
   background: var(--brand);
   color: var(--brand-contrast);
+}
+.practice-test-shell .test-bar-right > .calculator-tool-btn.tool-btn-on {
+  border-color: color-mix(in srgb, var(--brand) 25%, transparent);
+  background: color-mix(in srgb, var(--brand) 13%, #ffffff);
+  color: var(--brand);
+}
+:root[data-theme="dark"] .practice-test-shell .test-bar-right > .calculator-tool-btn.tool-btn-on {
+  background: color-mix(in srgb, var(--brand) 22%, var(--surface));
+  color: color-mix(in srgb, var(--brand) 70%, #ffffff);
 }
 .practice-test-shell .q-view-exam .q-choice,
 .practice-test-shell .q-view-exam .q-mark,

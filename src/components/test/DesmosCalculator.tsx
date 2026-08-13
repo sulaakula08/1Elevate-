@@ -2,20 +2,20 @@
 
 import { useEffect, useRef } from "react";
 
-/**
- * The Desmos graphing calculator, as the real digital SAT provides it.
- *
- * Desmos ships as a script from their own servers, so this is the one thing in
- * the app that needs the network at runtime. That is why it is never the only
- * calculator: CalculatorPanel falls back to the built-in one when the script
- * cannot be had, which is what the student would otherwise be left staring at
- * — a panel that says "Loading calculator…" forever.
- */
+type DesmosState = Record<string, unknown>;
 
-/** Minimal surface of the API actually used here; Desmos ships no types. */
-type DesmosInstance = { destroy: () => void; resize?: () => void };
+type DesmosInstance = {
+  destroy: () => void;
+  getState: () => DesmosState;
+  resize: () => void;
+  setState: (state: DesmosState, options?: { allowUndo?: boolean }) => void;
+};
+
 type DesmosApi = {
-  GraphingCalculator: (element: HTMLElement, options?: Record<string, unknown>) => DesmosInstance;
+  GraphingCalculator: (
+    element: HTMLElement,
+    options?: Record<string, unknown>,
+  ) => DesmosInstance;
 };
 
 declare global {
@@ -24,118 +24,127 @@ declare global {
   }
 }
 
-/**
- * The key Desmos publishes for trying the API out. It works, and it is not a
- * licence — see the note in DESMOS.md before this reaches real students.
- */
+/** Desmos publishes this key for evaluation. Production must use a licensed key. */
 const DEMO_KEY = "dcb31709b452b1cf9dc26972add0fda6";
-
 const API_KEY = process.env.NEXT_PUBLIC_DESMOS_API_KEY || DEMO_KEY;
 const VERSION = process.env.NEXT_PUBLIC_DESMOS_VERSION || "v1.11";
-const SRC = `https://www.desmos.com/api/${VERSION}/calculator.js?apiKey=${API_KEY}`;
-
-/** How long to wait before deciding the script is not coming. */
-const TIMEOUT_MS = 8000;
+const SOURCE = `https://www.desmos.com/api/${VERSION}/calculator.js?apiKey=${API_KEY}`;
+const LOAD_TIMEOUT_MS = 10_000;
 
 let loader: Promise<boolean> | null = null;
 
-/**
- * Loads the script once per page, whatever the number of calculators.
- *
- * A failed load clears the cached promise, so a student who opens the panel
- * again after their connection comes back gets a fresh attempt rather than the
- * fallback for the rest of the session.
- */
+/** Keeps graph work through a runner remount without creating permanent storage. */
+const sessionStates = new Map<string, DesmosState>();
+
 function loadDesmos(): Promise<boolean> {
   if (typeof window === "undefined") return Promise.resolve(false);
   if (window.Desmos) return Promise.resolve(true);
   if (loader) return loader;
 
   loader = new Promise<boolean>((resolve) => {
-    const script = document.createElement("script");
-    script.src = SRC;
-    script.async = true;
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${SOURCE}"]`);
+    const script = existing ?? document.createElement("script");
+    if (!existing) {
+      script.src = SOURCE;
+      script.async = true;
+      script.dataset.desmosApi = "true";
+    }
 
     let settled = false;
-    const finish = (ok: boolean) => {
+    const finish = (loaded: boolean) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timer);
-      if (!ok) loader = null;
-      resolve(ok);
+      if (!loaded) {
+        loader = null;
+        script.remove();
+      }
+      resolve(loaded);
     };
 
-    const timer = window.setTimeout(() => finish(false), TIMEOUT_MS);
-    script.onload = () => finish(Boolean(window.Desmos));
-    script.onerror = () => finish(false);
-    document.head.appendChild(script);
+    const timer = window.setTimeout(() => finish(Boolean(window.Desmos)), LOAD_TIMEOUT_MS);
+    script.addEventListener("load", () => finish(Boolean(window.Desmos)), { once: true });
+    script.addEventListener("error", () => finish(false), { once: true });
+    if (!existing) document.head.appendChild(script);
   });
 
   return loader;
 }
 
 type Props = {
-  /** Told whether the calculator actually appeared, so the caller can fall back. */
-  onResolved: (ok: boolean) => void;
+  active?: boolean;
+  onResolved: (loaded: boolean) => void;
+  sessionKey?: string;
 };
 
-export function DesmosCalculator({ onResolved }: Props) {
-  const host = useRef<HTMLDivElement>(null);
-  /** Desmos lays out once; a resized container needs telling. */
-  const calc = useRef<DesmosInstance | null>(null);
+export function DesmosCalculator({
+  active = true,
+  onResolved,
+  sessionKey = "math-calculator",
+}: Props) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const calculatorRef = useRef<DesmosInstance | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    let instance: DesmosInstance | null = null;
+    let calculator: DesmosInstance | null = null;
+    const host = hostRef.current;
 
-    void loadDesmos().then((ok) => {
-      // The panel can be closed while the script is still in flight; building a
-      // calculator into a detached node leaks it.
+    void loadDesmos().then((loaded) => {
       if (cancelled) return;
-      if (!ok || !window.Desmos || !host.current) {
+      if (!loaded || !window.Desmos || !host) {
         onResolved(false);
         return;
       }
+
       try {
-        instance = window.Desmos.GraphingCalculator(host.current, {
-          // Close to what the exam offers: the graph and its keypad, without
-          // the account and sharing chrome that has nowhere to go here.
+        calculator = window.Desmos.GraphingCalculator(host, {
           expressions: true,
+          graphpaper: true,
           keypad: true,
-          settingsMenu: false,
+          settingsMenu: true,
           zoomButtons: true,
-          border: false,
           images: false,
           folders: false,
           notes: false,
-          // The app's own theme, so the panel does not glare in a dark room.
+          border: false,
+          autosize: false,
           invertedColors: document.documentElement.dataset.theme === "dark",
         });
-        calc.current = instance;
+        calculatorRef.current = calculator;
+
+        const previousState = sessionStates.get(sessionKey);
+        if (previousState) calculator.setState(previousState);
+        calculator.resize();
         onResolved(true);
       } catch {
         onResolved(false);
       }
     });
 
-    /*
-     * The panel is resizable, and Desmos lays its graph out once against the
-     * size it found at startup. Without this the plot keeps the old dimensions
-     * inside a bigger box — axes cut off, or a band of empty panel down one
-     * side — which reads as the resize not having worked.
-     */
-    const observer = new ResizeObserver(() => calc.current?.resize?.());
-    if (host.current) observer.observe(host.current);
+    const observer = new ResizeObserver(() => calculatorRef.current?.resize());
+    if (host) observer.observe(host);
 
     return () => {
       cancelled = true;
       observer.disconnect();
-      // Desmos attaches listeners and a render loop of its own; without this
-      // they outlive the panel and keep running for the rest of the session.
-      instance?.destroy();
-      calc.current = null;
+      if (calculator) {
+        try {
+          sessionStates.set(sessionKey, calculator.getState());
+        } catch {
+          // Desmos teardown must never prevent the runner from closing cleanly.
+        }
+        calculator.destroy();
+      }
+      calculatorRef.current = null;
     };
-  }, [onResolved]);
+  }, [onResolved, sessionKey]);
 
-  return <div ref={host} className="desmos-host" />;
+  useEffect(() => {
+    if (!active) return;
+    const frame = window.requestAnimationFrame(() => calculatorRef.current?.resize());
+    return () => window.cancelAnimationFrame(frame);
+  }, [active]);
+
+  return <div ref={hostRef} className="desmos-host" aria-label="Desmos graphing calculator" />;
 }
