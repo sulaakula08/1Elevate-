@@ -2453,6 +2453,59 @@ body[data-exam] .notif-dock {
   color: var(--warning);
 }
 
+/* The animated pointer only replaces the native cursor on precise pointer
+   devices and remains disabled for reduced-motion users. */
+@media (pointer: fine) and (hover: hover) and (prefers-reduced-motion: no-preference) {
+  html[data-landing-cursor],
+  html[data-landing-cursor] body,
+  html[data-landing-cursor] body * {
+    cursor: none !important;
+  }
+
+  html[data-landing-cursor] .adaptive-cursor-shell {
+    display: block;
+  }
+}
+
+.adaptive-cursor-shell {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  display: none;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.adaptive-cursor {
+  translate: -50% -50%;
+  width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  background: var(--foreground);
+  opacity: 0.94;
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--background) 22%, transparent);
+  transition:
+    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width, height, transform;
+  contain: layout style paint;
+}
+
+.adaptive-cursor[data-kind="text"] {
+  background: var(--accent);
+  opacity: 1;
+  box-shadow: none;
+}
+
+.adaptive-cursor[data-kind="disabled"] {
+  background: var(--faint);
+  opacity: 0.58;
+  box-shadow: none;
+}
+
 /* ---------------------------------------------------------------------------
    Environment badge borders, unlayered on purpose.
 

@@ -9,6 +9,7 @@ import { Stats } from "./landing/Stats";
 import { Steps } from "./landing/Steps";
 import { Subjects } from "./landing/Subjects";
 import { useLandingMotion } from "./useLandingMotion";
+import { AdaptiveCursor } from "./AdaptiveCursor";
 
 /** The signed-out marketing page and the scope for its entrance motion. */
 export function Landing({ bank }: { bank: Question[] }) {
@@ -17,6 +18,7 @@ export function Landing({ bank }: { bank: Question[] }) {
 
   return (
     <div className="max-w-5xl mx-auto" ref={scope}>
+      <AdaptiveCursor />
       <Hero bank={bank} />
       <Stats />
       <Features />
