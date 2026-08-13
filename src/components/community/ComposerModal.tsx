@@ -10,6 +10,27 @@ import { Select } from "@/components/Select";
 
 const SUBJECT_TYPES: CommunityPostType[] = ["question", "explanation", "study-update", "resource"];
 
+/**
+ * A question carried in from Practice.
+ *
+ * What is deliberately NOT here is the correct answer. Practice knows it, and
+ * prefilling it would publish the key to a bank question that other students have
+ * not attempted yet — the feed is the one place that undoes the review flow for
+ * everyone at once. The composer's manual correct-answer field stays available,
+ * so a student can still choose to say it about their own attempt; the difference
+ * is that it becomes their decision rather than ours.
+ */
+export type ComposerPrefill = {
+  /** The bank question's id, kept so the post can link back to Practice. */
+  questionId: string;
+  subjectId: string;
+  topic?: string;
+  /** The problem itself, shown read-only. */
+  prompt: string;
+  /** The letter the student picked, when they had answered before asking. */
+  myAnswer?: string;
+};
+
 type FormState = {
   text: string;
   subjectId: string;
@@ -48,10 +69,13 @@ function emptyForm(): FormState {
   };
 }
 
-function canSubmit(type: CommunityPostType, form: FormState): boolean {
+function canSubmit(type: CommunityPostType, form: FormState, prefill?: ComposerPrefill): boolean {
   switch (type) {
     case "question":
-      return form.text.trim().length > 0;
+      /* Asked from Practice the problem is already there, so the post is
+         publishable the moment it exists — a student who has nothing to add
+         beyond "I am stuck on this" should not be blocked by an empty box. */
+      return prefill ? true : form.text.trim().length > 0;
     case "progress":
       return form.fromScore.trim().length > 0 && form.toScore.trim().length > 0;
     case "achievement":
@@ -67,16 +91,27 @@ function canSubmit(type: CommunityPostType, form: FormState): boolean {
   }
 }
 
-function toInput(type: CommunityPostType, form: FormState): CreatePostInput {
+function toInput(
+  type: CommunityPostType,
+  form: FormState,
+  prefill?: ComposerPrefill,
+): CreatePostInput {
   const num = (s: string) => (s.trim() ? Number(s) : undefined);
   switch (type) {
     case "question":
       return {
         type,
         text: form.text,
-        subjectId: form.subjectId,
-        topic: form.topic || undefined,
-        question: { myAnswer: form.myAnswer || undefined, correctAnswer: form.correctAnswer || undefined },
+        subjectId: prefill?.subjectId ?? form.subjectId,
+        topic: prefill?.topic ?? (form.topic || undefined),
+        question: {
+          /* The problem is the prefilled prompt when there is one; otherwise
+             payloadFor falls back to the body text, as it always has. */
+          prompt: prefill?.prompt,
+          questionId: prefill?.questionId,
+          myAnswer: form.myAnswer || undefined,
+          correctAnswer: form.correctAnswer || undefined,
+        },
       };
     case "progress":
       return {
@@ -136,9 +171,16 @@ function toInput(type: CommunityPostType, form: FormState): CreatePostInput {
 export function ComposerModal({
   initialType,
   onClose,
+  prefill,
 }: {
   initialType: CommunityPostType;
   onClose: () => void;
+  /**
+   * A question brought in from Practice. When present the problem is fixed and
+   * shown read-only, the subject and topic come with it, and the body field
+   * becomes the student's own context rather than the problem statement.
+   */
+  prefill?: ComposerPrefill;
 }) {
   const { t, tx } = useI18n();
   const { createPost } = useCommunity();
@@ -152,7 +194,20 @@ export function ComposerModal({
    * come back to. That screen is what the change removed.
    */
   const type = initialType;
-  const [form, setForm] = useState<FormState>(emptyForm);
+  /* Seeded once on mount, which is also the only time it could matter: the
+     parent mounts this component when the composer opens and unmounts it when it
+     closes, so there is no stale-prop case to synchronise. */
+  const [form, setForm] = useState<FormState>(() => {
+    const base = emptyForm();
+    if (!prefill) return base;
+    return {
+      ...base,
+      subjectId: prefill.subjectId,
+      topic: prefill.topic ?? "",
+      myAnswer: prefill.myAnswer ?? "",
+      // correctAnswer stays empty on purpose. See ComposerPrefill.
+    };
+  });
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -171,9 +226,9 @@ export function ComposerModal({
     setForm((previous) => ({ ...previous, [key]: value }));
 
   const submit = () => {
-    if (!type || !canSubmit(type, form)) return;
+    if (!type || !canSubmit(type, form, prefill)) return;
     send(() => {
-      createPost(toInput(type, form));
+      createPost(toInput(type, form, prefill));
       onClose();
     });
   };
@@ -182,7 +237,11 @@ export function ComposerModal({
     <label className="block">
       <span className="label">
         {type === "question"
-          ? t("community.composerQuestionBody")
+          ? /* Asked from Practice the problem is already stated, so this field is
+               no longer "your question" — it is what you make of it. */
+            prefill
+            ? t("community.composerAskContext")
+            : t("community.composerQuestionBody")
           : type === "post"
             ? t("community.composerPostBody")
             : type === "achievement"
@@ -196,7 +255,9 @@ export function ComposerModal({
         onChange={(event) => set("text", event.target.value)}
         placeholder={t(
           type === "question"
-            ? "community.composerBodyPlaceholderQuestion"
+            ? prefill
+              ? "community.composerAskContextPlaceholder"
+              : "community.composerBodyPlaceholderQuestion"
             : type === "post"
               ? "community.composerPostBody"
               : type === "explanation"
@@ -231,9 +292,36 @@ export function ComposerModal({
 
         <div className="cm-composer-body px-5 pb-5">
           <div className="space-y-3.5">
+            {/*
+              The problem, quoted and not editable.
+              Read-only because it is not the author's text: it is a bank question
+              they are asking about, and letting them retype it would let the post
+              quote something the linked question does not say. It sits above the
+              body field so the composer reads in the order the student thinks —
+              here is the problem, here is what I do not understand.
+            */}
+            {prefill && (
+              <div className="cm-ask-source">
+                <p className="label-xs">{t("community.askSourceLabel")}</p>
+                <blockquote className="cm-quote mt-2">{prefill.prompt}</blockquote>
+                <p className="cm-ask-source-meta">
+                  {tx(subjectsFor("sat").find((s) => s.id === prefill.subjectId)?.name)}
+                  {prefill.topic && <> · {prefill.topic}</>}
+                  {prefill.myAnswer && (
+                    <>
+                      {" · "}
+                      {t("community.myAnswerLabel")}: <strong>{prefill.myAnswer}</strong>
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+
             {(type === "question" || type === "post") && bodyField}
 
-            {SUBJECT_TYPES.includes(type) && (
+            {/* Subject and topic come with a prefilled question, so asking again
+                would be asking the student to confirm what they cannot change. */}
+            {SUBJECT_TYPES.includes(type) && !prefill && (
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
                   <span className="label">{t("community.composerSubject")}</span>
@@ -262,21 +350,34 @@ export function ComposerModal({
             )}
 
             {type === "question" && (
-              <div className="grid grid-cols-2 gap-3">
+              /*
+                Prefilled, the student's own answer is already stated in the block
+                above — so only the correct-answer field is offered, and it stays
+                offered on purpose. It is the one place the key can appear, it
+                arrives empty, and filling it is the author's decision about their
+                own attempt rather than something Practice did for them.
+              */
+              <div className={prefill ? "block" : "grid grid-cols-2 gap-3"}>
+                {!prefill && (
+                  <label className="block">
+                    <span className="label">{t("community.composerMyAnswer")}</span>
+                    <input
+                      type="text"
+                      maxLength={8}
+                      inputMode="text"
+                      className="field"
+                      placeholder={t("community.composerAnswerHint")}
+                      value={form.myAnswer}
+                      onChange={(event) => set("myAnswer", event.target.value.toUpperCase())}
+                    />
+                  </label>
+                )}
                 <label className="block">
-                  <span className="label">{t("community.composerMyAnswer")}</span>
-                  <input
-                    type="text"
-                    maxLength={8}
-                    inputMode="text"
-                    className="field"
-                    placeholder={t("community.composerAnswerHint")}
-                    value={form.myAnswer}
-                    onChange={(event) => set("myAnswer", event.target.value.toUpperCase())}
-                  />
-                </label>
-                <label className="block">
-                  <span className="label">{t("community.composerCorrectAnswer")}</span>
+                  <span className="label">
+                    {prefill
+                      ? t("community.composerCorrectAnswerOptional")
+                      : t("community.composerCorrectAnswer")}
+                  </span>
                   <input
                     type="text"
                     maxLength={8}
@@ -427,7 +528,7 @@ export function ComposerModal({
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={!canSubmit(type, form) || pending}
+                disabled={!canSubmit(type, form, prefill) || pending}
                 onClick={submit}
               >
                 {pending ? t("community.posting") : t("community.composerPost")}

@@ -108,7 +108,22 @@ export async function GET(request: Request) {
 
   const posts = (postRows ?? []) as PostRow[];
   if (posts.length === 0) {
-    return NextResponse.json({ posts: [], reactions: {}, saved: [] });
+    /*
+     * Still worth one query for the follow list. An empty feed does not imply an
+     * empty follow list, and the Following tab tells those two apart to choose
+     * its empty state: "you have not followed anyone" reads as a mistake when the
+     * truth is that the people you follow simply have not posted.
+     */
+    const { data: follows } = await client
+      .from("community_follows")
+      .select("following_id")
+      .eq("follower_id", user.id);
+    return NextResponse.json({
+      posts: [],
+      reactions: {},
+      saved: [],
+      following: (follows ?? []).map((f) => f.following_id as string),
+    });
   }
 
   const ids = posts.map((p) => p.id);
@@ -116,7 +131,7 @@ export async function GET(request: Request) {
   // Reactions and comments for exactly these posts, plus the caller's own
   // saves. Four small queries beat one embedded select that silently returns
   // nulls the moment a relationship stops being detected.
-  const [reactionsRes, commentsRes, savesRes] = await Promise.all([
+  const [reactionsRes, commentsRes, savesRes, followsRes] = await Promise.all([
     client.from("community_reactions").select("post_id, account_id, kind").in("post_id", ids),
     client
       .from("community_comments")
@@ -125,6 +140,14 @@ export async function GET(request: Request) {
       .is("hidden_at", null)
       .order("created_at", { ascending: true }),
     client.from("community_saves").select("post_id").eq("account_id", user.id),
+    /*
+     * Who the caller follows. Every row the read policy will return is already
+     * one of theirs, so the `eq` is belt-and-braces rather than the security —
+     * but it also means this is the caller's whole follow list and not just the
+     * authors on this page, which is what lets the client answer "am I following
+     * this person?" for a post that arrives later without a second round trip.
+     */
+    client.from("community_follows").select("following_id").eq("follower_id", user.id),
   ]);
 
   const reactionRows = (reactionsRes.data ?? []) as {
@@ -197,6 +220,7 @@ export async function GET(request: Request) {
     posts: shaped,
     reactions: mine,
     saved: (savesRes.data ?? []).map((s) => s.post_id as string),
+    following: (followsRes.data ?? []).map((f) => f.following_id as string),
   });
 }
 
@@ -313,6 +337,57 @@ export async function POST(request: Request) {
         { post_id: postId, account_id: user.id },
         { onConflict: "post_id,account_id", ignoreDuplicates: true },
       );
+    return NextResponse.json({ ok: true, on: true });
+  }
+
+  /* ---------------- follow ---------------- */
+
+  /*
+   * Follow and unfollow, shaped exactly like toggleSave because it is the same
+   * kind of thing: a private edge owned by the caller.
+   *
+   * `follower_id` comes from the access token and never from the body, so the
+   * request says only who is being followed. That is the whole impersonation
+   * defence at this layer, and the insert policy repeats it in the database.
+   *
+   * Self-following is not checked here. The check constraint refuses it, and
+   * catching 23514 is a better contract than a duplicate rule in TypeScript that
+   * can drift from the one Postgres enforces.
+   */
+  if (action === "toggleFollow") {
+    const targetId = String(body.targetId ?? "");
+    if (!targetId) return NextResponse.json({ error: "Follow whom?" }, { status: 400 });
+
+    if (body.on === false) {
+      await client
+        .from("community_follows")
+        .delete()
+        .eq("follower_id", user.id)
+        .eq("following_id", targetId);
+      return NextResponse.json({ ok: true, on: false });
+    }
+
+    const { error } = await client
+      .from("community_follows")
+      .upsert(
+        { follower_id: user.id, following_id: targetId },
+        { onConflict: "follower_id,following_id", ignoreDuplicates: true },
+      );
+
+    if (error) {
+      // 23514 is community_follows_no_self: someone aimed a follow at their own
+      // id. The UI never offers it, so this is a forged request rather than a
+      // mistake, and it gets a plain refusal instead of a 502.
+      if (error.code === "23514") {
+        return NextResponse.json({ error: "You cannot follow yourself." }, { status: 400 });
+      }
+      // 23503 is the foreign key: the target is not a real profile.
+      if (error.code === "23503") {
+        return NextResponse.json({ error: "No such student." }, { status: 404 });
+      }
+      if (process.env.NODE_ENV !== "production") console.error("[community]", error);
+      return NextResponse.json({ error: "Could not follow." }, { status: 502 });
+    }
     return NextResponse.json({ ok: true, on: true });
   }
 

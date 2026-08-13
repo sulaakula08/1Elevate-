@@ -6,7 +6,9 @@ import { useI18n } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { RichText } from "@/lib/math/markdown";
 
-const LETTERS = ["A", "B", "C", "D", "E", "F"];
+/** Choice labels. Exported so anything naming a student's answer — the Ask
+ *  Community prefill, for one — uses the same letters the player showed them. */
+export const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 type Props = {
   question: Question;
