@@ -441,14 +441,44 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-top: 1.5rem;
   }
-  /* Manual mode is also what a wide screen gets under reduced motion, where the
-     frame would otherwise stretch to the full 64rem measure and leave a short
-     question floating in it. */
-  .lp-loop[data-mode="manual"] .lp-loop-stage,
-  .lp-loop[data-mode="manual"] .lp-loop-aside {
+
+  /*
+   * Manual mode reorders itself so the controls sit under the thing they drive.
+   *
+   * The markup is one aside (tabs, steps, buttons) beside the frame, which is
+   * the right structure for the scroll layout and the wrong one here: it puts
+   * "Next step" *above* the product surface, so tapping it changes something
+   * below the fold. `display: contents` dissolves the aside for this mode only,
+   * which lets all four parts order themselves in one column —
+   * tabs, step, frame, buttons — with no second set of markup to keep in sync.
+   *
+   * The width cap matters on a wide screen under reduced motion, where manual
+   * mode is what a desktop gets: without it the frame stretches to the full 64rem
+   * measure and a four-line question floats in the middle of it.
+   */
+  .lp-loop[data-mode="manual"] .lp-loop-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
     max-width: 46rem;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-aside {
+    display: contents;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-tabs {
+    order: 1;
+    margin-bottom: 0;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-steps {
+    order: 2;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-stage {
+    order: 3;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-nav {
+    order: 4;
+    margin-top: 0;
   }
   .lp-loop-count {
     font-size: var(--t-micro);
@@ -1328,6 +1358,13 @@
     box-shadow: var(--overlay);
     transform: translate3d(calc(var(--mx, 0) * 7px), calc(var(--my, 0) * 5px), 0);
   }
+  /* On a near-black page a drop shadow separates nothing, so the front card is
+     lifted with light instead: `--surface-2` is *above* `--surface` in the dark
+     theme, which is the whole reason that token flips direction. Without this the
+     two cards merge into one long panel and the stack stops being a stack. */
+  :root[data-theme="dark"] .lp-xp-front {
+    background: var(--surface-2);
+  }
   .lp-xp-body {
     margin-top: 0.5rem;
     font-size: var(--t-sm);
@@ -1774,12 +1811,12 @@
     position: absolute;
     left: 50%;
     bottom: 0;
-    width: min(100%, 27rem);
+    width: min(96%, 25rem);
     height: 1.75rem;
     border-width: 0 1px 1px;
     border-style: solid;
-    border-end-start-radius: 14px;
-    border-end-end-radius: 14px;
+    border-end-start-radius: 10px;
+    border-end-end-radius: 10px;
     /* Centred by its own width rather than by `inset`, so the two rounded ends
        stay symmetrical about the chip row above them. */
     transform: translateX(-50%);
@@ -1791,17 +1828,21 @@
   .lp-close[data-in] .lp-close-arc {
     clip-path: inset(0);
   }
-  /* The arrowhead, landing on the first chip once the line has reached it. */
+  /* The arrowhead, landing on the first chip once the line has reached it.
+     Without it the shape reads as a bracket under the row rather than as a path
+     with a direction, and the direction is the whole point.
+
+     A clipped box, not a border triangle: `border-color` inside this layer is
+     overridden by the unlayered `*` rule (see the top of this file), so a
+     classic CSS triangle would come out grey whatever colour it asked for. */
   .lp-close-arc-head {
     position: absolute;
-    left: -1px;
+    left: -3.5px;
     top: -1px;
-    width: 0.4375rem;
-    height: 0.4375rem;
-    border-width: 1px 0 0 1px;
-    border-style: solid;
-    transform: rotate(45deg);
-    transform-origin: top left;
+    width: 8px;
+    height: 6px;
+    background: var(--line-strong);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
     opacity: 0;
     transition: opacity 260ms ease 1420ms;
   }
@@ -1843,14 +1884,27 @@
       align-items: end;
       gap: 3rem;
     }
-    .lp-cap-bank,
-    .lp-cap-explain {
+    .lp-cap-bank {
       grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
       gap: 3rem;
       align-items: center;
     }
-    /* Alternated on purpose: the explanation stack leads with the picture, so
-       three capabilities in a column never fall into the same rhythm. */
+    /*
+     * Alternated on purpose: the explanation stack leads with the picture, so
+     * three capabilities in a column never fall into the same rhythm.
+     *
+     * The tracks are reversed here, not just the `order`. `order` changes which
+     * item is placed first, and auto-placement then puts that item in the *first*
+     * track — so with the copy ordered second, the surface landed in the 0.78fr
+     * column. Which meant the two cards in the stack had no room to be offset
+     * against each other, and the layered composition rendered as one tall card
+     * with a rule across it.
+     */
+    .lp-cap-explain {
+      grid-template-columns: minmax(0, 1.22fr) minmax(0, 0.78fr);
+      gap: 3rem;
+      align-items: center;
+    }
     .lp-cap-explain .lp-cap-copy {
       order: 2;
     }
@@ -1921,10 +1975,40 @@
        at this width and the explanation still has to fit under it on step two —
        and nothing is sticky here, so height costs a scroll rather than a screen. */
     .lp-fr-body {
-      height: clamp(23rem, 66vh, 30rem);
+      height: clamp(22rem, 62vh, 27rem);
     }
     .lp-fr-layer {
       padding: 1rem;
+    }
+    /* Top-aligned on a phone, centred on a desktop. The frame is proportionally
+       taller here, so centring a four-choice question left a band of empty space
+       between the skill row and the prompt that read as a loading state. Anchored
+       to the top, the slack sits at the bottom — and the explanation opening on
+       step two grows down into it, which is what it looks like in the app. */
+    .lp-fr .q-view {
+      margin-block: 0 auto;
+    }
+    /* Height alone was not enough: at 390px the prompt takes three lines and the
+       explanation three more, and the two together ran past the bottom of the
+       frame. So the whole question steps down one size — which is also what the
+       real practice screen does on a phone. */
+    .lp-fr .q-prompt {
+      font-size: var(--t-sm);
+      line-height: 1.45;
+    }
+    .lp-fr .q-choice {
+      padding: 0.4375rem 0.625rem;
+    }
+    .lp-fr .q-mark {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+    .lp-fr .space-y-5 > * + * {
+      margin-top: 0.625rem;
+    }
+    .lp-fr .q-explanation .text-body {
+      font-size: var(--t-micro);
+      line-height: 1.5;
     }
     /* Stacked: side by side, the state line was squeezed into about half the
        width and wrapped to three lines beside a large number. */
@@ -2117,6 +2201,12 @@
     }
     .lp-close-loop {
       padding-bottom: 0;
+    }
+    /* Three then two. Left to fill the width the row breaks four-and-one, and a
+       single chip alone on the second line reads as a wrapping accident. */
+    .lp-close-chips {
+      max-width: 17.5rem;
+      margin-inline: auto;
     }
   }
 

@@ -26,10 +26,15 @@ export const LANDING_COPY: CopyDict = {
     en: "1Elevate keeps it. One miss names a skill, the skill picks your next question, and that question is where the points come back.",
   },
   /* Caption for the attempt strip. The count is the strip's own length, so the
-     sentence and the graphic cannot drift apart — see `STRIP_LENGTH`. */
-  "lp.methodStripA": { en: "A practice session is 48 questions." },
+     sentence and the graphic cannot drift apart — see `STRIP_LENGTH`.
+
+     It deliberately does not say "a practice session is 48 questions". There is
+     no such number — practice runs over whatever the student filtered to, and
+     only review has a fixed size (fifteen, in review/page.tsx). The strip is a
+     stretch of answers, and the ratio under it is the only claim being made. */
+  "lp.methodStripA": { en: "Forty-eight answers." },
   "lp.methodStripB": { en: "The six you miss are the ones with something to say." },
-  "lp.methodStripLabel": { en: "A session of 48 answers, six of them wrong" },
+  "lp.methodStripLabel": { en: "Forty-eight answers, six of them wrong" },
 
   /* ================= section 2: the learning loop ================= */
   "lp.loopEyebrow": { en: "One question, five steps" },
