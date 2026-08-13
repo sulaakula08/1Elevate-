@@ -2405,7 +2405,7 @@
    flexible workspace into the same split used by Reading & Writing. */
 @layer components {
   .practice-test-shell.is-math:not(.has-math-calculator) .test-question {
-    width: min(60rem, 100%);
+    width: min(60rem, max(48rem, 50vw));
     max-width: 60rem;
     margin-inline: auto;
     padding-right: 0;
