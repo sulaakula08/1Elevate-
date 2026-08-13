@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useApp } from "@/lib/app-state";
 import { loadSidebarCollapsed, saveSidebarCollapsed } from "@/lib/storage";
 import { NotificationsBell } from "./NotificationsBell";
@@ -15,6 +16,7 @@ import { Footer } from "./Footer";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { account, ready } = useApp();
+  const pathname = usePathname();
   /**
    * Collapsed rail state. Starts expanded and reads the stored preference after
    * mount rather than during render: localStorage is not available on the
@@ -54,7 +56,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  if (!ready) {
+  // The home route can render its public landing immediately. Holding it behind
+  // session restoration would replace the real product preview with an app
+  // skeleton on every cold visit and on slow connections.
+  if (!ready && pathname !== "/") {
     return (
       <div className="flex min-h-dvh">
         <div className="sidebar hidden md:flex">

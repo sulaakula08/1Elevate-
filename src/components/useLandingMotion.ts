@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, type RefObject } from "react";
+import { useLayoutEffect, type RefObject } from "react";
 import gsap from "gsap";
 import { MOTION } from "@/lib/motion.config";
 
 /** A restrained, reduced-motion-aware entrance for the above-the-fold content. */
 export function useLandingMotion(scope: RefObject<HTMLElement | null>) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = scope.current;
     if (!root) return;
 
-    document.documentElement.classList.remove("js-motion");
     const mm = gsap.matchMedia();
 
     mm.add("(prefers-reduced-motion: no-preference)", () => {

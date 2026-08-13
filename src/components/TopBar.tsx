@@ -122,7 +122,7 @@ export function TopBar() {
               {theme === "dark" ? "☀" : "☾"}
             </button>
 
-            {ready &&
+            {(ready || pathname === "/") &&
               (account ? (
                 <div className="relative" ref={menuRef}>
                   <button
@@ -194,7 +194,7 @@ export function TopBar() {
                 */
                 <div className="flex items-center gap-1 ml-1">
                   {pathname !== "/login" && (
-                    <Link href="/login" className="hidden sm:inline-flex btn btn-ghost btn-sm">
+                    <Link href="/login" className="inline-flex btn btn-ghost btn-sm">
                       {t("auth.signIn")}
                     </Link>
                   )}

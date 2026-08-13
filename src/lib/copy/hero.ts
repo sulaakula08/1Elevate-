@@ -16,28 +16,23 @@ export const HERO_COPY: CopyDict = {
 
   /* ---------------- live product preview ---------------- */
   "hero.demoLabel": { en: "Interactive 1Elevate practice preview" },
-  "hero.demoMode": { en: "Practice preview" },
-  "hero.demoQuestionMeta": { en: "Question subject and difficulty" },
+  "hero.demoMode": { en: "Practice" },
+  "hero.demoQuestionMeta": { en: "Question domain and difficulty" },
   "hero.demoFallbackSubject": { en: "SAT practice" },
   "hero.demoDomain": { en: "SAT question" },
-  "hero.demoPublished": { en: "Published question" },
-  "hero.demoInsightLabel": { en: "Next-step logic" },
-  "hero.demoInsightBefore": { en: "Choose an answer. The same interaction powers practice sessions inside 1Elevate." },
+  "hero.demoInsightLabel": { en: "After you check" },
+  "hero.demoInsightBefore": { en: "Select one answer, then check it." },
   "hero.demoInsightCorrect": { en: "Correct. 1Elevate keeps looking for weaker topics instead of repeating what you already know." },
   "hero.demoInsightWrong": { en: "This miss would enter your review queue and make the topic more visible in your progress view." },
   "hero.demoCheck": { en: "Check answer" },
   "hero.demoReset": { en: "Reset sample" },
-  "hero.demoLoadingTitle": { en: "Loading the published question bank" },
-  "hero.demoLoadingText": { en: "This preview uses a real question from 1Elevate, not a marketing mockup." },
 
   /* ---------------- methodology proof ---------------- */
   "hero.proofLabel": { en: "What the product implements" },
-  "hero.proofFormat": { en: "Reading & Writing + Math questions in the SAT format" },
-  "hero.proofTiming": { en: "timed module lengths" },
-  "hero.proofEveryChoice": { en: "Every choice" },
-  "hero.proofExplained": { en: "explained after practice" },
-  "hero.proofMistakes": { en: "Mistakes return" },
-  "hero.proofReview": { en: "through the review queue" },
+  "hero.proofFormat": { en: "questions across the official two-section blueprint" },
+  "hero.proofTiming": { en: "real Reading & Writing and Math module timing" },
+  "hero.proofLoop": { en: "Answer → Explain → Review" },
+  "hero.proofReview": { en: "one learning loop from practice to weak-topic review" },
 
   /* ---------------- hero score chart ---------------- */
   "hero.chartTitle": { en: "Score trend" },

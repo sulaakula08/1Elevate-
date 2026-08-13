@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { LANDING_SAMPLE_QUESTION } from "@/data/landing-sample";
 import type { Question } from "@/data/types";
 import { useI18n } from "@/lib/i18n";
 import { HeroProductDemo } from "./HeroProductDemo";
@@ -13,24 +14,14 @@ import { HeroProductDemo } from "./HeroProductDemo";
 export function Hero({ bank }: { bank: Question[] }) {
   const { t } = useI18n();
 
-  const sampleQuestion = useMemo(() => {
-    const candidates = bank
-      .filter(
-        (question) =>
-          question.subjectId === "sat-math" &&
-          !question.passage &&
-          question.choices.length === 4 &&
-          question.prompt.en.trim().length >= 35 &&
-          question.prompt.en.trim().length <= 260,
-      )
-      .sort((a, b) => a.prompt.en.length - b.prompt.en.length || a.id.localeCompare(b.id));
-
-    return candidates[0] ?? bank.find((question) => question.choices.length >= 2);
-  }, [bank]);
+  const sampleQuestion = useMemo(
+    () => bank.find((question) => question.id === LANDING_SAMPLE_QUESTION.id) ?? LANDING_SAMPLE_QUESTION,
+    [bank],
+  );
 
   return (
     <section className="hero-section relative" data-motion="hero">
-      <div className="relative grid lg:grid-cols-[0.78fr_1.22fr] gap-8 lg:gap-12 items-center">
+      <div className="hero-grid relative">
         <div className="min-w-0">
           <p className="t-label hero-kicker">{t("hero.kicker")}</p>
           <h1 className="display t-display mt-4" data-motion="headline">
@@ -58,7 +49,7 @@ export function Hero({ bank }: { bank: Question[] }) {
         </div>
 
         <div data-motion="hero-card-in" className="min-w-0">
-          <HeroProductDemo key={sampleQuestion?.id ?? "loading"} question={sampleQuestion} />
+          <HeroProductDemo key={sampleQuestion.id} question={sampleQuestion} />
         </div>
       </div>
     </section>

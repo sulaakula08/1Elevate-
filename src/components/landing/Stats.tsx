@@ -12,12 +12,28 @@ export function Stats() {
   const mathQuestions = SAT.sections
     .filter((section) => section.subjectId === "sat-math")
     .reduce((sum, section) => sum + section.count, 0);
+  const rwMinutes = SAT.sections.find((section) => section.subjectId === "sat-rw")?.minutes ?? 32;
+  const mathMinutes = SAT.sections.find((section) => section.subjectId === "sat-math")?.minutes ?? 35;
 
   const cells = [
-    { id: "blueprint", value: `${rwQuestions} + ${mathQuestions}`, text: t("hero.proofFormat") },
-    { id: "timing", value: "32 / 35 min", text: t("hero.proofTiming") },
-    { id: "explained", value: t("hero.proofEveryChoice"), text: t("hero.proofExplained") },
-    { id: "queue", value: t("hero.proofMistakes"), text: t("hero.proofReview") },
+    {
+      id: "blueprint",
+      value: `${rwQuestions} RW · ${mathQuestions} Math`,
+      text: t("hero.proofFormat"),
+      numeric: true,
+    },
+    {
+      id: "timing",
+      value: `${rwMinutes} min · ${mathMinutes} min`,
+      text: t("hero.proofTiming"),
+      numeric: true,
+    },
+    {
+      id: "loop",
+      value: t("hero.proofLoop"),
+      text: t("hero.proofReview"),
+      numeric: false,
+    },
   ];
 
   return (
@@ -26,7 +42,7 @@ export function Stats() {
       <dl className="lp-proof-grid">
         {cells.map((cell) => (
           <div key={cell.id} className="lp-proof-item">
-            <dt className="lp-proof-value num">{cell.value}</dt>
+            <dt className={`lp-proof-value ${cell.numeric ? "num" : ""}`}>{cell.value}</dt>
             <dd className="lp-proof-text">{cell.text}</dd>
           </div>
         ))}

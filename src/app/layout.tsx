@@ -15,12 +15,6 @@ export const metadata: Metadata = {
 /**
  * Runs before first paint so the stored theme is already on <html>: no flash of
  * the wrong palette, and no custom-property swap after the page has painted.
- *
- * It also flags that JavaScript-driven motion is coming, which pre-hides the
- * GSAP-animated elements (see .js-motion in globals.css). The flag is only set
- * when the user has not asked for reduced motion, and useLandingMotion removes
- * it as it takes over — so a visitor with JS disabled, or with reduced motion
- * on, never sees hidden content.
  */
 const THEME_BOOTSTRAP = `
 try {
@@ -31,11 +25,6 @@ try {
 } catch (e) {
   document.documentElement.dataset.theme = 'light';
 }
-try {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches === false) {
-    document.documentElement.classList.add('js-motion');
-  }
-} catch (e) {}
 `;
 
 /**
