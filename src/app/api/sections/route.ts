@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SECTION_KEYS, type SectionKey } from "@/lib/sections";
 import { supabaseConfigured, tokenFrom, userClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -14,17 +15,6 @@ export const runtime = "nodejs";
  * product for every student is a different kind of decision from writing a
  * question, so it is deliberately not something an admin can do.
  */
-
-/** The sections that can be closed. Anything else is rejected. */
-export const SECTION_KEYS = [
-  "community",
-  "practice",
-  "mock",
-  "review",
-  "progress",
-] as const;
-
-export type SectionKey = (typeof SECTION_KEYS)[number];
 
 const MAX_MESSAGE = 300;
 

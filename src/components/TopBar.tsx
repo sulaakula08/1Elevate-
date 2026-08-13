@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
-import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import {
@@ -32,13 +31,12 @@ const MOBILE_TABS = LINKS.slice(0, 4);
 
 export function TopBar() {
   const { t } = useI18n();
-  const { account, signOut, ready, data } = useApp();
+  const { account, signOut, ready } = useApp();
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const days = streak(data.attempts);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -116,19 +114,6 @@ export function TopBar() {
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
-            {signedIn && days > 0 && (
-              <span
-                className="badge h-9 px-3"
-                style={{
-                  ["--tone" as string]: "var(--brand)",
-                  ["--tone-soft" as string]: "var(--brand-soft)",
-                }}
-                title={t("progress.streak")}
-              >
-                🔥 <span className="num">{days}</span>
-              </span>
-            )}
-
             <ThemeToggle />
 
             {ready &&

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
-import { streak } from "@/lib/stats";
 import { Logo } from "./Logo";
 import { NotificationsBell } from "./NotificationsBell";
 import { ThemeToggle } from "./ThemeToggle";
@@ -37,8 +36,7 @@ const TABS = [
 
 /** Compact header for signed-in phones — the sidebar's job is done by the tabs. */
 export function MobileHeader() {
-  const { account, data } = useApp();
-  const days = streak(data.attempts);
+  const { account } = useApp();
 
   return (
     <header
@@ -51,18 +49,6 @@ export function MobileHeader() {
         </Link>
 
         <div className="ml-auto flex items-center gap-1.5">
-          {days > 0 && (
-            <span
-              className="badge h-8 px-2.5"
-              style={{
-                ["--tone" as string]: "var(--brand)",
-                ["--tone-soft" as string]: "var(--brand-soft)",
-              }}
-            >
-              🔥 <span className="num">{days}</span>
-            </span>
-          )}
-
           <ThemeToggle className="w-8 h-8" />
           <NotificationsBell />
 
