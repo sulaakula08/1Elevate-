@@ -608,6 +608,39 @@ p {
     background: var(--tone-soft, var(--accent-soft));
     color: var(--tone, var(--accent));
   }
+  /* The environment tag beside the wordmark. Never drawn on production — see
+     EnvironmentBadge — so it only has to look right in dev and preview.
+
+     Muted by default, because "DEV" is a fact and not a problem: it should be
+     legible when looked at and invisible when not. The [data-unsafe] variant is
+     the opposite, and is the one state that has earned the attention — a local
+     build wired to the production database. */
+  /* Border COLOUR is deliberately not set here — see the unlayered override at
+     the bottom of this file. `* { border-color: var(--line) }` is unlayered, and
+     an unlayered declaration beats anything inside @layer whatever its
+     specificity, so a border-color written in here silently does nothing. */
+  .env-badge {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    height: 1.375rem;
+    padding: 0 0.4375rem;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: var(--t-2xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    cursor: default;
+    user-select: none;
+  }
+  .env-badge[data-unsafe] {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
   .hairline {
     height: 1px;
     background: var(--line);
