@@ -91,6 +91,33 @@
     color: var(--foreground);
   }
 
+  /* ---------------- asked from Practice ----------------
+     The question a student carried in from Practice, shown above the composer's
+     own field. Given a recessed surface rather than a border so it reads as
+     material that came from somewhere else and cannot be edited here — the same
+     job a quoted reply does in a mail client. */
+  .cm-ask-source {
+    padding: 0.75rem 0.875rem 0.8125rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+  }
+  .cm-ask-source .cm-quote {
+    /* Already inside a tinted well, so the rule that separates a quote from page
+       background would be a second frame around the same block. */
+    border-left-color: var(--line-strong);
+    padding-block: 0;
+    font-size: var(--t-sm);
+  }
+  .cm-ask-source-meta {
+    margin-top: 0.625rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+  }
+  .cm-ask-source-meta strong {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
   /* ---------------- composer entry ----------------
      No panel: the composer is an action, not a post, and giving it the same
      bordered card as the feed items made it compete with them. */
@@ -245,6 +272,19 @@
     transition: color 150ms ease;
   }
   .cm-view-all:hover {
+    color: var(--foreground);
+  }
+  /* "Try this in Practice" on a question that came from there. Same quiet
+     treatment as the comments link — it is an alternative to answering, not the
+     thing the card is asking for. */
+  .cm-practice-link {
+    display: inline-block;
+    font-size: var(--t-sm);
+    font-weight: 500;
+    color: var(--muted);
+    transition: color 150ms ease;
+  }
+  .cm-practice-link:hover {
     color: var(--foreground);
   }
   .cm-comment-field {
@@ -454,6 +494,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  /* "Following", inside the byline's context line.
+     Set a step quieter than the context it sits beside, and given no colour of
+     its own: it reports a state the reader already chose, so it should be
+     findable and never eye-catching. A brand tint or a pill here would turn a
+     study feed into a network of badges. */
+  .cm-following {
+    color: var(--faint);
+    font-weight: 500;
   }
   /* Pushed to the far edge and set at the quietest weight on the row: when it
      sat inline after the school and the score, the byline read as a credential

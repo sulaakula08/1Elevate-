@@ -82,6 +82,18 @@ export type ReportTarget = { type: "post" | "comment"; id: string };
 type Ctx = {
   ready: boolean;
   posts: CommunityPostView[];
+  /**
+   * Account ids the signed-in student follows.
+   *
+   * The whole list, not just the authors currently on screen, so a card can
+   * answer "am I following this person?" without asking the server again. It is
+   * only ever the caller's own edges — the read policy on community_follows
+   * makes anyone else's unreadable — so this cannot become a follower count.
+   */
+  following: string[];
+  isFollowing: (accountId?: string) => boolean;
+  /** Follow or unfollow one student. Optimistic, rolled back if the server refuses. */
+  toggleFollow: (accountId: string) => void;
   toggleReaction: (postId: string, kind: CommunityReactionKind) => void;
   toggleSave: (postId: string) => void;
   addComment: (postId: string, text: string) => void;
@@ -121,10 +133,14 @@ function payloadFor(input: CreatePostInput): Record<string, unknown> {
       return {
         question: {
           subjectId: input.subjectId || "sat-math",
+          /* Asked from Practice, `prompt` is the bank question and `text` is the
+             student's own words about it. Typed into the composer, there is only
+             one field and it serves as both. */
           prompt: input.question?.prompt || text,
           myAnswer: input.question?.myAnswer,
           correctAnswer: input.question?.correctAnswer,
           explanationCount: 0,
+          ...(input.question?.questionId ? { questionId: input.question.questionId } : {}),
         },
       };
     case "progress":
@@ -182,6 +198,7 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [reactions, setReactions] = useState<ReactionState>({});
   const [saved, setSaved] = useState<string[]>([]);
+  const [following, setFollowing] = useState<string[]>([]);
 
   const accountId = account?.id ?? null;
 
@@ -192,6 +209,7 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
       posts: CommunityPost[];
       reactions: ReactionState;
       saved: string[];
+      following: string[];
     };
   }, []);
 
@@ -206,6 +224,7 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
       setPosts([]);
       setReactions({});
       setSaved([]);
+      setFollowing([]);
       setReady(true);
       return;
     }
@@ -217,6 +236,7 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
         setPosts(feed.posts);
         setReactions(feed.reactions);
         setSaved(feed.saved);
+        setFollowing(feed.following ?? []);
       }
       setReady(true);
     })();
@@ -393,9 +413,52 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
         setPosts(feed.posts);
         setReactions(feed.reactions);
         setSaved(feed.saved);
+        setFollowing(feed.following ?? []);
       })();
     },
     [account, load],
+  );
+
+  /*
+   * Follow is optimistic like the reaction toggles, not pessimistic like delete.
+   *
+   * The cost of being briefly wrong is a word in a byline and one row in the
+   * Following tab, and the alternative — a menu item that does nothing until a
+   * round trip finishes — feels broken on a slow connection. A refusal rolls the
+   * list back to exactly what it was.
+   */
+  const toggleFollow = useCallback<Ctx["toggleFollow"]>(
+    (targetId) => {
+      // Self-following is refused by a check constraint, but there is no reason
+      // to send the request: nothing in the UI offers it either.
+      if (!accountId || !targetId || targetId === accountId) return;
+
+      const wasFollowing = following.includes(targetId);
+      const on = !wasFollowing;
+
+      setFollowing((previous) =>
+        on
+          ? previous.includes(targetId)
+            ? previous
+            : [...previous, targetId]
+          : previous.filter((id) => id !== targetId),
+      );
+
+      void apiFetch("/api/community", {
+        method: "POST",
+        body: JSON.stringify({ action: "toggleFollow", targetId, on }),
+      }).then((response) => {
+        if (response.ok) return;
+        setFollowing((previous) =>
+          wasFollowing
+            ? previous.includes(targetId)
+              ? previous
+              : [...previous, targetId]
+            : previous.filter((id) => id !== targetId),
+        );
+      });
+    },
+    [accountId, following],
   );
 
   /*
@@ -465,9 +528,20 @@ export function CommunityProvider({ children }: { children: React.ReactNode }) {
     [posts, reactions, saved],
   );
 
+  /* An author with no id — nothing in a database-backed feed, but the type allows
+     it — is never "followed". Treating a missing id as a match would mark every
+     such byline as followed at once. */
+  const isFollowing = useCallback(
+    (id?: string) => Boolean(id && following.includes(id)),
+    [following],
+  );
+
   const value: Ctx = {
     ready,
     posts: view,
+    following,
+    isFollowing,
+    toggleFollow,
     toggleReaction,
     toggleSave,
     addComment,

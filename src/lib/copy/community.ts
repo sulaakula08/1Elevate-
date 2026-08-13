@@ -60,6 +60,18 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.composerCancel": { en: "Cancel" },
   "community.composerPost": { en: "Post" },
 
+  /* ---------------- asked from Practice ---------------- */
+  "community.askCommunity": { en: "Ask Community" },
+  "community.askSourceLabel": { en: "The question you're asking about" },
+  "community.composerAskContext": { en: "What's confusing you?" },
+  "community.composerAskContextPlaceholder": {
+    en: "I got B but the answer is D — what am I missing?",
+  },
+  /* Marked optional because it arrives empty by design: Practice knows the answer
+     and deliberately does not fill it in. */
+  "community.composerCorrectAnswerOptional": { en: "Correct answer (optional)" },
+  "community.tryInPractice": { en: "Try this question in Practice →" },
+
   "community.reactionHelpful": { en: "Helpful" },
   "community.reactionCongrats": { en: "Congrats" },
   "community.actionExplain": { en: "Explain" },
@@ -95,8 +107,21 @@ export const COMMUNITY_COPY: CopyDict = {
   "community.emptyWinsBody": { en: "Score improvements and achievements will show up here." },
   "community.emptyFollowingTitle": { en: "You're not following anyone yet" },
   "community.emptyFollowingBody": {
-    en: "Follow classmates to see their progress and questions in this tab.",
+    en: "Open the menu on someone's post and choose Follow. Their questions and progress will collect here.",
   },
+  /* The other way this tab is empty: the follows exist, the posts do not. Saying
+     "follow someone" here would read as though the follows had been lost. */
+  "community.emptyFollowingQuietTitle": { en: "Nothing new from them yet" },
+  "community.emptyFollowingQuietBody": {
+    en: "The students you follow haven't posted recently. For You has everything.",
+  },
+
+  /* ---------------- follow ----------------
+     Verbs, because they label an action in a menu — and the author's name is
+     appended by the caller, so the item reads "Follow Aruzhan S." rather than a
+     bare "Follow" that could mean anything on a page full of posts. */
+  "community.follow": { en: "Follow" },
+  "community.unfollow": { en: "Unfollow" },
 
   /* Posting is written through to the server, but the confirmation waits a beat
      — see useSendDelay. */

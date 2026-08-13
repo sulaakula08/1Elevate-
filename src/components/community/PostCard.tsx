@@ -57,7 +57,7 @@ function PostBody({ post }: { post: CommunityPostView }) {
 export function PostCard({ post }: { post: CommunityPostView }) {
   const { t } = useI18n();
   const { account } = useApp();
-  const { toggleReaction, toggleSave, deletePost } = useCommunity();
+  const { toggleReaction, toggleSave, deletePost, isFollowing, toggleFollow } = useCommunity();
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -72,7 +72,18 @@ export function PostCard({ post }: { post: CommunityPostView }) {
    * would refuse, but the menu should never have said it.
    */
   const isMine = Boolean(account?.id && post.author.id && post.author.id === account.id);
+  const authorId = post.author.id;
+  const followed = isFollowing(authorId);
 
+  /*
+   * Follow lives in the menu rather than on the card.
+   *
+   * A Follow button on every post is the single change that would make this feed
+   * read like a professional network: four of them down one column, each shouting
+   * for a decision about a person while you are trying to read what they wrote.
+   * In the menu it costs nothing until someone goes looking for it, and the
+   * byline carries the state instead.
+   */
   const actions: MenuAction[] = isMine
     ? [
         {
@@ -82,9 +93,18 @@ export function PostCard({ post }: { post: CommunityPostView }) {
           onSelect: () => setConfirmingDelete(true),
         },
       ]
-    : post.author.id
-      ? [{ key: "report", label: t("community.reportPost"), onSelect: () => setReporting(true) }]
-      : /* Nobody to report: seeded content has no account behind it. */ [];
+    : authorId
+      ? [
+          {
+            key: "follow",
+            label: followed
+              ? `${t("community.unfollow")} ${post.author.name}`
+              : `${t("community.follow")} ${post.author.name}`,
+            onSelect: () => toggleFollow(authorId),
+          },
+          { key: "report", label: t("community.reportPost"), onSelect: () => setReporting(true) },
+        ]
+      : /* Nobody to follow or report: seeded content has no account behind it. */ [];
 
   async function confirmDelete() {
     setDeleting(true);
@@ -111,6 +131,7 @@ export function PostCard({ post }: { post: CommunityPostView }) {
       <PostHeader
         author={post.author}
         createdAt={post.createdAt}
+        following={followed}
         menu={
           <PostMenu
             actions={actions}

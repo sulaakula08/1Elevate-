@@ -7,6 +7,7 @@
  */
 
 import { HERO_COPY } from "./hero";
+import { LANDING_COPY } from "./landing";
 import { SHOWCASE_COPY } from "./showcase";
 import { STUDY_COPY } from "./study";
 import { PLAN_COPY } from "./plan";
@@ -18,6 +19,7 @@ export type CopyDict = Record<string, CopyEntry>;
 
 export const COPY: CopyDict = {
   ...HERO_COPY,
+  ...LANDING_COPY,
   ...SHOWCASE_COPY,
   ...STUDY_COPY,
   ...PLAN_COPY,

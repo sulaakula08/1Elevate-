@@ -3,6 +3,7 @@
 /* Per-area component styles. Each product area owns one file so the shared
    token layer below stays the only place two areas have to agree. */
 @import "./hero.css";
+@import "./landing.css";
 @import "./showcase.css";
 @import "./study.css";
 @import "./plan.css";
@@ -204,7 +205,7 @@
   --brand-soft: #1c1b33;
   --ring: color-mix(in srgb, var(--accent) 34%, transparent);
 
-  --sidebar-bg: #373078;
+  --sidebar-bg: #282354;
   --sidebar-fg: #fbfaff;
   --sidebar-muted: #d2cef1;
   --sidebar-faint: #aaa5d4;

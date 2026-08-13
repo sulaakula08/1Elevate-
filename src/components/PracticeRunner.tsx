@@ -13,7 +13,8 @@ import { generatedIds } from "@/lib/generation/provenance";
 import { useI18n } from "@/lib/i18n";
 import type { QuizMode } from "@/lib/storage";
 import { pct } from "@/lib/stats";
-import { QuestionPassage, QuestionView } from "./QuestionView";
+import { LETTERS, QuestionPassage, QuestionView } from "./QuestionView";
+import { ComposerModal, type ComposerPrefill } from "./community/ComposerModal";
 import { AiTutor } from "./AiTutor";
 import { ProgressBar, Toast } from "./motion";
 import { ProgressMark, SuccessTick } from "./illustrations";
@@ -116,7 +117,7 @@ export function PracticeRunner({
   onExit,
   onRestart,
 }: Props) {
-  const { t } = useI18n();
+  const { t, tx } = useI18n();
   const { recordAttempts, theme, toggleTheme } = useApp();
   const { settings } = useSettings();
   const fullscreen = useFullscreen();
@@ -152,6 +153,8 @@ export function PracticeRunner({
   const [reportError, setReportError] = useState<string | null>(null);
   const [reportSent, setReportSent] = useState(false);
   const [explanationOpen, setExplanationOpen] = useState<Record<string, boolean>>({});
+  /** The question being asked about, or null when the composer is closed. */
+  const [askPrefill, setAskPrefill] = useState<ComposerPrefill | null>(null);
   const [splitRatio, setSplitRatio] = useState(50);
   const [resizing, setResizing] = useState(false);
 
@@ -443,6 +446,34 @@ export function PracticeRunner({
         >
           <IconReport />
           <span>Report</span>
+        </button>
+
+        {/*
+          Beside Report, because the two are the same shape of thought — "this
+          question needs someone else" — and a student who is stuck already looks
+          here. Deliberately not in the More menu, where it would be two taps away
+          from the moment it is wanted, and deliberately not a primary button,
+          which would compete with checking the answer.
+
+          `myAnswer` is sent only once the answer is revealed. Before that the
+          selection is still a working guess, and publishing it would turn a
+          question into an announcement of what the student is about to change.
+        */}
+        <button
+          className="test-report-btn"
+          onClick={() =>
+            setAskPrefill({
+              questionId: question.id,
+              subjectId: question.subjectId,
+              topic: question.skill || question.topic || undefined,
+              prompt: tx(question.prompt),
+              myAnswer:
+                isRevealed && selected !== null ? (LETTERS[selected] ?? undefined) : undefined,
+            })
+          }
+        >
+          <IconExplanation />
+          <span>{t("community.askCommunity")}</span>
         </button>
 
         <button
@@ -976,6 +1007,28 @@ export function PracticeRunner({
         open={tutorOpen}
         onOpenChange={setTutorOpen}
       />
+
+      {/*
+        Rendered here, inside the exam shell, and that placement is the whole
+        integration.
+
+        The shell is `position: fixed; z-index: 55` and it is also the element
+        that goes fullscreen. A composer mounted as a sibling — or portalled to
+        <body> — would lose on both counts: its own z-50 sits under the shell's
+        55, and nothing outside the fullscreen element is painted at all while
+        fullscreen is on. As a descendant its z-index is resolved inside the
+        shell's stacking context, so it lands above the question, and it comes
+        along into fullscreen. It also inherits the shell's paper-white tokens,
+        which is why the composer looks like part of the exam surface rather than
+        a window from the dashboard.
+      */}
+      {askPrefill && (
+        <ComposerModal
+          initialType="question"
+          prefill={askPrefill}
+          onClose={() => setAskPrefill(null)}
+        />
+      )}
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>

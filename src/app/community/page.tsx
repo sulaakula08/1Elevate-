@@ -24,7 +24,7 @@ export default function CommunityPage() {
 
 function CommunityInner() {
   const { t } = useI18n();
-  const { ready, posts } = useCommunity();
+  const { ready, posts, following } = useCommunity();
   const [tab, setTab] = useState<FeedTabId>("for-you");
   const [composerOpen, setComposerOpen] = useState(false);
   /* Always a concrete type now: the entry composer opens either an ordinary post
@@ -44,13 +44,22 @@ function CommunityInner() {
       case "wins":
         return posts.filter((p) => p.type === "progress" || p.type === "achievement");
       case "following":
-        // No follow graph yet (see AGENTS §17 "Future-ready integration") — empty by design.
-        return [];
+        /*
+         * Filtered from the real follow rows, not from anything invented. Every
+         * post type is included, so a question from someone you follow still
+         * behaves like a question here.
+         *
+         * The filter runs over the same page of posts the other tabs use, which
+         * is what makes this consistent with Questions and Wins — and what limits
+         * it: a followed student whose newest post falls outside that page will
+         * not appear. See the note beside FEED_LIMIT in the API route.
+         */
+        return posts.filter((p) => p.author.id && following.includes(p.author.id));
       case "for-you":
       default:
         return posts;
     }
-  }, [posts, tab]);
+  }, [posts, tab, following]);
 
   return (
     <>
@@ -80,7 +89,11 @@ function CommunityInner() {
                 <div className="skeleton h-44 rounded-xl" />
               </>
             ) : filtered.length === 0 ? (
-              <EmptyTab tab={tab} onAsk={() => openComposer("question")} />
+              <EmptyTab
+                tab={tab}
+                followsAnyone={following.length > 0}
+                onAsk={() => openComposer("question")}
+              />
             ) : (
               filtered.map((post) => <PostCard key={post.id} post={post} />)
             )}
@@ -95,7 +108,16 @@ function CommunityInner() {
   );
 }
 
-function EmptyTab({ tab, onAsk }: { tab: FeedTabId; onAsk: () => void }) {
+function EmptyTab({
+  tab,
+  followsAnyone,
+  onAsk,
+}: {
+  tab: FeedTabId;
+  /** Distinguishes the two ways the Following tab can be empty. */
+  followsAnyone: boolean;
+  onAsk: () => void;
+}) {
   const { t } = useI18n();
 
   if (tab === "questions") {
@@ -110,7 +132,17 @@ function EmptyTab({ tab, onAsk }: { tab: FeedTabId; onAsk: () => void }) {
   if (tab === "wins") {
     return <EmptyFeedState title={t("community.emptyWinsTitle")} body={t("community.emptyWinsBody")} />;
   }
-  return (
+  /*
+   * Two different facts, and telling them apart matters: "follow classmates to
+   * fill this tab" is useless advice to someone who already follows four people,
+   * and reads as though their follows were lost.
+   */
+  return followsAnyone ? (
+    <EmptyFeedState
+      title={t("community.emptyFollowingQuietTitle")}
+      body={t("community.emptyFollowingQuietBody")}
+    />
+  ) : (
     <EmptyFeedState
       title={t("community.emptyFollowingTitle")}
       body={t("community.emptyFollowingBody")}

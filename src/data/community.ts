@@ -70,6 +70,20 @@ export type QuestionPostData = {
   correctAnswer?: string;
   /** Number of explanations/answers offered by the community. */
   explanationCount: number;
+  /**
+   * The bank question this was asked about, when it came from Practice.
+   *
+   * Rides in the post's `payload` jsonb rather than a column, which needs no
+   * migration and matches how `skill` is stored on custom_questions: nothing
+   * queries it in SQL, it is read to build a link back to
+   * /practice/<subject>/<id>. Absent on a question typed straight into the
+   * composer, which is the honest default — there is no originating item.
+   *
+   * Deliberately not a foreign key. A post should survive the question being
+   * deleted from the bank; the link simply stops resolving, and the post is still
+   * a student asking for help with a problem quoted in full.
+   */
+  questionId?: string;
 };
 
 export type ProgressPostData = {

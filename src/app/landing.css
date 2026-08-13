@@ -1,0 +1,2323 @@
+/* ===========================================================================
+   Phase-two landing page: the middle of the signed-out story.
+
+   Tokens live in globals.css; the hero and the site chrome live in hero.css.
+   Everything here is prefixed `lp-` and is only ever rendered by the components
+   in `components/landing/`.
+
+   ---- two conventions this file depends on ----
+
+   1. SCROLL-DRIVEN VALUES ARE `calc()` OFF ONE PROPERTY.
+      A section's components write its scroll progress into `--p` (0 → 1) and
+      nothing else. Every reveal, stagger, draw and drift below is arithmetic on
+      that one number, which is why a page this animated runs one style write per
+      frame and re-renders almost nothing.
+
+      A reveal reads `var(--p, 1)` and a parallax reads `var(--p, 0.5)`, never a
+      bare `var(--p)`. The fallback is the finished, resting state — so with
+      JavaScript off, or once the reduced-motion query removes the binding, the
+      composition settles into its end state instead of freezing half-played.
+      This is the entire reduced-motion strategy for the scroll layer; see the
+      note in `landing/scroll.ts`.
+
+      The stagger idiom, used a dozen times:
+
+        --t: clamp(0, calc((var(--p, 1) - LAG) / SPAN), 1);
+
+      `--t` is that element's own 0 → 1, delayed by LAG and completed over SPAN.
+      Then transform and opacity read `--t`. Elements carry `--i` / `--n` so LAG
+      can be derived from their position.
+
+   2. BORDER *COLOUR* CANNOT BE SET INSIDE `@layer`.
+      globals.css ends with an unlayered `* { border-color: var(--line) }`, and an
+      unlayered declaration beats anything in a layer whatever its specificity.
+      So a `border-color`, or the colour half of a `border` shorthand, written in
+      the layer below silently does nothing.
+
+      Which is usually fine — `--line` is the hairline this design wants. Where a
+      border needs another colour there are two ways out, both used here: an
+      `inset` box-shadow (which also lets a border thicken without moving
+      anything), or the small unlayered block at the very bottom of this file.
+   =========================================================================== */
+
+@layer components {
+  /* ---------------------------------------------------------------------------
+     page frame
+     --------------------------------------------------------------------------- */
+
+  /* `clip`, not `hidden`: the bleed rule below overshoots the viewport by the
+     width of the scrollbar, and this swallows that overshoot without creating a
+     scroll container — which `overflow: hidden` would, and which would break
+     every `position: sticky` on the page. */
+  .lp-page {
+    overflow-x: clip;
+  }
+
+  /* Full-window background from inside a centred 64rem column. The negative
+     margin is measured from the column, so it lands on the viewport edge at any
+     width, and the padding puts the content back where it was. */
+  .lp-bleed {
+    margin-inline: calc(50% - 50vw);
+    padding-inline: calc(50vw - 50%);
+  }
+
+  /* ===========================================================================
+     1 — editorial transition
+     =========================================================================== */
+
+  .lp-mf {
+    position: relative;
+    padding-block: 7.5rem 5.5rem;
+    isolation: isolate;
+  }
+
+  .lp-mf-field {
+    position: absolute;
+    inset: -2rem 0 0;
+    z-index: -1;
+    margin-inline: calc(50% - 50vw);
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* A 64px hairline grid, drifting up against the scroll. Held at an opacity
+     where it is texture rather than graph paper: on a white page it should read
+     as the surface having a grain, not as a chart behind the type. */
+  .lp-mf-grid {
+    position: absolute;
+    inset: -8rem 0;
+    opacity: 0.5;
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 4rem 4rem;
+    /* Faded at both ends, so the grid has no edge to notice. */
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 22%, black 62%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, black 22%, black 62%, transparent);
+    transform: translate3d(0, calc((0.5 - var(--p, 0.5)) * 7rem), 0);
+    will-change: transform;
+  }
+
+  /* The one brand wash on the page. 5% at its strongest, top-right, behind the
+     statement — light in the room, not a gradient. */
+  .lp-mf-wash {
+    position: absolute;
+    top: -14rem;
+    right: -18rem;
+    width: 46rem;
+    height: 34rem;
+    border-radius: var(--radius-pill);
+    background: radial-gradient(
+      closest-side,
+      color-mix(in srgb, var(--brand) 12%, transparent),
+      transparent
+    );
+    opacity: clamp(0, calc(var(--p, 1) / 0.4), 1);
+    transform: translate3d(0, calc((0.5 - var(--p, 0.5)) * -4rem), 0);
+  }
+
+  .lp-mf-eyebrow {
+    position: relative;
+    padding-left: 3.25rem;
+    color: var(--brand);
+  }
+  .lp-mf-eyebrow::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 2.5rem;
+    height: 1px;
+    background: var(--brand);
+    transform-origin: left;
+    transform: scaleX(clamp(0, calc(var(--p, 1) / 0.16), 1));
+  }
+
+  .lp-mf-statement {
+    margin-top: 2rem;
+    max-width: 22ch;
+    font-size: clamp(2.125rem, 5.4vw, 3.5rem);
+    font-weight: 500;
+    line-height: 1.04;
+    letter-spacing: -0.045em;
+  }
+  /* The clip. Overflow on the line, movement on the ink inside it: a line that
+     only fades reads as a fade, and a line that rises out of a mask reads as
+     type being set. */
+  .lp-mf-line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.06em;
+  }
+  .lp-mf-ink {
+    --t: clamp(0, calc((var(--p, 1) - (var(--i) * 0.075) - 0.02) / 0.2), 1);
+    display: block;
+    opacity: var(--t);
+    transform: translate3d(0, calc((1 - var(--t)) * 1.05em), 0);
+  }
+  /* The middle line carries the idea, so it carries the colour. */
+  .lp-mf-line:nth-child(2) .lp-mf-ink {
+    color: var(--brand);
+  }
+  .lp-mf-line:nth-child(3) .lp-mf-ink {
+    color: var(--muted);
+  }
+
+  .lp-mf-body {
+    --t: clamp(0, calc((var(--p, 1) - 0.22) / 0.22), 1);
+    margin-top: 2.75rem;
+    max-width: 40ch;
+    font-size: var(--t-h3);
+    line-height: 1.55;
+    color: var(--foreground);
+    opacity: var(--t);
+    transform: translate3d(0, calc((1 - var(--t)) * 14px), 0);
+  }
+
+  /* ---- the attempt strip ---- */
+  .lp-mf-strip-block {
+    margin: 4.5rem 0 0;
+  }
+  .lp-mf-strip {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.3125rem;
+    height: 3rem;
+  }
+  .lp-mf-cell {
+    --t: clamp(0, calc((var(--p, 1) - 0.3 - (var(--n) * 0.004)) / 0.14), 1);
+    flex: 1;
+    min-width: 0;
+    height: 0.875rem;
+    border-radius: 2px;
+    background: var(--line-strong);
+    opacity: calc(0.4 + var(--t) * 0.6);
+  }
+  /* The six that matter: taller, brand-coloured, and lifted clear of the row.
+     Same `--t` ramp, so they resolve as the strip fills rather than afterwards. */
+  .lp-mf-cell[data-miss] {
+    height: calc(0.875rem + var(--t) * 2.125rem);
+    background: color-mix(in srgb, var(--brand) calc(35% + var(--t) * 65%), var(--line-strong));
+    opacity: 1;
+  }
+  .lp-mf-caption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 1.125rem;
+    font-size: var(--t-sm);
+    color: var(--faint);
+  }
+  .lp-mf-caption strong {
+    --t: clamp(0, calc((var(--p, 1) - 0.42) / 0.18), 1);
+    font-weight: 500;
+    color: color-mix(in srgb, var(--foreground) calc(var(--t) * 100%), var(--faint));
+  }
+
+  /* The rule out of this section and into the next. Drawn over the last third,
+     so the loop opens on a line the reader watched arrive.
+
+     Absolutely positioned, and hanging past the section's own bottom edge: it has
+     to reach into the space below without taking part in the layout, because a
+     4.5rem element in flow would change the gap between two sections in order to
+     decorate it. */
+  .lp-mf-thread {
+    position: absolute;
+    left: 0;
+    bottom: -2.25rem;
+    width: 1px;
+    height: 4.5rem;
+    background: linear-gradient(to bottom, var(--brand), transparent);
+    transform-origin: top;
+    transform: scaleY(clamp(0, calc((var(--p, 1) - 0.52) / 0.3), 1));
+  }
+
+  /* ===========================================================================
+     2 — the learning loop
+     =========================================================================== */
+
+  .lp-loop {
+    position: relative;
+    padding-block: 4.5rem 0;
+  }
+  .lp-loop-head {
+    max-width: 44rem;
+  }
+  .lp-loop-title {
+    margin-top: 0.875rem;
+    font-size: clamp(1.875rem, 3.6vw, 2.5rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  .lp-loop-sub {
+    margin-top: 1rem;
+    max-width: 44ch;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* The track's only job is height. In scroll mode it is five viewports tall and
+     the composition inside it is sticky; in manual mode it is exactly as tall as
+     its content and nothing sticks. Both are the same markup. */
+  .lp-loop-track {
+    margin-top: 3rem;
+  }
+  .lp-loop[data-mode="scroll"] .lp-loop-track {
+    /* 74vh per stage: brisk enough that nobody feels held, long enough that a
+       transition finishes before the next one is asked for. */
+    height: calc(var(--stages) * 74vh);
+  }
+  .lp-loop[data-mode="scroll"] .lp-loop-stick {
+    position: sticky;
+    /* Clears the 3.5rem sticky header with room to breathe. */
+    top: 4.75rem;
+  }
+
+  .lp-loop-grid {
+    display: grid;
+    gap: 2rem;
+  }
+  .lp-loop[data-mode="scroll"] .lp-loop-grid {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    gap: 3rem;
+    align-items: start;
+  }
+
+  /* ---- the step rail ---- */
+  .lp-loop-steps {
+    position: relative;
+    margin: 0;
+    padding: 0 0 0 1.875rem;
+    list-style: none;
+  }
+  .lp-loop-rail {
+    position: absolute;
+    left: 0;
+    top: 0.55rem;
+    bottom: 0.55rem;
+    width: 2px;
+    border-radius: var(--radius-pill);
+    background: var(--line);
+    overflow: hidden;
+  }
+  .lp-loop-rail-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--brand);
+    transform-origin: top;
+    transform: scaleY(var(--p, 1));
+  }
+
+  .lp-loop-step {
+    padding-block: 0.875rem;
+    /* Everything about an inactive step is dimmed except its position, so the
+       rail and the list agree about where you are without either shouting. */
+    opacity: 0.34;
+    transition:
+      opacity 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-loop-step[data-done] {
+    opacity: 0.5;
+  }
+  .lp-loop-step[data-on] {
+    opacity: 1;
+  }
+  .lp-loop-step-index {
+    font-size: var(--t-micro);
+    color: var(--faint);
+    letter-spacing: 0.04em;
+  }
+  .lp-loop-step[data-on] .lp-loop-step-index {
+    color: var(--brand);
+  }
+  .lp-loop-step-title {
+    margin-top: 0.1875rem;
+    font-size: var(--t-h3);
+    font-weight: 500;
+    letter-spacing: -0.022em;
+  }
+  /* Collapsed for every step but the current one: five paragraphs at once is a
+     wall, and the reader only needs the one they are standing on.
+
+     The animatable `0fr → 1fr` row needs a real element inside it to size — a
+     bare text node becomes an anonymous grid item that `0fr` does not collapse,
+     which is why the paragraph is wrapped in a span. */
+  .lp-loop-step-text {
+    display: grid;
+    grid-template-rows: 0fr;
+    margin-top: 0;
+    max-width: 34ch;
+    font-size: var(--t-sm);
+    line-height: 1.6;
+    color: var(--muted);
+    overflow: hidden;
+    transition:
+      grid-template-rows 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      margin-top 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      opacity 300ms ease;
+    opacity: 0;
+  }
+  .lp-loop-step[data-on] .lp-loop-step-text {
+    grid-template-rows: 1fr;
+    margin-top: 0.5rem;
+    opacity: 1;
+  }
+  .lp-loop-step-text > span {
+    min-height: 0;
+  }
+
+  /* ---- manual controls: drawn only when scroll is not driving ---- */
+  .lp-loop-tabs,
+  .lp-loop-nav {
+    display: none;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-tabs {
+    display: flex;
+    gap: 0.375rem;
+    margin-bottom: 1.5rem;
+    /* A phone cannot hold five labelled steps in a row, so the row scrolls and
+       snaps. Nothing is hidden and nothing is truncated. */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding-bottom: 0.25rem;
+  }
+  .lp-loop-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .lp-loop-tab {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4375rem;
+    flex: none;
+    scroll-snap-align: start;
+    padding: 0.4375rem 0.75rem;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: var(--t-sm);
+    cursor: pointer;
+    transition:
+      background 180ms ease,
+      color 180ms ease,
+      box-shadow 180ms ease;
+  }
+  .lp-loop-tab .num {
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+  .lp-loop-tab[data-on] {
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+  .lp-loop-tab[data-on] .num {
+    color: color-mix(in srgb, var(--brand-contrast) 70%, transparent);
+  }
+
+  .lp-loop[data-mode="manual"] .lp-loop-steps {
+    padding-left: 0;
+    min-height: 7.5rem;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-rail {
+    display: none;
+  }
+  /* One step at a time, and no dimming — in manual mode the others are not
+     context, they are somewhere else. */
+  .lp-loop[data-mode="manual"] .lp-loop-step:not([data-on]) {
+    display: none;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-step {
+    padding-block: 0;
+    opacity: 1;
+  }
+
+  .lp-loop[data-mode="manual"] .lp-loop-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /*
+   * Manual mode reorders itself so the controls sit under the thing they drive.
+   *
+   * The markup is one aside (tabs, steps, buttons) beside the frame, which is
+   * the right structure for the scroll layout and the wrong one here: it puts
+   * "Next step" *above* the product surface, so tapping it changes something
+   * below the fold. `display: contents` dissolves the aside for this mode only,
+   * which lets all four parts order themselves in one column —
+   * tabs, step, frame, buttons — with no second set of markup to keep in sync.
+   *
+   * The width cap matters on a wide screen under reduced motion, where manual
+   * mode is what a desktop gets: without it the frame stretches to the full 64rem
+   * measure and a four-line question floats in the middle of it.
+   */
+  .lp-loop[data-mode="manual"] .lp-loop-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 46rem;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-aside {
+    display: contents;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-tabs {
+    order: 1;
+    margin-bottom: 0;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-steps {
+    order: 2;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-stage {
+    order: 3;
+  }
+  .lp-loop[data-mode="manual"] .lp-loop-nav {
+    order: 4;
+    margin-top: 0;
+  }
+  .lp-loop-count {
+    font-size: var(--t-micro);
+    color: var(--faint);
+    margin-inline: auto;
+  }
+
+  .lp-loop-hint {
+    display: none;
+  }
+  .lp-loop[data-mode="scroll"] .lp-loop-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding-left: 1.875rem;
+    font-size: var(--t-micro);
+    letter-spacing: var(--tr-label);
+    text-transform: uppercase;
+    color: var(--faint);
+    /* Gone as soon as the reader has obviously understood the instruction. */
+    opacity: clamp(0, calc((0.12 - var(--p, 1)) / 0.12), 1);
+  }
+  .lp-loop-hint-arrow {
+    width: 1px;
+    height: 1.25rem;
+    background: linear-gradient(to bottom, var(--faint), transparent);
+  }
+
+  /* ---- the product frame ---- */
+  .lp-fr {
+    display: flex;
+    flex-direction: column;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+    box-shadow:
+      0 1px 2px rgba(19, 19, 22, 0.04),
+      0 22px 60px rgba(19, 19, 22, 0.09);
+  }
+  :root[data-theme="dark"] .lp-fr {
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .lp-fr-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 2.875rem;
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid;
+    background: var(--surface-2);
+    font-size: var(--t-micro);
+    color: var(--muted);
+  }
+  .lp-fr-context,
+  .lp-fr-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .lp-fr-context {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+  .lp-fr-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--success);
+    box-shadow: 0 0 0 3px var(--success-soft);
+  }
+  /* Keyed in the component, so a changed label crossfades rather than swapping
+     a character at a time. */
+  .lp-fr-mode,
+  .lp-fr-level {
+    animation: lp-swap 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .lp-fr-level[data-level="3"] {
+    color: var(--lvl-3);
+    font-weight: 600;
+  }
+
+  .lp-fr-body {
+    position: relative;
+    height: clamp(21rem, 58vh, 28.5rem);
+    overflow: hidden;
+  }
+
+  .lp-fr-layer {
+    position: absolute;
+    inset: 0;
+    padding: 1.125rem 1.25rem;
+    background: var(--surface);
+    transition:
+      opacity 480ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 560ms cubic-bezier(0.3, 0.85, 0.24, 1);
+  }
+
+  /* The two questions cross in the same box: one leaves left, the other arrives
+     from the right. Nothing is unmounted, so scrolling back plays it in
+     reverse. */
+  .lp-fr-q[data-out] {
+    opacity: 0;
+    transform: translate3d(-7%, 0, 0) scale(0.985);
+  }
+  .lp-fr-q-next {
+    opacity: 0;
+    transform: translate3d(9%, 0, 0) scale(0.985);
+    pointer-events: none;
+  }
+  .lp-fr-q-next[data-in] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .lp-fr-skill {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
+  }
+  .lp-fr-skill > span:first-child {
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .lp-fr-chip {
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    animation: lp-chip-in 420ms cubic-bezier(0.22, 0.61, 0.36, 1) 240ms both;
+  }
+
+  /* The question, sized down to fit a frame rather than a page. Prompt at body
+     size, choices tightened — the same component, on a smaller surface.
+
+     Centred in whatever height is left under the skill row, which is what makes
+     the explanation arriving on step two read as the panel opening: the question
+     settles upward to make room for it instead of sitting at the top of a
+     half-empty box waiting for something to appear underneath. No `gap` here —
+     `.q-view` carries Tailwind's `space-y-5` margins, and a flex gap on top of
+     them would space the choices twice. */
+  .lp-fr-q {
+    display: flex;
+    flex-direction: column;
+  }
+  /* Auto margins, not `justify-content: center`.
+     Centring overflows in both directions when the content is taller than the
+     box — on step two, with the explanation open, the prompt was pushed up
+     underneath the skill row. Auto margins centre with the free space they are
+     given and collapse to nothing when there is none, so the question centres
+     while it fits and simply starts at the top when it does not. */
+  .lp-fr .q-view {
+    margin-block: auto;
+    min-height: 0;
+  }
+  .lp-fr .q-prompt {
+    font-size: var(--t-body);
+    line-height: 1.5;
+  }
+  .lp-fr .q-choice {
+    padding: 0.5rem 0.75rem;
+    cursor: default;
+  }
+  .lp-fr .q-text {
+    font-size: var(--t-sm);
+    line-height: 1.4;
+  }
+  .lp-fr .q-mark {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .lp-fr .q-explanation {
+    padding-top: 0.75rem;
+    font-size: var(--t-sm);
+  }
+  .lp-fr .q-explanation .mt-2\.5 {
+    margin-top: 0.375rem;
+  }
+  .lp-fr .q-explanation .text-body {
+    font-size: var(--t-sm);
+    line-height: 1.55;
+  }
+  .lp-fr .space-y-5 > * + * {
+    margin-top: 0.875rem;
+  }
+  .lp-fr .space-y-2 > * + * {
+    margin-top: 0.375rem;
+  }
+
+  /* ---- the review sheet ---- */
+  .lp-fr-review {
+    top: auto;
+    height: 62%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    justify-content: center;
+    border-top: 1px solid;
+    background: var(--surface-2);
+    transform: translate3d(0, 100%, 0);
+    box-shadow: 0 -20px 44px rgba(19, 19, 22, 0.14);
+  }
+  :root[data-theme="dark"] .lp-fr-review {
+    box-shadow: 0 -20px 44px rgba(0, 0, 0, 0.6);
+  }
+  /* The question recedes while the sheet is over it. Without this the sheet's top
+     edge cuts a choice in half and reads as a clipping bug rather than as
+     something arriving on top.
+
+     `:not(.lp-fr-q-next)` matters: the replacement question carries `.lp-fr-q`
+     too, and dimming it to 0.4 here made it *appear* — two prompts stacked on top
+     of each other — because its resting state is opacity 0. */
+  .lp-fr[data-stage="2"] .lp-fr-q:not(.lp-fr-q-next) {
+    opacity: 0.4;
+    transform: scale(0.99);
+  }
+  .lp-fr-review[data-on] {
+    transform: none;
+  }
+  .lp-fr-review-skill {
+    margin-top: 0.5rem;
+    font-size: var(--t-h3);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .lp-fr-review-tally {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.625rem;
+    font-size: var(--t-sm);
+    color: var(--muted);
+  }
+  .lp-fr-review-level {
+    margin-left: 0.25rem;
+    padding: 0.125rem 0.4375rem;
+    border-radius: var(--radius-pill);
+    background: var(--lvl-2-soft);
+    color: var(--lvl-2);
+    font-size: var(--t-2xs);
+    font-weight: 600;
+  }
+  .lp-fr-review-rule {
+    padding-top: 0.875rem;
+    border-top: 1px solid;
+    font-size: var(--t-sm);
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  /* ---- the progress surface ---- */
+  /* Header, list and footnote centred as one block. Centring the list on its own
+     — which is what `margin-block: auto` on it did — opened a gap above it and
+     another below, so the layer read as three things adrift rather than one
+     panel. */
+  .lp-fr-progress {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+    pointer-events: none;
+  }
+  .lp-fr-more {
+    margin-top: 1.125rem;
+    font-size: var(--t-micro);
+    color: var(--faint);
+  }
+  .lp-fr-progress[data-on] {
+    opacity: 1;
+    transform: none;
+  }
+  .lp-fr-hint {
+    margin-top: 0.375rem;
+    font-size: var(--t-micro);
+    color: var(--faint);
+  }
+
+  .lp-fr-focus {
+    --row-h: 3.625rem;
+    position: relative;
+    margin-top: 1.5rem;
+    padding-left: 6.5rem;
+  }
+  .lp-fr-focus ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lp-fr-focus li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-content: center;
+    column-gap: 0.75rem;
+    row-gap: 0.4375rem;
+    height: var(--row-h);
+  }
+  .lp-fr-focus li + li {
+    border-top: 1px solid;
+  }
+  .lp-fr-focus-name {
+    grid-column: 1;
+    font-size: var(--t-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lp-fr-focus-pct {
+    grid-column: 2;
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .lp-fr-focus-count {
+    grid-column: 3;
+    min-width: 2.5rem;
+    text-align: right;
+    font-size: var(--t-micro);
+    color: var(--faint);
+  }
+  .lp-fr-focus-rule {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  /* One marker in the margin, moved. Two markers fading into each other would
+     say "another thing is also true"; one travelling says the weakest skill
+     changed, which is what happened. The `+ 1px` is the rule between rows — the
+     translation has to agree with the layout exactly or the flag drifts. */
+  .lp-fr-flag {
+    position: absolute;
+    left: 0;
+    top: 1.0625rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    padding: 0.1875rem 0.5rem;
+    border-radius: var(--radius-sm);
+    background: var(--brand);
+    color: var(--brand-contrast);
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    transform: translate3d(0, calc(var(--row) * (var(--row-h) + 1px)), 0);
+    transition: transform 680ms cubic-bezier(0.5, 0, 0.2, 1);
+  }
+  /* The dash reaches from the marker to the row it is pointing at, and lives
+     inside the gutter — it is what makes the marker read as an annotation in the
+     margin rather than a badge that happens to be there. */
+  .lp-fr-flag::after {
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    width: 0.875rem;
+    height: 1px;
+    background: var(--brand);
+    opacity: 0.45;
+  }
+
+  /* ---- the frame footer ---- */
+  .lp-fr-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 4.75rem;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid;
+    background: var(--surface-2);
+  }
+  .lp-fr-foot-copy {
+    min-width: 0;
+  }
+  .lp-fr-foot-copy .t-label {
+    animation: lp-swap 300ms ease both;
+  }
+  .lp-fr-foot-text {
+    margin-top: 0.3125rem;
+    max-width: 46ch;
+    font-size: var(--t-sm);
+    line-height: 1.5;
+    animation: lp-swap 380ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .lp-fr-action {
+    flex: none;
+    pointer-events: none;
+  }
+  .lp-fr-queue {
+    display: flex;
+    flex: none;
+    align-items: baseline;
+    gap: 0.4375rem;
+  }
+  .lp-fr-queue-value {
+    font-size: var(--t-h2);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    animation: lp-tick 460ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .lp-fr-queue-label {
+    font-size: var(--t-micro);
+    color: var(--muted);
+  }
+
+  /* ===========================================================================
+     3 — outcomes
+     =========================================================================== */
+
+  .lp-res {
+    padding-block: 7rem 5.5rem;
+  }
+  .lp-res-title {
+    margin-top: 0.875rem;
+    font-size: clamp(1.875rem, 3.6vw, 2.5rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+  .lp-res-sub {
+    margin-top: 0.875rem;
+    max-width: 44ch;
+    color: var(--muted);
+  }
+
+  .lp-res-cohort {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin-top: 3rem;
+    border-block: 1px solid;
+  }
+  .lp-res-figure {
+    padding: 1.25rem 1.25rem 1.25rem 0;
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 620ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 620ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    transition-delay: calc(var(--i) * 90ms);
+  }
+  .lp-res-figure[data-in] {
+    opacity: 1;
+    transform: none;
+  }
+  .lp-res-figure + .lp-res-figure {
+    padding-left: 1.25rem;
+    border-left: 1px solid;
+  }
+  .lp-res-figure-value {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .lp-res-figure-label {
+    margin-top: 0.5rem;
+    max-width: 22ch;
+    font-size: var(--t-micro);
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .lp-res-wall {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 2.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Three columns, three drifts. The offsets are a stepped rhythm rather than
+     random: column two sits lowest, column three between, so the wall reads as
+     set rather than scattered. */
+  .lp-res-slot {
+    transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * var(--drift, 0px)), 0);
+  }
+  .lp-res-slot:nth-child(3n + 1) {
+    --drift: 22px;
+  }
+  .lp-res-slot:nth-child(3n + 2) {
+    --drift: -30px;
+    margin-top: 2.25rem;
+  }
+  .lp-res-slot:nth-child(3n + 3) {
+    --drift: 10px;
+    margin-top: 1.125rem;
+  }
+
+  .lp-res-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 11.75rem;
+    padding: 1.125rem 1.25rem;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 320ms ease;
+    transition-delay: calc(var(--i) * 80ms);
+  }
+  .lp-res-card[data-in] {
+    opacity: 1;
+    transform: none;
+  }
+  .lp-res-card:hover,
+  .lp-res-card:focus-visible {
+    box-shadow: var(--lift-brand);
+  }
+
+  .lp-res-scores {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+    transform-origin: top left;
+    transition: transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-res-from {
+    font-size: var(--t-h3);
+    color: var(--faint);
+    letter-spacing: -0.025em;
+  }
+  .lp-res-arrow {
+    width: 1.25rem;
+    height: 1px;
+    background: var(--line-strong);
+    position: relative;
+  }
+  .lp-res-arrow::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: -2.5px;
+    width: 6px;
+    height: 6px;
+    border-top: 1px solid;
+    border-right: 1px solid;
+    transform: rotate(45deg);
+  }
+  .lp-res-to {
+    font-size: clamp(1.75rem, 2.6vw, 2.125rem);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .lp-res-delta {
+    margin-top: 0.625rem;
+    font-size: var(--t-sm);
+    font-weight: 600;
+    color: var(--success);
+    transition:
+      opacity 300ms ease,
+      transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-res-delta span {
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  /* The detail arrives as a panel over the card, not as the card growing: six
+     cards in a wall must not move because one of them is being pointed at. */
+  .lp-res-panel {
+    position: absolute;
+    inset: 3.125rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.8125rem 1.25rem 1rem;
+    background: var(--surface);
+    border-top: 1px solid;
+    opacity: 0;
+    transform: translate3d(0, 100%, 0);
+    transition:
+      opacity 300ms ease,
+      transform 460ms cubic-bezier(0.28, 0.86, 0.24, 1);
+  }
+  .lp-res-card:hover .lp-res-panel,
+  .lp-res-card:focus-visible .lp-res-panel,
+  .lp-res-card:focus-within .lp-res-panel {
+    opacity: 1;
+    transform: none;
+  }
+  /* The score stays visible above the panel, smaller — the number is what the
+     card is about and losing it on hover would be losing the point. */
+  .lp-res-card:hover .lp-res-scores,
+  .lp-res-card:focus-visible .lp-res-scores,
+  .lp-res-card:focus-within .lp-res-scores {
+    transform: scale(0.74);
+  }
+  .lp-res-card:hover .lp-res-delta,
+  .lp-res-card:focus-visible .lp-res-delta,
+  .lp-res-card:focus-within .lp-res-delta,
+  .lp-res-card:hover .lp-res-fixed,
+  .lp-res-card:focus-visible .lp-res-fixed,
+  .lp-res-card:focus-within .lp-res-fixed {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  /* The resting state's last line, pinned to the bottom of the card. */
+  .lp-res-fixed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: auto;
+    padding-top: 0.875rem;
+    border-top: 1px solid;
+    transition:
+      opacity 260ms ease,
+      transform 400ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-res-skill {
+    font-size: var(--t-sm);
+    font-weight: 600;
+    color: var(--brand);
+    line-height: 1.35;
+  }
+  .lp-res-who {
+    font-size: var(--t-sm);
+  }
+  .lp-res-who strong {
+    font-weight: 600;
+  }
+  .lp-res-place {
+    color: var(--muted);
+  }
+  .lp-res-quote {
+    margin: 0;
+    font-size: var(--t-sm);
+    line-height: 1.45;
+    color: var(--foreground);
+  }
+  .lp-res-facts {
+    margin-top: auto;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+
+  .lp-res-hint {
+    margin-top: 1.75rem;
+    font-size: var(--t-micro);
+    color: var(--faint);
+  }
+  .lp-res-hint-touch {
+    display: none;
+  }
+
+  /* ===========================================================================
+     4 — capability surfaces
+     =========================================================================== */
+
+  .lp-caps {
+    padding-block: 6rem 4rem;
+    border-top: 1px solid;
+  }
+  .lp-caps-title {
+    margin-top: 0.875rem;
+    font-size: clamp(1.875rem, 3.6vw, 2.5rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+  .lp-caps-sub {
+    margin-top: 0.875rem;
+    max-width: 46ch;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .lp-cap {
+    display: grid;
+    gap: 2rem;
+    margin-top: 4.5rem;
+  }
+  .lp-cap-label {
+    color: var(--brand);
+  }
+  .lp-cap-title {
+    margin-top: 0.75rem;
+    font-size: var(--t-h2);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.028em;
+    text-wrap: balance;
+  }
+  .lp-cap-text {
+    margin-top: 0.875rem;
+    max-width: 40ch;
+    font-size: var(--t-sm);
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .lp-cap-try {
+    margin-top: 1.25rem;
+    font-size: var(--t-micro);
+    letter-spacing: var(--tr-label);
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  /* ---- 4a: the bank ---- */
+  .lp-bank {
+    padding: 1.125rem;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--lift);
+  }
+  .lp-bank-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid;
+  }
+  .lp-bank-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+  .lp-bank-showing {
+    margin-left: auto;
+    font-size: var(--t-micro);
+    color: var(--faint);
+  }
+  .lp-bank-list {
+    --row-h: 2.625rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lp-bank-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: var(--row-h);
+    max-height: var(--row-h);
+    padding-inline: 0.625rem;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition:
+      max-height 300ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 220ms ease,
+      background 180ms ease,
+      transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-bank-row:nth-child(odd) {
+    background: var(--surface-2);
+  }
+  /* Filtered out, not deleted: the row collapses to nothing over its own known
+     height, which is the only reason a max-height transition is honest here. */
+  .lp-bank-row[data-off] {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  .lp-bank-tone {
+    flex: none;
+    width: 3px;
+    height: 1.125rem;
+    border-radius: var(--radius-pill);
+    background: var(--tone);
+  }
+  .lp-bank-skill {
+    min-width: 0;
+    flex: 1;
+    font-size: var(--t-sm);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lp-bank-domain,
+  .lp-bank-subject {
+    flex: none;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+  .lp-bank-level {
+    flex: none;
+    min-width: 3.5rem;
+    text-align: right;
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    color: var(--lvl-1);
+  }
+  .lp-bank-level[data-level="2"] {
+    color: var(--lvl-2);
+  }
+  .lp-bank-level[data-level="3"] {
+    color: var(--lvl-3);
+  }
+  .lp-bank-state {
+    flex: none;
+    min-width: 5.75rem;
+    text-align: right;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+  .lp-bank-state[data-state="missed"] {
+    color: var(--brand);
+    font-weight: 600;
+  }
+
+  /* ---- 4b: the explanation stack ---- */
+  .lp-xp {
+    position: relative;
+    padding-bottom: 3rem;
+  }
+  .lp-xp-back,
+  .lp-xp-front {
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    transition: transform 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  /* The bottom padding is the overlap.
+     The explanation card is pulled up over this card's lower edge, and reserving
+     exactly that much space here is what stops it landing on top of an answer
+     choice — which it did, hiding the correct one, which is the one thing the
+     composition exists to show. */
+  .lp-xp-back {
+    padding: 1.25rem 1.25rem 3.25rem;
+    width: min(100%, 25rem);
+    /* Six pixels of pointer parallax, in the opposite direction to the front
+       card. Depth comes from the two cards disagreeing, not from a shadow. */
+    transform: translate3d(calc(var(--mx, 0) * -5px), calc(var(--my, 0) * -4px), 0);
+  }
+  .lp-xp-prompt {
+    display: block;
+    margin-top: 0.625rem;
+    font-size: var(--t-body);
+    line-height: 1.5;
+  }
+  .lp-xp-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-top: 1rem;
+  }
+  .lp-xp-choice {
+    cursor: default;
+    padding: 0.5rem 0.75rem;
+  }
+  .lp-xp-choice .q-mark {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .lp-xp-choice .q-text {
+    font-size: var(--t-sm);
+  }
+
+  .lp-xp-front {
+    position: relative;
+    margin: -2.5rem 0 0 auto;
+    width: min(100%, 26rem);
+    padding: 1.125rem 1.25rem 1.25rem;
+    box-shadow: var(--overlay);
+    transform: translate3d(calc(var(--mx, 0) * 7px), calc(var(--my, 0) * 5px), 0);
+  }
+  /* On a near-black page a drop shadow separates nothing, so the front card is
+     lifted with light instead: `--surface-2` is *above* `--surface` in the dark
+     theme, which is the whole reason that token flips direction. Without this the
+     two cards merge into one long panel and the stack stops being a stack. */
+  :root[data-theme="dark"] .lp-xp-front {
+    background: var(--surface-2);
+  }
+  .lp-xp-body {
+    margin-top: 0.5rem;
+    font-size: var(--t-sm);
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .lp-xp-thread {
+    margin-top: 1rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid;
+  }
+  /* The student's line, as the tutor thread renders it: right-aligned, tinted,
+     and shaped like something typed rather than published. */
+  .lp-xp-ask {
+    margin-left: auto;
+    width: fit-content;
+    max-width: 88%;
+    padding: 0.4375rem 0.6875rem;
+    border-radius: var(--radius) var(--radius) 2px var(--radius);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: var(--t-sm);
+  }
+  .lp-xp-reply {
+    display: flex;
+    gap: 0.625rem;
+    margin-top: 0.75rem;
+  }
+  .lp-xp-who {
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .lp-xp-said {
+    margin-top: 0.25rem;
+    font-size: var(--t-sm);
+    line-height: 1.55;
+  }
+
+  /* ---- 4c: review & progress ---- */
+  .lp-rv-figures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.75rem;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid;
+  }
+  .lp-rv-figure-value {
+    font-size: var(--t-h2);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .lp-rv-figure-label {
+    margin-top: 0.375rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+  }
+
+  .lp-rv {
+    padding: 1.375rem 1.5rem 1.5rem;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+  }
+  .lp-rv-cap {
+    margin-bottom: 1rem;
+  }
+  .lp-rv-chart {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lp-rv-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: 0.875rem;
+    row-gap: 0.4375rem;
+    padding-block: 0.6875rem;
+  }
+  .lp-rv-row + .lp-rv-row {
+    border-top: 1px solid;
+  }
+  .lp-rv-name {
+    font-size: var(--t-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lp-rv-pct {
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .lp-rv-count {
+    min-width: 2.75rem;
+    text-align: right;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+  .lp-rv-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--line);
+    overflow: hidden;
+  }
+  /* Scale, not width: five bars growing at once is exactly the case where a
+     compositor transform beats a layout-triggering property. */
+  .lp-rv-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--brand);
+    transform-origin: left;
+    transform: scaleX(var(--w, 0));
+    transition: transform 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    transition-delay: calc(var(--i) * 110ms);
+  }
+  .lp-rv-fill[data-low] {
+    background: var(--danger);
+  }
+
+  /* ===========================================================================
+     5 — the exam, and its two sections
+     =========================================================================== */
+
+  .lp-exam {
+    position: relative;
+    padding-block: 6.5rem 6rem;
+    isolation: isolate;
+  }
+  /* The one full-window surface on the page. It makes the exam feel like a
+     different place from the product sections around it, which is what it is. */
+  .lp-exam-bleed {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    margin-inline: calc(50% - 50vw);
+    background: var(--surface-2);
+    border-block: 1px solid;
+  }
+  .lp-exam-title {
+    margin-top: 0.875rem;
+    font-size: clamp(1.875rem, 3.6vw, 2.5rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+  .lp-exam-sub {
+    margin-top: 0.875rem;
+    max-width: 50ch;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .lp-exam-track {
+    margin-top: 3rem;
+  }
+  .lp-exam-clock {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .lp-exam-clock-value {
+    font-size: var(--t-h2);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    animation: lp-swap 340ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .lp-exam-clock-label {
+    font-size: var(--t-micro);
+    letter-spacing: var(--tr-label);
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  /* A query container, so the playhead below can be moved by a transform.
+     A percentage in `translate` resolves against the moving element's own box —
+     1px, here — which is the classic way this effect ends up not working at all.
+     `100cqi` is the row's inline size, which is the distance actually wanted, and
+     keeps the playhead on the compositor rather than on `left`. */
+  .lp-exam-line {
+    position: relative;
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: var(--cols);
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lp-exam-seg {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .lp-exam-seg-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.0625rem;
+    font-size: var(--t-micro);
+    min-height: 2.25rem;
+  }
+  .lp-exam-seg-subject {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lp-exam-seg-module {
+    color: var(--faint);
+  }
+  .lp-exam-seg[data-break] .lp-exam-seg-name {
+    color: var(--faint);
+    writing-mode: vertical-rl;
+    min-height: 0;
+    height: 2.25rem;
+  }
+
+  /* The bar is what assembles: it draws from its left edge, one after another,
+     as the section scrolls past. Width is real — every segment is as wide as its
+     share of the 134 minutes plus the break. */
+  .lp-exam-bar {
+    --t: clamp(0, calc((var(--p, 1) - 0.1 - (var(--n) * 0.055)) / 0.16), 1);
+    display: block;
+    height: 2.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--tone);
+    opacity: calc(0.32 + var(--t) * 0.68);
+    transform-origin: left;
+    transform: scaleX(var(--t));
+  }
+  .lp-exam-seg[data-break] .lp-exam-bar {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--line-strong) 0 2px,
+      transparent 2px 6px
+    );
+  }
+  .lp-exam-seg[data-on] .lp-exam-bar {
+    opacity: 1;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--foreground) 30%, transparent) inset;
+  }
+  .lp-exam-seg-meta {
+    font-size: var(--t-2xs);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .lp-exam-seg[data-break] .lp-exam-seg-meta {
+    color: var(--faint);
+  }
+
+  /* Scroll position, drawn as the place in the sitting you have reached. */
+  .lp-exam-playhead {
+    position: absolute;
+    left: 0;
+    top: 2.25rem;
+    bottom: 1.25rem;
+    width: 1px;
+    background: var(--foreground);
+    opacity: clamp(0, calc((var(--p, 1) - 0.12) / 0.1), 0.4);
+    transform: translate3d(calc(var(--p, 1) * (100cqi - 1px)), 0, 0);
+    pointer-events: none;
+  }
+
+  .lp-exam-total {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 2.5rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid;
+  }
+  .lp-exam-total-value {
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .lp-exam-total-label {
+    margin-top: 0.5rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+  }
+
+  /* ---- the two sections ---- */
+  .lp-subjects-title {
+    margin-top: 5rem;
+    max-width: 30ch;
+    font-size: var(--t-h2);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.028em;
+    text-wrap: balance;
+  }
+  /* Laid out on the timeline's own grid, so Reading & Writing sits under its two
+     modules and Math under its two. Nothing points this out and nobody has to
+     see it; it is why the section reads as one object rather than two. */
+  .lp-subjects {
+    display: grid;
+    grid-template-columns: var(--cols);
+    gap: 0.5rem;
+    margin-top: 1.75rem;
+  }
+  .lp-subject-rw {
+    grid-column: 1 / 3;
+  }
+  .lp-subject-math {
+    grid-column: 4 / 6;
+  }
+  .lp-subject {
+    min-height: 20rem;
+  }
+  /* A deeper scrim than the dashboard's version of this card needs.
+     The scene is the same, but the text block below it is now twice as tall — a
+     name, a caption, four domain chips and a link — so it reaches up into the part
+     of the canvas where the Math scene's lit geometry is brightest, and the
+     original ramp let a white edge run straight through the copy. */
+  .lp-subject .sc-scrim {
+    background: linear-gradient(
+      to top,
+      rgba(9, 7, 26, 0.92) 0%,
+      rgba(9, 7, 26, 0.78) 40%,
+      rgba(9, 7, 26, 0.42) 68%,
+      rgba(9, 7, 26, 0) 100%
+    );
+  }
+  .lp-subject-domains {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 1.125rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+  }
+  .lp-subject-domains-label {
+    width: 100%;
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.62);
+  }
+  .lp-subject-domain {
+    padding: 0.1875rem 0.5rem;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.14);
+    font-size: var(--t-2xs);
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .lp-subject-go {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 1.125rem;
+    font-size: var(--t-sm);
+    font-weight: 500;
+    color: #fff;
+  }
+  .lp-subject-go span {
+    transition: transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-subject:hover .lp-subject-go span {
+    transform: translateX(3px);
+  }
+
+  /* ===========================================================================
+     6 — closing
+     =========================================================================== */
+
+  .lp-close {
+    position: relative;
+    padding-block: 7rem 6rem;
+    text-align: center;
+    isolation: isolate;
+  }
+  /* The same hairline grid the editorial turn opens on, brought back under the
+     last screen and masked to a soft field. A bookend: the page begins and ends
+     on the same surface, and nothing in between has to carry it. */
+  .lp-close::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    margin-inline: calc(50% - 50vw);
+    background-image:
+      linear-gradient(to right, var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 4rem 4rem;
+    opacity: 0.45;
+    -webkit-mask-image: radial-gradient(56% 68% at 50% 46%, black, transparent 100%);
+    mask-image: radial-gradient(56% 68% at 50% 46%, black, transparent 100%);
+    pointer-events: none;
+  }
+  .lp-close-eyebrow {
+    color: var(--brand);
+  }
+
+  .lp-close-loop {
+    position: relative;
+    max-width: 40rem;
+    margin: 1.75rem auto 0;
+    padding-bottom: 1.75rem;
+  }
+  .lp-close-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lp-close-chip {
+    padding: 0.375rem 0.75rem;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    font-size: var(--t-sm);
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 520ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    transition-delay: calc(var(--n) * 90ms);
+  }
+  .lp-close[data-in] .lp-close-chip {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The return path: the fifth step curves back into the first. Borders and two
+     absolute-radius corners, so nothing distorts at any width. */
+  .lp-close-arc {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: min(96%, 25rem);
+    height: 1.75rem;
+    border-width: 0 1px 1px;
+    border-style: solid;
+    border-end-start-radius: 10px;
+    border-end-end-radius: 10px;
+    /* Centred by its own width rather than by `inset`, so the two rounded ends
+       stay symmetrical about the chip row above them. */
+    transform: translateX(-50%);
+    /* Revealed from the right edge leftwards — the direction the loop returns
+       in. One property, and it composites. */
+    clip-path: inset(0 0 0 100%);
+    transition: clip-path 1000ms cubic-bezier(0.4, 0, 0.2, 1) 480ms;
+  }
+  .lp-close[data-in] .lp-close-arc {
+    clip-path: inset(0);
+  }
+  /* The arrowhead, landing on the first chip once the line has reached it.
+     Without it the shape reads as a bracket under the row rather than as a path
+     with a direction, and the direction is the whole point.
+
+     A clipped box, not a border triangle: `border-color` inside this layer is
+     overridden by the unlayered `*` rule (see the top of this file), so a
+     classic CSS triangle would come out grey whatever colour it asked for. */
+  .lp-close-arc-head {
+    position: absolute;
+    left: -3.5px;
+    top: -1px;
+    width: 8px;
+    height: 6px;
+    background: var(--line-strong);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    opacity: 0;
+    transition: opacity 260ms ease 1420ms;
+  }
+  .lp-close[data-in] .lp-close-arc-head {
+    opacity: 1;
+  }
+
+  .lp-close-title {
+    margin: 2rem auto 0;
+    max-width: 28ch;
+    font-size: clamp(2rem, 4.4vw, 3rem);
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+  .lp-close-text {
+    margin: 1.25rem auto 0;
+    max-width: 44ch;
+    font-size: var(--t-h3);
+    line-height: 1.55;
+    color: var(--muted);
+  }
+  .lp-close-cta {
+    margin-top: 2rem;
+  }
+  .lp-close-fine {
+    margin-top: 1rem;
+    font-size: var(--t-sm);
+    color: var(--faint);
+  }
+
+  /* ===========================================================================
+     responsive
+     =========================================================================== */
+
+  @media (min-width: 48rem) {
+    .lp-mf-foot {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 3rem;
+    }
+    .lp-cap-bank {
+      grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+      gap: 3rem;
+      align-items: center;
+    }
+    /*
+     * Alternated on purpose: the explanation stack leads with the picture, so
+     * three capabilities in a column never fall into the same rhythm.
+     *
+     * The tracks are reversed here, not just the `order`. `order` changes which
+     * item is placed first, and auto-placement then puts that item in the *first*
+     * track — so with the copy ordered second, the surface landed in the 0.78fr
+     * column. Which meant the two cards in the stack had no room to be offset
+     * against each other, and the layered composition rendered as one tall card
+     * with a rule across it.
+     */
+    .lp-cap-explain {
+      grid-template-columns: minmax(0, 1.22fr) minmax(0, 0.78fr);
+      gap: 3rem;
+      align-items: center;
+    }
+    .lp-cap-explain .lp-cap-copy {
+      order: 2;
+    }
+    .lp-cap-review {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 3rem;
+      align-items: start;
+    }
+  }
+
+  @media (max-width: 63.99rem) {
+    .lp-res-wall {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .lp-res-slot {
+      --drift: 0px;
+      margin-top: 0 !important;
+    }
+  }
+
+  @media (max-width: 47.99rem) {
+    .lp-mf {
+      padding-block: 4rem 3rem;
+    }
+    .lp-mf-statement {
+      margin-top: 1.5rem;
+      max-width: none;
+      font-size: clamp(1.75rem, 8.6vw, 2.375rem);
+      letter-spacing: -0.038em;
+    }
+    .lp-mf-body {
+      font-size: var(--t-body);
+    }
+    .lp-mf-strip-block {
+      margin-top: 3rem;
+    }
+    .lp-mf-strip {
+      gap: 2px;
+      height: 2.5rem;
+    }
+    .lp-mf-cell {
+      border-radius: 1px;
+    }
+    .lp-mf-aside {
+      display: none;
+    }
+
+    .lp-loop {
+      padding-block: 3rem 0;
+    }
+    .lp-loop-track {
+      margin-top: 2rem;
+    }
+    /* Numbers only. Five labelled steps measure about 27rem, so on a 390px screen
+       the fifth one sat off the end of a scrolling strip — reachable, but a step
+       you have to discover by dragging is a step most readers never see. The name
+       is directly below in the step block, where it is set at heading size. */
+    .lp-loop-tab-name {
+      display: none;
+    }
+    .lp-loop-tab {
+      padding: 0.4375rem 0.6875rem;
+    }
+    .lp-loop-tab .num {
+      font-size: var(--t-sm);
+    }
+    /* Taller than the desktop frame, not shorter. The prompt wraps to three lines
+       at this width and the explanation still has to fit under it on step two —
+       and nothing is sticky here, so height costs a scroll rather than a screen. */
+    .lp-fr-body {
+      height: clamp(22rem, 62vh, 27rem);
+    }
+    .lp-fr-layer {
+      padding: 1rem;
+    }
+    /* Top-aligned on a phone, centred on a desktop. The frame is proportionally
+       taller here, so centring a four-choice question left a band of empty space
+       between the skill row and the prompt that read as a loading state. Anchored
+       to the top, the slack sits at the bottom — and the explanation opening on
+       step two grows down into it, which is what it looks like in the app. */
+    .lp-fr .q-view {
+      margin-block: 0 auto;
+    }
+    /* Height alone was not enough: at 390px the prompt takes three lines and the
+       explanation three more, and the two together ran past the bottom of the
+       frame. So the whole question steps down one size — which is also what the
+       real practice screen does on a phone. */
+    .lp-fr .q-prompt {
+      font-size: var(--t-sm);
+      line-height: 1.45;
+    }
+    .lp-fr .q-choice {
+      padding: 0.4375rem 0.625rem;
+    }
+    .lp-fr .q-mark {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+    .lp-fr .space-y-5 > * + * {
+      margin-top: 0.625rem;
+    }
+    .lp-fr .q-explanation .text-body {
+      font-size: var(--t-micro);
+      line-height: 1.5;
+    }
+    /* Stacked: side by side, the state line was squeezed into about half the
+       width and wrapped to three lines beside a large number. */
+    .lp-fr-foot {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.625rem;
+      padding: 0.875rem 1rem;
+    }
+    .lp-fr-queue {
+      justify-content: flex-end;
+    }
+    .lp-fr-queue-value {
+      font-size: var(--t-h3);
+    }
+    .lp-fr-focus {
+      padding-left: 0.8125rem;
+    }
+    /* No margin to write in at this width, so the marker becomes what it is
+       underneath: a rule in the gutter against the row it points at. It still
+       travels, and the travel is the information. */
+    .lp-fr-flag {
+      left: 0;
+      top: 0.5rem;
+      width: 3px;
+      height: 2.625rem;
+      padding: 0;
+      gap: 0;
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+      color: transparent;
+    }
+    .lp-fr-flag::after {
+      display: none;
+    }
+    .lp-fr-focus li {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .lp-fr-focus-count {
+      display: none;
+    }
+    .lp-fr-review {
+      height: 60%;
+    }
+
+    .lp-res {
+      padding-block: 4rem 3.5rem;
+    }
+    .lp-res-cohort {
+      grid-template-columns: 1fr;
+    }
+    .lp-res-figure {
+      padding: 1rem 0;
+    }
+    .lp-res-figure + .lp-res-figure {
+      padding-left: 0;
+      border-left: none;
+      border-top: 1px solid;
+    }
+    .lp-res-wall {
+      grid-template-columns: 1fr;
+    }
+    /* On a phone the detail is the content, not a reward for hovering. The panel
+       drops out of its overlay position and the card grows to hold it. */
+    .lp-res-card {
+      height: auto;
+    }
+    .lp-res-panel {
+      position: static;
+      inset: auto;
+      margin-top: 0.875rem;
+      padding: 0.875rem 0 0;
+      opacity: 1;
+      transform: none;
+      background: transparent;
+    }
+    .lp-res-card:hover .lp-res-scores,
+    .lp-res-card:focus-within .lp-res-scores {
+      transform: none;
+    }
+    .lp-res-card:hover .lp-res-delta,
+    .lp-res-card:focus-within .lp-res-delta {
+      opacity: 1;
+      transform: none;
+    }
+    .lp-res-hint {
+      display: none;
+    }
+
+    .lp-caps {
+      padding-block: 3.5rem 2.5rem;
+    }
+    .lp-cap {
+      margin-top: 3rem;
+      gap: 1.5rem;
+    }
+    .lp-bank {
+      padding: 0.875rem;
+    }
+    .lp-bank-domain,
+    .lp-bank-subject {
+      display: none;
+    }
+    .lp-bank-state {
+      min-width: 4.5rem;
+    }
+    .lp-xp {
+      padding-bottom: 0;
+    }
+    .lp-xp-front {
+      width: 100%;
+      margin-top: -1.25rem;
+    }
+    .lp-rv {
+      padding: 1rem;
+    }
+
+    .lp-exam {
+      padding-block: 3.5rem 3.5rem;
+    }
+    .lp-exam-track {
+      margin-top: 2rem;
+    }
+    /* Five columns cannot hold five labels on a phone, so the sitting becomes a
+       stack: one row per module, label and length on one line, the bar under it
+       still drawn to its real share of the sitting. */
+    .lp-exam-line {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .lp-exam-seg {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 0.75rem;
+      row-gap: 0.4375rem;
+    }
+    .lp-exam-seg-name {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 0.4375rem;
+      min-height: 0;
+    }
+    .lp-exam-seg[data-break] .lp-exam-seg-name {
+      writing-mode: horizontal-tb;
+      height: auto;
+    }
+    .lp-exam-seg-meta {
+      text-align: right;
+    }
+    .lp-exam-bar {
+      grid-column: 1 / -1;
+      height: 1.625rem;
+      /* `--share` is this module's length over the longest one, so the widest
+         bar fills the row and every other one is drawn against it. */
+      transform: scaleX(calc(var(--t) * var(--share, 1)));
+    }
+    .lp-exam-playhead {
+      display: none;
+    }
+    .lp-exam-total {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    .lp-subjects-title {
+      margin-top: 3rem;
+    }
+    .lp-subjects {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    .lp-subject-rw,
+    .lp-subject-math {
+      grid-column: 1;
+    }
+    .lp-subject {
+      min-height: 17rem;
+    }
+
+    .lp-close {
+      padding-block: 4rem 3.5rem;
+    }
+    .lp-close-title {
+      font-size: clamp(1.75rem, 8vw, 2.25rem);
+    }
+    .lp-close-text {
+      font-size: var(--t-body);
+    }
+    .lp-close-arc {
+      display: none;
+    }
+    .lp-close-loop {
+      padding-bottom: 0;
+    }
+    /* Three then two. Left to fill the width the row breaks four-and-one, and a
+       single chip alone on the second line reads as a wrapping accident. */
+    .lp-close-chips {
+      max-width: 17.5rem;
+      margin-inline: auto;
+    }
+  }
+
+  /* Touch: the hint has to name the gesture the reader actually has. */
+  @media (hover: none) {
+    .lp-res-hint-pointer {
+      display: none;
+    }
+    .lp-res-hint-touch {
+      display: inline;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   keyframes — the four one-shots. Everything else on this page is a transition
+   or a scroll-linked calc.
+   --------------------------------------------------------------------------- */
+
+@keyframes lp-swap {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lp-chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lp-tick {
+  from {
+    opacity: 0;
+    transform: translateY(-40%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   reduced motion
+
+   The scroll layer needs nothing here — its bindings are removed and every
+   `var(--p, …)` falls back to the finished state, which is the whole point of
+   that convention. What is left is the handful of places where a *transition*
+   carries meaning rather than movement, and where the global reduced-motion rule
+   (which collapses all durations to 0.001ms) would otherwise leave an element
+   parked in its "before" position with nothing to move it out.
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-res-figure,
+  .lp-res-card,
+  .lp-close-chip {
+    opacity: 1;
+    transform: none;
+  }
+  .lp-close-arc {
+    clip-path: none;
+  }
+  .lp-close-arc-head {
+    opacity: 1;
+  }
+  /* The five step paragraphs open on their own, because there is no scroll
+     sequence walking through them. */
+  .lp-loop-step-text {
+    grid-template-rows: 1fr;
+    margin-top: 0.5rem;
+  }
+  .lp-loop-step {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   unlayered: border colours only.
+
+   `* { border-color: var(--line) }` at the end of globals.css is unlayered, and
+   an unlayered declaration beats anything inside `@layer` regardless of
+   specificity — so these have to live out here or they do nothing at all. Read
+   the note at the top of this file before adding to the list.
+   --------------------------------------------------------------------------- */
+
+.lp-fr {
+  border-color: var(--line-strong);
+}
+.lp-res-card:hover,
+.lp-res-card:focus-visible,
+.lp-res-card:focus-within {
+  border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
+}
+.lp-loop-tab {
+  border-color: var(--line-strong);
+}
+.lp-loop-tab[data-on] {
+  border-color: var(--brand);
+}
+.lp-exam-seg[data-on] .lp-exam-bar {
+  border-color: transparent;
+}
+.lp-res-arrow::after {
+  border-color: var(--line-strong);
+}
