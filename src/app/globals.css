@@ -108,6 +108,12 @@
   --sidebar-active: rgba(255, 255, 255, 0.13);
   --sidebar-divider: rgba(255, 255, 255, 0.13);
   --sidebar-accent: #a79eff;
+  /* The mark's own colour, and nothing else's.
+     This used to be --sidebar-accent, shared with the active-nav indicator —
+     two unrelated jobs on one token, so retuning the indicator silently
+     repainted the logo. A brand mark is not a UI state and must not move when
+     one is adjusted. #c9c4ff is the value the mark has always been. */
+  --sidebar-logo: #c9c4ff;
   --sidebar-avatar: #3d3577;
   --sidebar-focus: #ffffff;
   /* Its own edge token. The border used to be the rail's own colour mixed with
@@ -1577,7 +1583,7 @@ p {
     color: var(--sidebar-fg);
   }
   .side-brand svg {
-    --brand: var(--sidebar-accent);
+    --brand: var(--sidebar-logo);
     color: var(--sidebar-fg);
   }
   /* Collapsed: the mark and the toggle stack, so both survive 4rem. */
