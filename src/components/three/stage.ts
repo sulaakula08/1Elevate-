@@ -55,6 +55,48 @@ export function qualityFor(width: number): Quality {
     : { dprCap: 1.75, density: 1, fps: 60, antialias: true };
 }
 
+/**
+ * Camera distance at which a sphere of `radius` at the origin fits the frame.
+ *
+ * Both axes, not just the vertical. A perspective camera's `fov` is vertical
+ * only, so a scene composed against one fixed camera position is framed for
+ * exactly one aspect ratio and clipped at every other. These cards are laid out
+ * three different ways — a short art column on the dashboard, a narrower one on
+ * /practice, and a tall full-bleed panel on the landing page — and the column
+ * resizes again whenever the sidebar collapses. That is why the cube's corners
+ * were being sliced off and the book was running out past the card edge: not a
+ * bug in either scene's geometry, but a camera that was never told the shape of
+ * the canvas it was drawing into.
+ *
+ * `margin` is headroom for the parts of a composition that move — an orbiting
+ * bead, a page lifting out of the block — so a fit is not a fit only on the
+ * frame it was computed.
+ */
+export function fitDistance(
+  camera: THREE.PerspectiveCamera,
+  radius: number,
+  aspect: number,
+  margin = 1.1,
+): number {
+  const fovY = (camera.fov * Math.PI) / 180;
+  // The horizontal field follows from the vertical one and the aspect; on a
+  // portrait canvas it is the *narrower* of the two and therefore the binding
+  // constraint, which is the case the old fixed cameras always lost.
+  const fovX = 2 * Math.atan(Math.tan(fovY / 2) * aspect);
+  const distance = Math.max(radius / Math.sin(fovY / 2), radius / Math.sin(fovX / 2));
+  return distance * margin;
+}
+
+/** World-space size of the frustum at `distance`, for sizing backdrops. */
+export function visibleSize(
+  camera: THREE.PerspectiveCamera,
+  distance: number,
+  aspect: number,
+): { width: number; height: number } {
+  const height = 2 * distance * Math.tan(((camera.fov * Math.PI) / 180) / 2);
+  return { width: height * aspect, height };
+}
+
 export interface Stage {
   /** Begin (or resume) the render loop. */
   play(): void;

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { createStudioEnvironment } from "./environment";
+import { fitDistance, visibleSize } from "./stage";
 import type { Pointer, Quality, SceneContext } from "./stage";
 
 /**
@@ -30,32 +31,42 @@ const LEAVES = 3;
 const FLIP_SECONDS = 2.3;
 const STAGGER = 1.15;
 
+/**
+ * Bounding radius of the open spread.
+ *
+ * Half the full width of the two pages plus the cover bleed, against half the
+ * page height, with room for a leaf standing proud of the block mid-flight.
+ */
+const RADIUS = Math.hypot(PAGE_W + COVER_BLEED, PAGE_H / 2 + COVER_BLEED) * 1.02;
+
 export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): SceneContext {
   const scene = new THREE.Scene();
   const environment = createStudioEnvironment(renderer);
   scene.environment = environment.texture;
 
+  // Framed in layout(), once the aspect is known.
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 40);
-  camera.position.set(0, 0.6, 4.4);
-  camera.lookAt(0, -0.05, 0);
 
   const world = new THREE.Group();
   /**
-   * Attitude and placement.
+   * Attitude.
    *
    * Shallower than a book flat on a desk: the spread faces the reader, tilted
    * just enough that the cover boards, the spine and the thickness of the page
    * blocks all stay visible. Any less and it collapses into a flat graphic.
    *
-   * Offset right of centre because the card sets its heading and progress bar
-   * hard left, and the book was landing on top of the title.
+   * The old right-of-centre offset is gone. It existed because the book used to
+   * be drawn across the whole card and collided with the heading; the card is a
+   * grid now and the scene has a column of its own, so the offset was only
+   * pushing the spread's outer edge off the right-hand side of a narrow column.
    */
-  const HOME_X = 0.52;
   const HOME_ROT_X = 0.4;
   const HOME_ROT_Y = -0.24;
   world.rotation.set(HOME_ROT_X, HOME_ROT_Y, 0);
-  world.position.x = HOME_X;
   scene.add(world);
+
+  /** Vertical rest position, set by layout() and breathed around in update(). */
+  let homeY = 0;
 
   /* ---------------- lighting ----------------
      Paper is diffuse with a faint sheen. The key models the faces, and the rim
@@ -243,15 +254,24 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
   const moteRate = new Float32Array(MOTES);
   const motePhase = new Float32Array(MOTES);
 
+  /*
+   * Positions are normalised to a -1..1 box and the Points object is *scaled*
+   * to the frustum in layout(). The field used to be authored in world units,
+   * ±1.7 vertically, and wrapped at that same bound — which on any card taller
+   * than that put the wrap line inside the visible area, so specks blinked out
+   * halfway up the card and reappeared halfway down it. In normalised space the
+   * wrap is always exactly at the edge of the frame, whatever shape it is.
+   */
   for (let i = 0; i < MOTES; i++) {
     // Seeded by index, so the composition is identical on every mount.
     const r = (k: number) => {
       const v = Math.sin((i + 1) * k) * 43758.5453;
       return v - Math.floor(v);
     };
-    motePos[i * 3] = (r(12.9898) - 0.5) * 5.4;
-    motePos[i * 3 + 1] = (r(78.233) - 0.5) * 3.4;
-    // Kept off the book's own plane so nothing settles on the page.
+    motePos[i * 3] = (r(12.9898) - 0.5) * 2;
+    motePos[i * 3 + 1] = (r(78.233) - 0.5) * 2;
+    // Kept off the book's own plane so nothing settles on the page. Depth stays
+    // in world units — it is not something the card's shape should stretch.
     motePos[i * 3 + 2] = (r(37.719) - 0.5) * 2.6 + 0.6;
     moteRate[i] = 0.05 + r(93.989) * 0.13;
     motePhase[i] = r(21.317) * Math.PI * 2;
@@ -275,6 +295,28 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
   // Outside `world`, so the pointer parallax does not swing the dust with the
   // book — dust belongs to the room, not to the object.
   scene.add(motes);
+
+  /**
+   * Fit the spread to the card.
+   *
+   * The book gets the frame; the dust field is stretched to the frustum so it
+   * always fills the card and always wraps off-screen; and on a tall card the
+   * book rides up, because the landing page's panel carries its copy along the
+   * bottom third and a centred book sat right behind the words.
+   */
+  function layout(aspect: number) {
+    // A little more headroom than the cube gets: a leaf at mid-flight stands
+    // clear of the block and swings towards the reader.
+    const distance = fitDistance(camera, RADIUS, aspect, 1.16);
+    camera.position.set(0, 0, distance);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+
+    const view = visibleSize(camera, distance, aspect);
+    // Past the edge on both axes, so a mote is never seen to wrap.
+    motes.scale.set(view.width * 0.62, view.height * 0.62, 1);
+    homeY = aspect < 1 ? view.height * 0.1 : 0;
+  }
 
   function update(elapsed: number, delta: number, pointer: Pointer) {
     for (let i = 0; i < leaves.length; i++) {
@@ -309,8 +351,9 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
       bend(leaf, arc * 0.34 * Math.cos(progress * Math.PI));
     }
 
-    // The whole book breathes very slightly, so a still frame never looks frozen.
-    world.position.y = Math.sin(elapsed * 0.5) * 0.022;
+    // The whole book breathes very slightly, so a still frame never looks
+    // frozen — around wherever layout() parked it, not around the origin.
+    world.position.y = homeY + Math.sin(elapsed * 0.5) * 0.022;
 
     // Parallax rests at the home attitude, so an idle card sits where it was
     // composed rather than drifting to wherever the pointer last was.
@@ -321,10 +364,12 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
        way than as 70 objects with matrices. */
     const p = moteGeo.getAttribute("position") as THREE.BufferAttribute;
     for (let i = 0; i < MOTES; i++) {
+      // Normalised space: the box is -1..1 on both axes and layout() stretches
+      // it to the card, so wrapping at 1 is wrapping at the edge of the frame.
       let y = p.getY(i) + moteRate[i] * delta;
-      if (y > 1.8) y = -1.8;
+      if (y > 1) y = -1;
       p.setY(i, y);
-      p.setX(i, motePos[i * 3] + Math.sin(elapsed * 0.32 + motePhase[i]) * 0.16);
+      p.setX(i, motePos[i * 3] + Math.sin(elapsed * 0.32 + motePhase[i]) * 0.09);
     }
     p.needsUpdate = true;
     // Breathing brightness, so the field never looks like a static texture.
@@ -334,5 +379,5 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
     world.rotation.x += (targetX - world.rotation.x) * Math.min(1, delta * 3.5);
   }
 
-  return { scene, camera, update, dispose: environment.dispose };
+  return { scene, camera, update, layout, dispose: environment.dispose };
 }

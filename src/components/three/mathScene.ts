@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { createStudioEnvironment } from "./environment";
+import { fitDistance, visibleSize } from "./stage";
 import type { Pointer, Quality, SceneContext } from "./stage";
 
 /**
@@ -21,14 +22,28 @@ import type { Pointer, Quality, SceneContext } from "./stage";
 const HALF = 0.86;
 const BEAM = 0.235;
 
+/** Radius of the orbiting beads' path, and its wobble. */
+const ORBIT = 1.32;
+const ORBIT_WOBBLE = 0.1;
+
+/**
+ * Bounding radius of everything that must stay on the card.
+ *
+ * The cube's own bounding sphere is √3·HALF = 1.49, which is larger than the
+ * bead orbit, so the frame is what sets the frame. A little over it for the
+ * bead radius and the vertical bob.
+ */
+const RADIUS = 1.58;
+
 export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): SceneContext {
   const scene = new THREE.Scene();
   const environment = createStudioEnvironment(renderer);
   scene.environment = environment.texture;
 
+  // Position and framing are settled in layout(), which is called with the real
+  // aspect before the first frame is drawn. Nothing here is composed for a
+  // square canvas any more.
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 40);
-  camera.position.set(0, 0.35, 4.5);
-  camera.lookAt(0, 0, 0);
 
   const world = new THREE.Group();
   // The classic isometric-ish three-quarter attitude: three faces visible, none
@@ -146,7 +161,9 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
       opacity: 0.9,
     }),
   );
-  aura.scale.setScalar(3.6);
+  // Sized in layout() against the frustum, not with a constant. A fixed 3.6 was
+  // a modest halo on a wide card and a full-card white wash on a narrow one,
+  // which is most of what read as "washed out" on the dashboard.
   aura.position.z = -0.9;
   scene.add(aura);
 
@@ -166,6 +183,28 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
   scene.add(beads);
   const dummy = new THREE.Object3D();
 
+  /**
+   * Fit the composition to whatever shape the card is.
+   *
+   * The cube is the subject, so it gets the frame; the aura is scaled to the
+   * frustum behind it, and on a tall card the whole thing rides up out of the
+   * way of the copy that sits along the bottom. Moving the group rather than
+   * tilting the camera keeps the three-quarter attitude exactly as composed —
+   * a camera looking off-axis would skew the right angles that are the entire
+   * point of this object.
+   */
+  function layout(aspect: number) {
+    const distance = fitDistance(camera, RADIUS, aspect, 1.12);
+    camera.position.set(0, 0, distance);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+
+    const view = visibleSize(camera, distance, aspect);
+    // Comfortably larger than the frame, never larger than the card.
+    aura.scale.setScalar(Math.min(view.height, view.width) * 1.5);
+    world.position.y = aspect < 1 ? view.height * 0.08 : 0;
+  }
+
   function update(elapsed: number, delta: number, pointer: Pointer) {
     // One slow turn about the vertical, with a gentle nod on top: the highlight
     // has to travel across the faces for the material to read, and a single-axis
@@ -174,11 +213,13 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
     frame.rotation.x = Math.sin(elapsed * 0.24) * 0.16;
     frame.position.y = Math.sin(elapsed * 0.55) * 0.05;
 
-    aura.material.opacity = 0.78 + Math.sin(elapsed * 0.9) * 0.12;
+    // Halved. Additive light at 0.9 over a saturated card is not a halo, it is
+    // a fog bank — the cube's own silhouette was being eaten by its glow.
+    aura.material.opacity = 0.42 + Math.sin(elapsed * 0.9) * 0.08;
 
     for (let i = 0; i < beadCount; i++) {
       const phase = (i / beadCount) * Math.PI * 2;
-      const radius = 1.5 + Math.sin(elapsed * 0.42 + phase) * 0.14;
+      const radius = ORBIT + Math.sin(elapsed * 0.42 + phase) * ORBIT_WOBBLE;
       dummy.position.set(
         Math.cos(elapsed * 0.26 + phase) * radius,
         Math.sin(elapsed * 0.55 + phase * 1.6) * 0.62,
@@ -196,5 +237,5 @@ export function createScene(quality: Quality, renderer: THREE.WebGLRenderer): Sc
     world.rotation.x += (targetX - world.rotation.x) * Math.min(1, delta * 3.5);
   }
 
-  return { scene, camera, update, dispose: environment.dispose };
+  return { scene, camera, update, layout, dispose: environment.dispose };
 }
