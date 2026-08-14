@@ -1,10 +1,69 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Attempt } from "@/lib/storage";
 import { contributionYear, streak } from "@/lib/stats";
 import { useI18n } from "@/lib/i18n";
 import { NOUNS, pluralize } from "@/lib/plural";
+
+/**
+ * Counts from wherever the display currently is up to `target`.
+ *
+ * Two cases, one mechanism. On mount it runs 0 → n, so the streak arrives as a
+ * tally being taken rather than as a number that was always there. When the
+ * streak later grows — a first attempt logged today, on a dashboard already
+ * open — it runs from the old value to the new one, which is the only moment
+ * the count actually means something.
+ *
+ * `settled` is the flag the caller uses to fire the landing animation: it goes
+ * false while the digits are still moving and true on the frame they stop, so
+ * the bump plays once, at the end, instead of fighting the count.
+ */
+function useCountUp(target: number, ms = 850) {
+  const [value, setValue] = useState(target);
+  const [running, setRunning] = useState(false);
+  // Where the last run finished, so an interrupted count resumes from what the
+  // student can currently see rather than snapping back to the old target.
+  const shown = useRef(target);
+  const first = useRef(true);
+
+  useEffect(() => {
+    const reduced =
+      typeof matchMedia !== "undefined" &&
+      matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const from = first.current ? 0 : shown.current;
+    first.current = false;
+
+    // Nothing to travel, or the student asked for no motion.
+    if (reduced || from === target) {
+      shown.current = target;
+      setValue(target);
+      return;
+    }
+
+    setRunning(true);
+    let raf = 0;
+    const start = performance.now();
+
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / ms);
+      // Ease-out cubic: fast off the mark, decelerating onto the final digit,
+      // which is what makes the last number feel arrived at.
+      const eased = 1 - Math.pow(1 - t, 3);
+      const next = Math.round(from + (target - from) * eased);
+      shown.current = next;
+      setValue(next);
+      if (t < 1) raf = requestAnimationFrame(step);
+      else setRunning(false);
+    };
+
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, ms]);
+
+  return { value, settled: !running };
+}
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -42,6 +101,8 @@ export function StudyActivity({ attempts }: { attempts: Attempt[] }) {
     };
   }, [attempts]);
 
+  const { value: shownDays, settled } = useCountUp(days);
+
   // A month is named on the first column that opens it, and never on the last
   // column, where the label would have nothing after it to sit over.
   const labels = weeks.map((week, i) => {
@@ -55,19 +116,31 @@ export function StudyActivity({ attempts }: { attempts: Attempt[] }) {
     <div className="act">
       <p className="act-lede">
         {days > 0 ? (
-          <span className="act-streak-wrap">
-            <svg className="act-flame" viewBox="0 0 24 24" aria-hidden>
-              <path
-                className="act-flame-outer"
-                d="M13.2 2.4c.5 3.6-1.9 4.8-3.4 6.8-1.2 1.6-1.3 3.2-.3 4.5.2-1.6 1.2-2.7 2.5-3.9.1 2.3 2.4 3.2 2.4 5.7 0 1.5-.9 2.8-2.3 3.3 2.8-.1 5.3-2.1 5.8-4.9.7-4.1-1.7-8.2-4.7-11.5Z"
-              />
-              <path
-                className="act-flame-core"
-                d="M10.4 20.5c-2.5-.7-4.3-2.8-4.3-5.4 0-2.2 1.2-4.1 2.8-5.8-.2 2.7 1 3.6 1.8 4.7.9 1.2 1 2.4.4 3.4-.5.8-.9 1.7-.7 3.1Z"
-              />
-            </svg>
+          <span className="act-streak-wrap" data-landed={settled ? "true" : undefined}>
+            {/* The glow is a sibling, not a filter on the SVG: a drop-shadow
+                cannot be animated independently of the shape casting it, and
+                the point is that the light lags the flame. */}
+            <span className="act-flame">
+              <span className="act-flame-glow" aria-hidden />
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path
+                  className="act-flame-outer"
+                  d="M13.2 2.4c.5 3.6-1.9 4.8-3.4 6.8-1.2 1.6-1.3 3.2-.3 4.5.2-1.6 1.2-2.7 2.5-3.9.1 2.3 2.4 3.2 2.4 5.7 0 1.5-.9 2.8-2.3 3.3 2.8-.1 5.3-2.1 5.8-4.9.7-4.1-1.7-8.2-4.7-11.5Z"
+                />
+                <path
+                  className="act-flame-core"
+                  d="M10.4 20.5c-2.5-.7-4.3-2.8-4.3-5.4 0-2.2 1.2-4.1 2.8-5.8-.2 2.7 1 3.6 1.8 4.7.9 1.2 1 2.4.4 3.4-.5.8-.9 1.7-.7 3.1Z"
+                />
+              </svg>
+            </span>
+            {/* The digits move, so the accessible value must not: a screen
+                reader announcing "1 day streak… 2… 3…" is noise. The live text
+                is the real number, the animated one is decoration. */}
             <span>
-              <span className="num act-streak">{days}</span>{" "}
+              <span className="num act-streak" aria-hidden>
+                {shownDays}
+              </span>
+              <span className="sr-only">{days}</span>{" "}
               <span>{t("home.actStreak")}</span>
             </span>
           </span>
