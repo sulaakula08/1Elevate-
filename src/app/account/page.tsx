@@ -96,10 +96,13 @@ function Profile() {
     <div className="container-read pb-20">
       {/* ---------------- identity ---------------- */}
       <header className="flex items-start gap-4 fade-up">
-        {/* The picture is the control. A 64px avatar with a separate "change"
-            link beside it is two targets for one idea; pressing the thing you
-            want to replace is what every account screen has taught people to
-            expect. */}
+        {/* The picture is the control: pressing the thing you want to replace is
+            what every account screen has taught people to expect.
+
+            The badge on its corner is always drawn, never on hover. A hover-only
+            affordance does not exist on a touchscreen at all, and that is where
+            most of this is read — so the only clue that the picture could be
+            changed was invisible to half the people looking at it. */}
         <button
           type="button"
           className="acc-avatar"
@@ -116,8 +119,20 @@ function Profile() {
               {initials(account!.name)}
             </span>
           )}
-          <span className="acc-avatar-veil" aria-hidden>
-            {photoBusy ? "…" : t("account.photoVerb")}
+          <span className="acc-avatar-badge" aria-hidden>
+            {photoBusy ? (
+              "…"
+            ) : (
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+                <path
+                  d="M4 8.5h3l1.4-2h7.2L17 8.5h3v10H4v-10Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+                <circle cx="12" cy="13" r="3.1" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+            )}
           </span>
         </button>
         <input
@@ -174,17 +189,17 @@ function Profile() {
                   setNameDraft(account!.name);
                   setEditingName(true);
                 }}
-                aria-label={t("account.renameLabel")}
                 title={t("account.renameLabel")}
               >
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden>
                   <path
                     d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z"
                     stroke="currentColor"
-                    strokeWidth="1.7"
+                    strokeWidth="1.8"
                     strokeLinejoin="round"
                   />
                 </svg>
+                {t("account.renameVerb")}
               </button>
             </h1>
           )}

@@ -226,6 +226,7 @@ const D: Dict = {
   /* ---------------- profile identity ---------------- */
   "account.changePhoto": { en: "Change your profile picture" },
   "account.photoVerb": { en: "Change" },
+  "account.renameVerb": { en: "Edit" },
   "account.renameLabel": { en: "Change your name" },
   "account.yourName": { en: "Your name" },
 
