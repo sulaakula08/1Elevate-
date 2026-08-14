@@ -680,6 +680,40 @@
       transform: scale(1);
     }
   }
+  /* ---------------- daily goal ---------------- */
+  .act-goal {
+    margin-top: 0.875rem;
+  }
+  .act-goal-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    font-size: var(--t-sm);
+  }
+  .act-goal-track {
+    margin-top: 0.375rem;
+    height: 6px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .act-goal-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--brand);
+    transition: width 600ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  /* Met is a different state, not just a full bar — at a glance the colour is
+     what is read, not whether the fill reaches the end. */
+  .act-goal-fill[data-met="true"] {
+    background: var(--success);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .act-goal-fill {
+      transition: none;
+    }
+  }
+
   .act-grid {
     margin-top: 0.875rem;
     /* 13 columns of 13px plus gaps — fits every width the app supports, so

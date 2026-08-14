@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Attempt } from "@/lib/storage";
 import { contributionYear, streak } from "@/lib/stats";
 import { useI18n } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { NOUNS, pluralize } from "@/lib/plural";
 
 /**
@@ -91,15 +92,21 @@ const WEEKS = 13;
 export function StudyActivity({ attempts }: { attempts: Attempt[] }) {
   const { t } = useI18n();
 
-  const { weeks, days, activeDays, total } = useMemo(() => {
+  const { settings } = useSettings();
+
+  const { weeks, days, activeDays, total, todayCount } = useMemo(() => {
     const year = contributionYear(attempts);
     return {
       weeks: year.weeks.slice(-WEEKS),
       days: streak(attempts),
       activeDays: year.activeDays,
       total: year.total,
+      todayCount: year.todayCount,
     };
   }, [attempts]);
+
+  const goal = settings.dailyGoal;
+  const goalMet = goal > 0 && todayCount >= goal;
 
   const { value: shownDays, settled } = useCountUp(days);
 
@@ -148,6 +155,28 @@ export function StudyActivity({ attempts }: { attempts: Attempt[] }) {
           <span className="text-muted">{t("home.actNoStreak")}</span>
         )}
       </p>
+
+      {/* The goal, only once there is one. A bar showing 0 of 0 is a widget
+          advertising a feature rather than reporting a fact. */}
+      {goal > 0 && (
+        <div className="act-goal">
+          <div className="act-goal-head">
+            <span className="num">
+              {Math.min(todayCount, goal)} / {goal}
+            </span>
+            <span className="text-muted">
+              {goalMet ? t("home.actGoalMet") : t("home.actGoalToday")}
+            </span>
+          </div>
+          <div className="act-goal-track">
+            <div
+              className="act-goal-fill"
+              data-met={goalMet ? "true" : undefined}
+              style={{ width: `${Math.min(1, todayCount / goal) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="act-grid" aria-hidden>
         <div className="act-months">

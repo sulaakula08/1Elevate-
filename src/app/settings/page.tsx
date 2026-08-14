@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
+import { DAILY_GOALS } from "@/lib/storage";
 import { ConfirmDialog, PageTitle, RequireAccount } from "@/components/ui";
 
 export default function SettingsPage() {
@@ -19,9 +20,39 @@ export default function SettingsPage() {
 function SettingsInner() {
   const { t } = useI18n();
   const router = useRouter();
-  const { theme, toggleTheme, signOut } = useApp();
+  const { theme, toggleTheme, signOut, account, data } = useApp();
   const { settings, set, reset } = useSettings();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  /**
+   * Everything this browser holds about the student, as a file they keep.
+   *
+   * Built and revoked in the same handler: an object URL left alive pins the
+   * whole blob in memory for the life of the document, and this one contains
+   * their entire history.
+   */
+  const exportData = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      account: account && {
+        name: account.name,
+        email: account.email,
+        grade: account.grade,
+        targetScore: account.targetScore,
+      },
+      attempts: data.attempts,
+      mocks: data.mocks,
+      settings,
+    };
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `1elevate-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="container-read pb-16">
@@ -69,6 +100,39 @@ function SettingsInner() {
           body={t("settings.showHintsBody")}
           on={settings.showHints}
           onChange={(on) => set("showHints", on)}
+        />
+        <Row
+          title={t("settings.autoExplain")}
+          body={t("settings.autoExplainBody")}
+          on={settings.autoExplain}
+          onChange={(on) => set("autoExplain", on)}
+        />
+      </Group>
+
+      {/* ---------------- daily goal ----------------
+          A number, not a switch, so it needs its own control. Fixed steps
+          rather than a free field: the useful question is "roughly how much",
+          and a text input invites 7 and then a week of missing it by two. */}
+      <Group title={t("settings.goal")}>
+        <ChoiceRow
+          title={t("settings.goalTitle")}
+          body={t("settings.goalBody")}
+          value={settings.dailyGoal}
+          options={DAILY_GOALS.map((n) => ({
+            value: n,
+            label: n === 0 ? t("settings.goalOff") : String(n),
+          }))}
+          onChange={(value) => set("dailyGoal", value)}
+        />
+      </Group>
+
+      {/* ---------------- data ---------------- */}
+      <Group title={t("settings.data")}>
+        <ActionRow
+          title={t("settings.export")}
+          body={t("settings.exportBody")}
+          action={t("settings.exportAction")}
+          onAction={exportData}
         />
       </Group>
 
@@ -157,5 +221,78 @@ function Row({
         <span className="sw-knob" />
       </span>
     </button>
+  );
+}
+
+/**
+ * One preference with more than two states.
+ *
+ * A radio group rather than a select: five short options are all visible at
+ * once and are one tap each, where a dropdown hides them behind a press and
+ * makes the current value the only thing you can see.
+ *
+ * Not a `button` wrapper like Row — a row containing several controls cannot
+ * itself be one, and nesting buttons is invalid.
+ */
+function ChoiceRow<T extends number | string>({
+  title,
+  body,
+  value,
+  options,
+  onChange,
+}: {
+  title: string;
+  body: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="w-full py-4 border-b px-1">
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-sm text-muted mt-0.5 leading-relaxed">{body}</p>
+      <div className="mt-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label={title}>
+        {options.map((option) => {
+          const on = option.value === value;
+          return (
+            <button
+              key={String(option.value)}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onChange(option.value)}
+              className={`btn btn-sm num ${on ? "btn-primary" : ""}`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** One row whose point is a thing that happens, not a value that persists. */
+function ActionRow({
+  title,
+  body,
+  action,
+  onAction,
+}: {
+  title: string;
+  body: string;
+  action: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className="w-full flex items-start gap-4 py-4 border-b px-1">
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="block text-sm text-muted mt-0.5 leading-relaxed">{body}</span>
+      </span>
+      <button type="button" className="btn btn-sm shrink-0" onClick={onAction}>
+        {action}
+      </button>
+    </div>
   );
 }

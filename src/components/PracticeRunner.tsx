@@ -267,6 +267,17 @@ export function PracticeRunner({
     [outcomes, question],
   );
 
+  const openExplanation = useCallback(() => {
+    setExplanationOpen((current) => ({ ...current, [question.id]: true }));
+    window.requestAnimationFrame(() =>
+      window.requestAnimationFrame(() =>
+        questionRef.current
+          ?.querySelector<HTMLElement>(".q-explanation")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      ),
+    );
+  }, [question]);
+
   const check = useCallback(() => {
     if (selected === null || isRevealed) return;
     const isCorrect = selected === question.answer;
@@ -274,6 +285,14 @@ export function PracticeRunner({
       ...current,
       [question.id]: isCorrect ? "correct" : "incorrect",
     }));
+    /* Auto-explain, for students who asked not to have to press for it.
+       Wrong answers only: opening the worked solution on a correct one buries
+       the next question under an explanation of something they just showed they
+       know. Called here rather than from an effect watching the outcome —
+       revealing the answer and opening its explanation are one action, and
+       chaining them through a render is how you get a scroll that fires before
+       there is anything to scroll to. */
+    if (!isCorrect && settings.autoExplain) openExplanation();
     if (isCorrect) {
       setStreak((s) => {
         const next = s + 1;
@@ -298,18 +317,16 @@ export function PracticeRunner({
         ms: startedAt.current ? Date.now() - startedAt.current : 0,
       },
     ]);
-  }, [selected, isRevealed, question, recordAttempts, mode, t]);
-
-  const openExplanation = useCallback(() => {
-    setExplanationOpen((current) => ({ ...current, [question.id]: true }));
-    window.requestAnimationFrame(() =>
-      window.requestAnimationFrame(() =>
-        questionRef.current
-          ?.querySelector<HTMLElement>(".q-explanation")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      ),
-    );
-  }, [question]);
+  }, [
+    selected,
+    isRevealed,
+    question,
+    recordAttempts,
+    mode,
+    t,
+    settings.autoExplain,
+    openExplanation,
+  ]);
 
   const submitReport = useCallback(
     async (event: FormEvent) => {

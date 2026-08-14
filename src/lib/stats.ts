@@ -200,7 +200,16 @@ export function contributionYear(attempts: Attempt[], now = Date.now()) {
   const weeks: HeatWeek[] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push({ days: cells.slice(i, i + 7) });
 
-  return { weeks, total, peak, activeDays: cells.filter((c) => c.count > 0).length };
+  // The walk stops at today, so the last cell is today by construction.
+  const todayCount = cells[cells.length - 1]?.count ?? 0;
+
+  return {
+    weeks,
+    total,
+    peak,
+    activeDays: cells.filter((c) => c.count > 0).length,
+    todayCount,
+  };
 }
 
 export function reviewQueue(data: UserData, bank: Question[]): Question[] {

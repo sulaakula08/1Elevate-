@@ -316,13 +316,33 @@ export type Settings = {
   hideTimer: boolean;
   /** Open the question navigator's keyboard hints. Off for people who know them. */
   showHints: boolean;
+  /**
+   * Open the explanation by itself on a wrong answer.
+   *
+   * Off by default on purpose: a student who wants to think about why they
+   * missed it before being told should get to. On, it removes the one click
+   * standing between the mistake and the reason for it.
+   */
+  autoExplain: boolean;
+  /**
+   * Questions per day the student is aiming for; 0 means no goal.
+   *
+   * Kept as the number rather than an on/off plus a magnitude, so "off" is a
+   * value in the same field rather than a second flag that can contradict it.
+   */
+  dailyGoal: number;
 };
+
+/** The goals offered, in the order they are shown. 0 is "no goal". */
+export const DAILY_GOALS = [0, 5, 10, 20, 30] as const;
 
 export const DEFAULT_SETTINGS: Settings = {
   notifications: true,
   reduceMotion: false,
   hideTimer: false,
   showHints: true,
+  autoExplain: false,
+  dailyGoal: 0,
 };
 
 export function loadSettings(): Settings {
