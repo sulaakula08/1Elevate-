@@ -76,28 +76,44 @@
   /* Focus ring, brand-tinted so it reads as ours rather than as the browser's. */
   --ring: color-mix(in srgb, var(--brand) 28%, transparent);
 
-  /* The application rail owns a violet surface in either theme. Keeping its
-     complete contrast system here prevents page-surface tokens from being
-     repurposed piecemeal inside navigation components.
-
-     Deep, not bright. The rail was #5b50c8 — a mid violet at full chroma, which
-     is the loudest colour on a page whose content is black type on white. It won
-     every glance against the thing the student actually came to read. Dropping
-     it to a deep indigo keeps the brand hue and the white-on-dark contrast
-     system exactly as it was, and hands the attention back to the page. */
-  --sidebar-bg: #2b2560;
-  --sidebar-bg-2: #221d50;
+  /*
+   * The application rail. One surface, both themes — these tokens are defined
+   * here and deliberately *not* overridden in the dark block below.
+   *
+   * The rail is the app's fixed point. It is the same eight destinations in the
+   * same order whether or not the page behind it is inverted, and repainting it
+   * on a theme switch made it look like a component that belonged to the page
+   * rather than the frame the page sits in. So it is constant, and the value has
+   * to earn its place against both backgrounds at once.
+   *
+   * #211c45 is that value: a deep indigo, dark enough to read as a solid rail
+   * beside a white page (16:1 against it) and lifted enough off the near-black
+   * one to separate from it, with the brand hue carried as an undertone rather
+   * than a fill. The old rail was #5b50c8 — a mid violet at full chroma, the
+   * loudest colour on a page of black type on white, winning every glance
+   * against the thing the student actually came to read.
+   *
+   * Because the surface never changes, neither does anything on it: one white
+   * foreground, one set of white-alpha states, no second contrast system to
+   * keep in step. Every value here is checked against #211c45 alone.
+   */
+  --sidebar-bg: #211c45;
+  --sidebar-bg-2: #191537;
   --sidebar-fg: #ffffff;
-  --sidebar-muted: #cfcaf0;
-  --sidebar-faint: #a9a3d4;
-  --sidebar-hover: rgba(255, 255, 255, 0.08);
-  --sidebar-active: rgba(255, 255, 255, 0.14);
-  --sidebar-divider: rgba(255, 255, 255, 0.14);
+  --sidebar-muted: #b8b3d8;
+  --sidebar-faint: #8e88b4;
+  /* Alpha, not colour: states composited on the rail hold whatever the rail is,
+     and cannot drift away from it the way a hard-coded hover value would. */
+  --sidebar-hover: rgba(255, 255, 255, 0.07);
+  --sidebar-active: rgba(255, 255, 255, 0.13);
+  --sidebar-divider: rgba(255, 255, 255, 0.13);
   --sidebar-accent: #a79eff;
-  --sidebar-avatar: #4a41a8;
+  --sidebar-avatar: #3d3577;
   --sidebar-focus: #ffffff;
   /* Its own edge token. The border used to be the rail's own colour mixed with
-     black, which works on a light rail and vanishes on a dark one. */
+     black, which is invisible against a dark page; a light edge reads against
+     either one, and does the most work in dark mode where the rail and the page
+     are closest together. */
   --sidebar-edge: rgba(255, 255, 255, 0.09);
 
   --streak-flame: #f05a28;
@@ -215,25 +231,9 @@
   --brand-soft: #1c1b33;
   --ring: color-mix(in srgb, var(--accent) 34%, transparent);
 
-  /* The dark rail was a saturated indigo slab (#282354) beside a neutral
-     near-black page (#0b0b0d). Two problems at once: the hue jump read as a
-     different product bolted to the side, and the rail was *lighter* than the
-     content it introduces, so the first thing the eye met in a dark interface
-     was the navigation. This sits one step above the page, carries the violet
-     as an undertone rather than a fill, and lets the cards be the bright thing.
-     Every foreground token is re-tuned against it, not inherited. */
-  --sidebar-bg: #131120;
-  --sidebar-bg-2: #0e0d18;
-  --sidebar-fg: #f4f2ff;
-  --sidebar-muted: #a5a1bd;
-  --sidebar-faint: #7d7996;
-  --sidebar-hover: rgba(255, 255, 255, 0.055);
-  --sidebar-active: rgba(141, 130, 255, 0.16);
-  --sidebar-divider: rgba(255, 255, 255, 0.08);
-  --sidebar-accent: #9d95ff;
-  --sidebar-avatar: #2c2757;
-  --sidebar-focus: #e8e5ff;
-  --sidebar-edge: rgba(255, 255, 255, 0.07);
+  /* No --sidebar-* here on purpose. The rail is one surface in both themes and
+     its whole contrast system lives in :root; overriding any single token here
+     would start the two copies drifting apart again. */
 
   --streak-flame: #ff7448;
   --streak-flame-core: #ffd166;
