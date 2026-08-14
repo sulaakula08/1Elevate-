@@ -223,6 +223,12 @@ const D: Dict = {
   "mock.adaptiveBody": { en: "Each section routes like the real thing: do well in the first module and the second one is harder, and a harder second module is what lets a section reach the top of its scale. The score is still an estimate — the real mapping is a calibrated table per form.",
   },
 
+  /* ---------------- profile identity ---------------- */
+  "account.changePhoto": { en: "Change your profile picture" },
+  "account.photoVerb": { en: "Change" },
+  "account.renameLabel": { en: "Change your name" },
+  "account.yourName": { en: "Your name" },
+
   "soon.title": { en: "Community is coming soon" },
   "soon.home": { en: "Back to dashboard" },
   "soon.badge": { en: "Soon" },
@@ -782,6 +788,7 @@ const D: Dict = {
   "common.minutes": { en: "min" },
   "common.total": { en: "Total" },
   "common.back": { en: "Back" },
+  "common.save": { en: "Save" },
   "common.reset": { en: "Reset all local data" },
   "common.resetConfirm": { en: "Delete all accounts, progress and custom questions from this browser?",
   },

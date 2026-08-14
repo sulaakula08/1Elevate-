@@ -19,6 +19,29 @@ function notConfigured() {
   );
 }
 
+/**
+ * True only for a public URL in this project's own Supabase storage.
+ *
+ * Parsed rather than pattern-matched: `startsWith` on the project origin is
+ * defeated by `https://our-project.supabase.co.evil.example/…`, which is a
+ * prefix match and a different host. URL() gives the real hostname to compare.
+ */
+function isOwnStorageUrl(value: string): boolean {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return false;
+  try {
+    const url = new URL(value);
+    const origin = new URL(base);
+    return (
+      url.protocol === "https:" &&
+      url.hostname === origin.hostname &&
+      url.pathname.startsWith("/storage/v1/object/public/avatars/")
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function caller(request: Request) {
   const token = tokenFrom(request);
   if (!token) return { error: "unauthorized" as const };
@@ -38,9 +61,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }
 
+  /*
+   * The whole row, not a column list.
+   *
+   * `avatar_url` arrived in a later migration, and naming it explicitly would
+   * make this route 400 on any project that has not applied it yet — taking
+   * profile loading, and therefore the entire signed-in app, down over a
+   * picture. Selecting the row and reading the field if it is there means the
+   * feature is simply inert until the migration runs.
+   */
   const { data, error } = await found.client
     .from("profiles")
-    .select("id, name, email, grade, role, target_score")
+    .select("*")
     .eq("id", found.user.id)
     .maybeSingle();
 
@@ -59,6 +91,8 @@ export async function GET(request: Request) {
       grade: data.grade,
       role: data.role,
       targetScore: data.target_score,
+      // Empty on a database that has not run the avatars migration.
+      avatarUrl: data.avatar_url ?? "",
       isAdmin: data.role === "admin",
     },
   });
@@ -73,7 +107,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }
 
-  let body: { name?: unknown; grade?: unknown; targetScore?: unknown };
+  let body: {
+    name?: unknown;
+    grade?: unknown;
+    targetScore?: unknown;
+    avatarUrl?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -88,6 +127,25 @@ export async function PATCH(request: Request) {
   if (typeof body.targetScore === "number" && Number.isFinite(body.targetScore)) {
     patch.target_score = Math.min(1600, Math.max(400, Math.round(body.targetScore)));
   }
+  /*
+   * A URL we issued, or nothing.
+   *
+   * The client uploads to the avatars bucket and sends back the public URL, so
+   * this field is attacker-controlled text that ends up in an <img src> on other
+   * people's screens. Restricting it to https and to the project's own storage
+   * host is what stops it becoming a way to point every viewer's browser at an
+   * arbitrary server — a tracking pixel with a face on it. Empty clears it.
+   */
+  if (typeof body.avatarUrl === "string") {
+    const value = body.avatarUrl.trim();
+    if (value === "") {
+      patch.avatar_url = "";
+    } else if (isOwnStorageUrl(value)) {
+      patch.avatar_url = value.slice(0, 500);
+    } else {
+      return NextResponse.json({ error: "That is not an uploaded image." }, { status: 400 });
+    }
+  }
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
   }
@@ -95,6 +153,14 @@ export async function PATCH(request: Request) {
   const { error } = await found.client.from("profiles").update(patch).eq("id", found.user.id);
   if (error) {
     if (process.env.NODE_ENV !== "production") console.error("[profile]", error);
+    // The one failure the operator can act on, and the likely one on a project
+    // that has not applied the avatars migration.
+    if ("avatar_url" in patch && /avatar_url/i.test(error.message)) {
+      return NextResponse.json(
+        { error: "Profile pictures need the avatars migration — run supabase/schema.sql." },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ error: "Could not save." }, { status: 502 });
   }
 

@@ -179,7 +179,12 @@ export function Sidebar({
           title={collapsed ? account.name : undefined}
         >
           <span className="side-avatar">
-            {account.name.slice(0, 2).toUpperCase()}
+            {account.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={account.avatarUrl} alt="" />
+            ) : (
+              account.name.slice(0, 2).toUpperCase()
+            )}
           </span>
           {!collapsed && (
             <span className="side-account-name">{account.name}</span>

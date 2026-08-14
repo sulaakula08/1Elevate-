@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SAT, getSubject, subjectColor, subjectColorSoft } from "@/data/exams";
 import { useApp } from "@/lib/app-state";
+import { uploadAvatar } from "@/lib/avatars";
 import { useI18n } from "@/lib/i18n";
 import {
   bySubject,
@@ -38,6 +39,39 @@ function Profile() {
   const router = useRouter();
   const [target, setTarget] = useState(account!.targetScore);
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(account!.name);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  /**
+   * A blank name is not a name.
+   *
+   * The rail, every post header and the initials badge all key off this, and an
+   * empty string turns each of them into a gap — so the edit is simply refused
+   * and the field closes on what was there before.
+   */
+  function commitName() {
+    const next = nameDraft.trim().slice(0, 80);
+    setEditingName(false);
+    if (!next || next === account!.name) return;
+    updateAccount({ name: next });
+  }
+
+  async function pickPhoto(file: File) {
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      const url = await uploadAvatar(file);
+      updateAccount({ avatarUrl: url });
+    } catch (error) {
+      setPhotoError(error instanceof Error ? error.message : "Could not upload that image.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
   const stats = overall(data.attempts);
   const days = streak(data.attempts);
   const pace = medianSeconds(data.attempts);
@@ -62,20 +96,104 @@ function Profile() {
     <div className="container-read pb-20">
       {/* ---------------- identity ---------------- */}
       <header className="flex items-start gap-4 fade-up">
-        <span
-          className="grid place-items-center shrink-0 w-16 h-16 rounded-[var(--radius-pill)] text-h3 font-semibold"
-          style={{
-            background: "var(--brand-soft)",
-            color: "var(--brand)",
-            border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
-          }}
-          aria-hidden
+        {/* The picture is the control. A 64px avatar with a separate "change"
+            link beside it is two targets for one idea; pressing the thing you
+            want to replace is what every account screen has taught people to
+            expect. */}
+        <button
+          type="button"
+          className="acc-avatar"
+          onClick={() => photoInput.current?.click()}
+          disabled={photoBusy}
+          aria-label={t("account.changePhoto")}
+          title={t("account.changePhoto")}
         >
-          {initials(account!.name)}
-        </span>
+          {account!.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={account!.avatarUrl} alt="" />
+          ) : (
+            <span className="acc-avatar-initials" aria-hidden>
+              {initials(account!.name)}
+            </span>
+          )}
+          <span className="acc-avatar-veil" aria-hidden>
+            {photoBusy ? "…" : t("account.photoVerb")}
+          </span>
+        </button>
+        <input
+          ref={photoInput}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            // Cleared immediately so choosing the same file twice still fires.
+            e.target.value = "";
+            if (file) void pickPhoto(file);
+          }}
+        />
+
         <div className="min-w-0 pt-1">
-          <h1 className="display text-h1 leading-tight truncate">{account!.name}</h1>
+          {editingName ? (
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                commitName();
+              }}
+            >
+              <input
+                className="field max-w-56"
+                value={nameDraft}
+                autoFocus
+                maxLength={80}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setEditingName(false);
+                }}
+                aria-label={t("account.yourName")}
+              />
+              <button className="btn btn-sm btn-primary" type="submit">
+                {t("common.save")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setEditingName(false)}
+              >
+                {t("admin.cancel")}
+              </button>
+            </form>
+          ) : (
+            <h1 className="display text-h1 leading-tight truncate flex items-center gap-2">
+              <span className="truncate">{account!.name}</span>
+              <button
+                type="button"
+                className="acc-rename"
+                onClick={() => {
+                  setNameDraft(account!.name);
+                  setEditingName(true);
+                }}
+                aria-label={t("account.renameLabel")}
+                title={t("account.renameLabel")}
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden>
+                  <path
+                    d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </h1>
+          )}
           <p className="mt-1 text-sm text-muted truncate">{account!.email || "—"}</p>
+          {photoError && (
+            <p className="mt-1.5 text-sm text-danger" role="alert">
+              {photoError}
+            </p>
+          )}
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <span
               className="chip"

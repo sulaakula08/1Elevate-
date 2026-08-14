@@ -857,3 +857,91 @@
     font-size: 1.125rem;
   }
 }
+
+@layer components {
+  /* ---------------- profile identity ----------------
+     The avatar is a button, so it has to look like the picture it replaces and
+     behave like a control only on approach — a permanently visible "change"
+     overlay would put a grey band across the student's own face every time they
+     opened their profile. */
+  .acc-avatar {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 4rem;
+    height: 4rem;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    color: var(--brand);
+    cursor: pointer;
+  }
+  .acc-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .acc-avatar-initials {
+    font-size: var(--t-h3);
+    font-weight: 600;
+  }
+  .acc-avatar-veil {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 0.1875rem 0;
+    background: color-mix(in srgb, #000 62%, transparent);
+    color: #fff;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .acc-avatar:hover .acc-avatar-veil,
+  .acc-avatar:focus-visible .acc-avatar-veil {
+    opacity: 1;
+  }
+  .acc-avatar:disabled {
+    cursor: progress;
+  }
+  .acc-avatar:disabled .acc-avatar-veil {
+    opacity: 1;
+  }
+
+  /* Sits on the baseline of a display-size heading, so it is sized against the
+     text rather than against a button grid. */
+  .acc-rename {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-sm);
+    color: var(--faint);
+    transition: color 150ms ease, background 150ms ease;
+  }
+  .acc-rename:hover {
+    color: var(--foreground);
+    background: var(--surface-2);
+  }
+
+  /* The rail and the phone header show the same picture, cropped by the same
+     square file — nothing here has to agree on an object-fit rule. */
+  .side-avatar img,
+  .mobile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    display: block;
+  }
+  .side-avatar,
+  .mobile-avatar {
+    overflow: hidden;
+  }
+}

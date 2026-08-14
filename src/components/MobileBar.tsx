@@ -55,11 +55,16 @@ export function MobileHeader() {
 
           <Link
             href="/account"
-            className="grid place-items-center w-8 h-8 rounded-[var(--radius-pill)] text-2xs font-semibold shrink-0"
+            className="mobile-avatar grid place-items-center w-8 h-8 rounded-[var(--radius-pill)] text-2xs font-semibold shrink-0"
             style={{ background: "var(--ink)", color: "var(--ink-contrast)" }}
             aria-label={account?.name}
           >
-            {account?.name.slice(0, 2).toUpperCase()}
+            {account?.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={account.avatarUrl} alt="" />
+            ) : (
+              account?.name.slice(0, 2).toUpperCase()
+            )}
           </Link>
         </div>
       </div>
