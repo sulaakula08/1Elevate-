@@ -78,17 +78,27 @@
 
   /* The application rail owns a violet surface in either theme. Keeping its
      complete contrast system here prevents page-surface tokens from being
-     repurposed piecemeal inside navigation components. */
-  --sidebar-bg: #5b50c8;
+     repurposed piecemeal inside navigation components.
+
+     Deep, not bright. The rail was #5b50c8 — a mid violet at full chroma, which
+     is the loudest colour on a page whose content is black type on white. It won
+     every glance against the thing the student actually came to read. Dropping
+     it to a deep indigo keeps the brand hue and the white-on-dark contrast
+     system exactly as it was, and hands the attention back to the page. */
+  --sidebar-bg: #2b2560;
+  --sidebar-bg-2: #221d50;
   --sidebar-fg: #ffffff;
-  --sidebar-muted: #dedbf7;
-  --sidebar-faint: #c4bfea;
-  --sidebar-hover: rgba(255, 255, 255, 0.1);
-  --sidebar-active: rgba(255, 255, 255, 0.18);
-  --sidebar-divider: rgba(255, 255, 255, 0.2);
-  --sidebar-accent: #c9c4ff;
-  --sidebar-avatar: #292176;
+  --sidebar-muted: #cfcaf0;
+  --sidebar-faint: #a9a3d4;
+  --sidebar-hover: rgba(255, 255, 255, 0.08);
+  --sidebar-active: rgba(255, 255, 255, 0.14);
+  --sidebar-divider: rgba(255, 255, 255, 0.14);
+  --sidebar-accent: #a79eff;
+  --sidebar-avatar: #4a41a8;
   --sidebar-focus: #ffffff;
+  /* Its own edge token. The border used to be the rail's own colour mixed with
+     black, which works on a light rail and vanishes on a dark one. */
+  --sidebar-edge: rgba(255, 255, 255, 0.09);
 
   --streak-flame: #f05a28;
   --streak-flame-core: #ffc247;
@@ -205,16 +215,25 @@
   --brand-soft: #1c1b33;
   --ring: color-mix(in srgb, var(--accent) 34%, transparent);
 
-  --sidebar-bg: #282354;
-  --sidebar-fg: #fbfaff;
-  --sidebar-muted: #d2cef1;
-  --sidebar-faint: #aaa5d4;
-  --sidebar-hover: rgba(255, 255, 255, 0.1);
-  --sidebar-active: rgba(255, 255, 255, 0.17);
-  --sidebar-divider: rgba(255, 255, 255, 0.17);
-  --sidebar-accent: #bcb6ff;
-  --sidebar-avatar: #191542;
+  /* The dark rail was a saturated indigo slab (#282354) beside a neutral
+     near-black page (#0b0b0d). Two problems at once: the hue jump read as a
+     different product bolted to the side, and the rail was *lighter* than the
+     content it introduces, so the first thing the eye met in a dark interface
+     was the navigation. This sits one step above the page, carries the violet
+     as an undertone rather than a fill, and lets the cards be the bright thing.
+     Every foreground token is re-tuned against it, not inherited. */
+  --sidebar-bg: #131120;
+  --sidebar-bg-2: #0e0d18;
+  --sidebar-fg: #f4f2ff;
+  --sidebar-muted: #a5a1bd;
+  --sidebar-faint: #7d7996;
+  --sidebar-hover: rgba(255, 255, 255, 0.055);
+  --sidebar-active: rgba(141, 130, 255, 0.16);
+  --sidebar-divider: rgba(255, 255, 255, 0.08);
+  --sidebar-accent: #9d95ff;
+  --sidebar-avatar: #2c2757;
   --sidebar-focus: #e8e5ff;
+  --sidebar-edge: rgba(255, 255, 255, 0.07);
 
   --streak-flame: #ff7448;
   --streak-flame-core: #ffd166;
@@ -1529,8 +1548,11 @@ p {
     flex-direction: column;
     gap: 0;
     padding: 0.875rem 0.75rem 0.75rem;
-    border-right: 1px solid color-mix(in srgb, var(--sidebar-bg) 78%, black);
-    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-edge);
+    /* A long vertical fade rather than a flat fill: the rail is 100dvh of one
+       colour, and a single value that tall reads as a printed block. Two stops
+       a few percent apart are not seen as a gradient, only as depth. */
+    background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-2) 100%);
     color: var(--sidebar-fg);
     overflow-y: auto;
     scrollbar-color: var(--sidebar-divider) transparent;
