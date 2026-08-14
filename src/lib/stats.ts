@@ -248,6 +248,24 @@ export function scaleScore(exam: ExamId, correct: number, total: number): number
   return Math.round((400 + (correct / total) * 1200) / 10) * 10;
 }
 
+/**
+ * One section's scaled score, 200–800, from its raw score and its route.
+ *
+ * The flat `scaleScore` above treats a test as one pile of questions, which is
+ * wrong for an adaptive one in a way that matters: on the real SAT the second
+ * module you are routed into bounds what the section can be worth, so a student
+ * who never left the easier form cannot reach the top of the scale however many
+ * of those easier questions they get right. Capping the lower route is the
+ * smallest honest model of that. It stays an estimate — the real mapping is a
+ * calibrated table per form — and the report says so.
+ */
+export function sectionScore(correct: number, total: number, routedUp: boolean): number {
+  if (total === 0) return 200;
+  const share = correct / total;
+  const ceiling = routedUp ? 800 : 600;
+  return Math.round((200 + share * (ceiling - 200)) / 10) * 10;
+}
+
 export function maxScore(exam: ExamId): number {
   return getExam(exam)?.maxScore ?? 1600;
 }

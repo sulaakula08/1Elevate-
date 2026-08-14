@@ -1,16 +1,17 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { SAT, getSubject, subjectColor, subjectColorSoft } from "@/data/exams";
 import type { Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
+import { buildMockSets, type MockSet } from "@/lib/mock-sets";
 import { fillMissingQuestions } from "@/lib/generation/client";
 import { generatedIds, recordProvenance } from "@/lib/generation/provenance";
 import { fillRequests, shortfall } from "@/lib/generation/shortfall";
 import { useI18n } from "@/lib/i18n";
 import { NOUNS, pluralize } from "@/lib/plural";
 import type { Attempt, MockResult, MockSectionResult } from "@/lib/storage";
-import { maxScore, pct, scaleScore, shuffle } from "@/lib/stats";
+import { maxScore, pct, scaleScore, sectionScore } from "@/lib/stats";
 import { MockRunner, type MockAnswers, type MockSection } from "@/components/MockRunner";
 import { MockLoader } from "@/components/test/MockLoader";
 import { QuestionView } from "@/components/QuestionView";
@@ -39,6 +40,23 @@ function MockInner() {
   const { t, tx } = useI18n();
   const { account, bank, data, recordAttempts, recordMock, saveQuestion } = useApp();
   const [sections, setSections] = useState<MockSection[] | null>(null);
+  /**
+   * Which numbered test is on screen.
+   *
+   * Carried beside the modules rather than inside them: the number belongs to
+   * the sitting, and MockSection is the shape MockRunner consumes. Undefined for
+   * a shortened test, which is not one of the numbered ones.
+   */
+  const [runningSet, setRunningSet] = useState<number | undefined>(undefined);
+  /**
+   * The harder second modules of the test on screen.
+   *
+   * Held beside `sections` for the same reason the number is: the runner needs
+   * them to route, and they are not part of the plan it renders.
+   */
+  const [runningAlternates, setRunningAlternates] = useState<
+    Map<string, MockSection> | undefined
+  >(undefined);
   /**
    * Modules dealt and waiting behind the loading screen. Built at the click, not
    * when the loader finishes, so the test a student is shown is the one that was
@@ -100,45 +118,67 @@ function MockInner() {
     }
   }, [bank, blueprint, saveQuestion, t]);
 
-  /** The four SAT modules, filled as far as the bank allows. */
-  const buildSections = useCallback((): MockSection[] => {
-    // The two modules of a subject must not repeat an item, so each subject
-    // deals from its own shuffled deck.
-    const decks = new Map<string, Question[]>();
+  /**
+   * Every test the bank can currently deal, numbered and stable.
+   *
+   * The dealing itself lives in lib/mock-sets, which owns the one property that
+   * makes a numbered test worth anything: Test 3 is the same Test 3 on every
+   * device and every day. All this does is put the display name on each module,
+   * which needs the translator and therefore cannot live in a pure module.
+   */
+  type NamedSet = Omit<MockSet, "sections" | "alternates"> & {
+    sections: MockSection[];
+    alternates: Map<string, MockSection>;
+  };
 
-    return blueprint.sections
-      .map((section) => {
-        if (!decks.has(section.subjectId)) {
-          decks.set(
-            section.subjectId,
-            shuffle(bank.filter((q) => q.subjectId === section.subjectId)),
-          );
-        }
-        const deck = decks.get(section.subjectId)!;
-        const questions = deck.splice(0, section.count);
-        const subject = getSubject(section.subjectId);
-        const base = subject ? tx(subject.name) : section.subjectId;
-        return {
-          subjectId: section.subjectId,
-          module: section.module,
-          name: `${base} · ${t("mock.module")} ${section.module}`,
-          // Shorten the clock proportionally when the bank is short on questions.
-          minutes: Math.max(
-            1,
-            Math.round((section.minutes * questions.length) / Math.max(1, section.count)),
-          ),
-          questions,
-        };
-      })
-      .filter((section) => section.questions.length > 0);
+  const sets = useMemo<NamedSet[]>(() => {
+    const name = (subjectId: string, module: number) => {
+      const subject = getSubject(subjectId);
+      return `${subject ? tx(subject.name) : subjectId} · ${t("mock.module")} ${module}`;
+    };
+    return buildMockSets(bank, blueprint).map((set) => ({
+      ...set,
+      sections: set.sections.map((section) => ({
+        ...section,
+        name: name(section.subjectId, section.module),
+      })),
+      alternates: new Map(
+        [...set.alternates].map(([subjectId, section]) => [
+          subjectId,
+          { ...section, name: name(section.subjectId, section.module) },
+        ]),
+      ),
+    }));
   }, [bank, blueprint, t, tx]);
 
-  const plan = buildSections();
+  /** Best score per numbered test, so a row can show what it is worth beating. */
+  const bestBySet = useMemo(() => {
+    const best = new Map<number, number>();
+    for (const mock of data.mocks) {
+      if (mock.setIndex === undefined) continue;
+      best.set(mock.setIndex, Math.max(best.get(mock.setIndex) ?? 0, mock.score));
+    }
+    return best;
+  }, [data.mocks]);
+
+  /** Everything one click has to remember about the test being started. */
+  const startSet = useCallback((set: NamedSet) => {
+    setRunningSet(set.complete ? set.index : undefined);
+    setRunningAlternates(set.alternates.size > 0 ? set.alternates : undefined);
+    setStarting(set.sections);
+  }, []);
+
   const plannedTotal = blueprint.sections.reduce((sum, s) => sum + s.count, 0);
+  const plan = sets[0]?.sections ?? [];
   const availableTotal = plan.reduce((sum, s) => sum + s.questions.length, 0);
 
   const finish = useCallback(
-    (built: MockSection[], answers: MockAnswers, msSpent: number) => {
+    (
+      built: MockSection[],
+      answers: MockAnswers,
+      msSpent: number,
+      routes: Record<string, "lower" | "upper"> = {},
+    ) => {
       const sectionResults: MockSectionResult[] = [];
       const attempts: Attempt[] = [];
       const wrong: string[] = [];
@@ -175,10 +215,39 @@ function MockInner() {
       }
 
       const correctTotal = sectionResults.reduce((sum, s) => sum + s.correct, 0);
-      const score = scaleScore(exam, correctTotal, totalQuestions);
+
+      /*
+       * Two section scores, then their sum — the shape of a real SAT score.
+       *
+       * Only when the test actually routed. A shortened or non-adaptive test has
+       * no routes, and scoring it as though a student had been held to the easier
+       * form would understate it; that falls back to the flat estimate.
+       */
+      const routed = Object.keys(routes).length > 0;
+      const bySubject = new Map<string, { correct: number; total: number }>();
+      for (const result of sectionResults) {
+        const entry = bySubject.get(result.subjectId) ?? { correct: 0, total: 0 };
+        entry.correct += result.correct;
+        entry.total += result.total;
+        bySubject.set(result.subjectId, entry);
+      }
+      const score = routed
+        ? Math.max(
+            blueprint.minScore,
+            Math.min(
+              blueprint.maxScore,
+              [...bySubject.entries()].reduce(
+                (sum, [subjectId, tally]) =>
+                  sum + sectionScore(tally.correct, tally.total, routes[subjectId] === "upper"),
+                0,
+              ),
+            ),
+          )
+        : scaleScore(exam, correctTotal, totalQuestions);
 
       const result: Omit<MockResult, "id"> = {
         exam,
+        setIndex: runningSet,
         at: now,
         sections: sectionResults,
         correct: correctTotal,
@@ -192,14 +261,15 @@ function MockInner() {
       setSections(null);
       setReport({ result, sections: built, answers });
     },
-    [exam, recordAttempts, recordMock],
+    [blueprint.maxScore, blueprint.minScore, exam, recordAttempts, recordMock, runningSet],
   );
 
   if (sections) {
     return (
       <MockRunner
         sections={sections}
-        onFinish={(answers, msSpent) => finish(sections, answers, msSpent)}
+        alternates={runningAlternates}
+        onFinish={(answers, msSpent, sat, routes) => finish(sat, answers, msSpent, routes)}
         onExit={() => setSections(null)}
       />
     );
@@ -345,9 +415,68 @@ function MockInner() {
             </div>
           </div>
 
+          {/* ---------------- the tests ----------------
+              One row per numbered test, each its own button. This replaces a
+              single "Begin test" that reshuffled the whole bank: a student who
+              sat it twice met the same questions in a new order and could not
+              tell whether a better score meant they had improved or the deal had
+              been kinder. Numbered, disjoint tests make a second sitting mean
+              something, and a best score gives them something to beat. */}
           <p className="label-xs mt-8">
-            {t("plan.mockModules")} · {pluralize(plan.length, NOUNS.module)}
+            {sets.length > 1
+              ? `${t("mock.testsAvailable")} · ${sets.length}`
+              : `${t("plan.mockModules")} · ${pluralize(plan.length, NOUNS.module)}`}
           </p>
+
+          <ol className="mock-sets mt-3">
+            {sets.map((set, i) => {
+              const best = bestBySet.get(set.index);
+              return (
+                <Reveal as="li" key={set.index} delay={Math.min(i, 6) * 45}>
+                  <button
+                    className="mock-set"
+                    disabled={filling || set.total === 0}
+                    onClick={() => startSet(set)}
+                  >
+                    <span className="mock-set-number num" aria-hidden>
+                      {set.complete ? set.index : "—"}
+                    </span>
+
+                    <span className="mock-set-body">
+                      <span className="mock-set-name">
+                        {set.complete
+                          ? `${t("mock.testNumber")} ${set.index}`
+                          : t("mock.shortenedTest")}
+                        {set.adaptive && (
+                          <span className="mock-set-tag" title={t("mock.adaptiveWhat")}>
+                            {t("mock.adaptive")}
+                          </span>
+                        )}
+                      </span>
+                      <span className="mock-set-meta">
+                        {pluralize(set.total, NOUNS.question)} · {set.minutes}{" "}
+                        {t("common.minutes")}
+                        {best !== undefined && (
+                          <>
+                            {" · "}
+                            {t("mock.yourBest")} <span className="num">{best}</span>
+                          </>
+                        )}
+                      </span>
+                    </span>
+
+                    <span className="mock-set-go" aria-hidden>
+                      ›
+                    </span>
+                  </button>
+                </Reveal>
+              );
+            })}
+          </ol>
+
+          {/* What the modules are, once, rather than repeated under every test:
+              every numbered test has the same shape. */}
+          <p className="label-xs mt-8">{t("plan.mockModules")}</p>
           <ol className="mt-3 space-y-2">
             {plan.map((section, i) => (
               <Reveal as="li" key={`${section.subjectId}-${i}`} delay={i * 50}>
@@ -367,6 +496,10 @@ function MockInner() {
               </Reveal>
             ))}
           </ol>
+
+          {sets[0]?.adaptive && (
+            <p className="mt-4 text-sm leading-relaxed text-muted">{t("mock.adaptiveBody")}</p>
+          )}
 
           {/* Whether the test is whole, and — if not — what can be done about it.
               Framed as a capability rather than as a defect report: a student
@@ -403,7 +536,7 @@ function MockInner() {
                   <button
                     className="btn btn-sm"
                     disabled={filling}
-                    onClick={() => setStarting(buildSections())}
+                    onClick={() => sets[0] && startSet(sets[0])}
                   >
                     {t("plan.mockShortenedOk")}
                   </button>
@@ -414,13 +547,6 @@ function MockInner() {
             )}
           </div>
 
-          <button
-            className="btn btn-primary btn-lg mt-8"
-            disabled={filling}
-            onClick={() => setStarting(buildSections())}
-          >
-            {t("mock.begin")}
-          </button>
         </>
       )}
 

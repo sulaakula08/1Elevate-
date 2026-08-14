@@ -73,7 +73,6 @@ export function ComingSoonGate({
         </span>
 
         <h1 className="display mt-5 text-[24px]">{t("soon.title")}</h1>
-        <p className="lede mt-3 text-[15px]">{t("soon.body")}</p>
 
         <div className="mt-7 flex flex-wrap justify-center gap-2">
           <Link href="/" className="btn btn-primary">

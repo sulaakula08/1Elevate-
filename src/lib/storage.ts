@@ -63,6 +63,19 @@ export type MockResult = {
   score: number;
   /** Question ids answered incorrectly, for the review queue. */
   wrong: string[];
+  /**
+   * Which numbered test this was, when it was one.
+   *
+   * Local-only by design. The mocks table has fixed columns and the API builds
+   * its row from an explicit field list, so this is simply dropped on the way to
+   * Supabase rather than erroring — and the merge lets the local copy of a row
+   * win, so it survives a sync. The cost is that history on a *second* device
+   * shows the score without the test number until a migration adds the column;
+   * the benefit is that shipping this cannot break saving a mock for anyone
+   * whose database has not been migrated. Absent is a normal state: mocks sat
+   * before this existed, and shortened tests, have no number.
+   */
+  setIndex?: number;
 };
 
 export type UserData = {

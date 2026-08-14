@@ -6,6 +6,7 @@ import { useApp } from "@/lib/app-state";
 import { useExamMode } from "@/lib/exam-mode";
 import { useFullscreen } from "@/lib/fullscreen";
 import { readingDisplayParts } from "@/lib/reading-parts";
+import { routeFor } from "@/lib/mock-sets";
 import { useSettings } from "@/lib/settings";
 import { generatedIds } from "@/lib/generation/provenance";
 import { useI18n } from "@/lib/i18n";
@@ -46,7 +47,24 @@ export type MockAnswers = Record<string, number>;
 
 type Props = {
   sections: MockSection[];
-  onFinish: (answers: MockAnswers, msSpent: number) => void;
+  /**
+   * The harder form of each second module, by subject. Present only when the
+   * bank could fill both forms; without it the test runs straight through, which
+   * is what every test did before routing existed.
+   */
+  alternates?: Map<string, MockSection>;
+  /**
+   * `sat` is the plan as actually taken, which is not the plan passed in: a
+   * routed test swaps a second module for its harder form, and scoring the
+   * modules that were handed to the runner rather than the ones answered would
+   * mark a student against questions they never saw.
+   */
+  onFinish: (
+    answers: MockAnswers,
+    msSpent: number,
+    sat: MockSection[],
+    routes: Record<string, "lower" | "upper">,
+  ) => void;
   onExit: () => void;
 };
 
@@ -70,12 +88,22 @@ function formatClock(seconds: number): string {
  * Between the Reading and Writing modules and Math it hands over to the ten
  * minute break the real test gives, which a student may end early.
  */
-export function MockRunner({ sections, onFinish, onExit }: Props) {
+export function MockRunner({ sections: plannedSections, alternates, onFinish, onExit }: Props) {
   const { t } = useI18n();
   const { settings } = useSettings();
   const { theme, toggleTheme } = useApp();
   const fullscreen = useFullscreen();
   useExamMode();
+
+  /**
+   * The modules as they are being sat.
+   *
+   * State rather than the prop, because routing rewrites the second module of a
+   * section while the test is in progress. The first modules never change.
+   */
+  const [sections, setSections] = useState<MockSection[]>(plannedSections);
+  /** Which form each section was routed into, for the score report. */
+  const [routes, setRoutes] = useState<Record<string, "lower" | "upper">>({});
 
   const [sectionIndex, setSectionIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -191,10 +219,33 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
   const submitSection = useCallback(() => {
     setConfirmSubmit(false);
     if (isLastSection) {
-      onFinish(answers, startedAt.current ? Date.now() - startedAt.current : 0);
+      onFinish(answers, startedAt.current ? Date.now() - startedAt.current : 0, sections, routes);
       return;
     }
     const nextIndex = sectionIndex + 1;
+
+    /*
+     * Routing, exactly where the real test does it: on leaving a first module.
+     *
+     * The next module has to belong to the same subject — a first Math module
+     * cannot route the Reading and Writing one — and an upper form has to exist
+     * for it. Everything else runs straight through.
+     */
+    const next = sections[nextIndex];
+    const upper = alternates?.get(section.subjectId);
+    if (section.module === 1 && upper && next?.subjectId === section.subjectId) {
+      const correct = section.questions.filter(
+        (q) => answers[q.id] === q.answer,
+      ).length;
+      const route = routeFor(correct, section.questions.length);
+      setRoutes((previous) => ({ ...previous, [section.subjectId]: route }));
+      if (route === "upper") {
+        setSections((previous) =>
+          previous.map((entry, i) => (i === nextIndex ? { ...upper, name: entry.name } : entry)),
+        );
+      }
+    }
+
     // The break falls where the subject changes — after the last Reading and
     // Writing module, exactly as the real test schedules it.
     if (sections[nextIndex].subjectId !== section.subjectId) {
@@ -203,13 +254,15 @@ export function MockRunner({ sections, onFinish, onExit }: Props) {
     }
     enterSection(nextIndex);
   }, [
+    alternates,
     answers,
     enterSection,
     isLastSection,
     onFinish,
-    section.subjectId,
-    sectionIndex,
+    routes,
+    section,
     sections,
+    sectionIndex,
   ]);
 
   // Keep the timer callback pointing at the freshest answers/section state.

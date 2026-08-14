@@ -774,3 +774,86 @@
     color: var(--faint);
   }
 }
+
+@layer components {
+  /* ---------------- the numbered mock tests ----------------
+     One row per test, each a single button. A grid of cards would give equal
+     weight to eight identical things; a list reads as a menu, which is what it
+     is. */
+  .mock-sets {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .mock-set {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .mock-set:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+    box-shadow: var(--lift-brand);
+    transform: translateY(-1px);
+  }
+  .mock-set:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .mock-set-number {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.9375rem;
+    font-weight: 650;
+  }
+  .mock-set-body {
+    min-width: 0;
+    flex: 1;
+  }
+  .mock-set-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 550;
+  }
+  /* Says the test routes, without explaining it here — the paragraph under the
+     list does that once rather than eight times. */
+  .mock-set-tag {
+    padding: 0.0625rem 0.375rem;
+    border-radius: var(--radius-pill);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .mock-set-meta {
+    display: block;
+    margin-top: 0.1875rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .mock-set-go {
+    flex-shrink: 0;
+    color: var(--faint);
+    font-size: 1.125rem;
+  }
+}
