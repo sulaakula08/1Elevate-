@@ -55,6 +55,9 @@ function toRow(question: Question, authorId: string) {
     answer: Number(question.answer),
     payload: {
       passage: question.passage ?? null,
+      // Figures ride in the payload for the same reason the prompt does: it is
+      // jsonb, so a new field costs no migration.
+      figure: question.figure ?? null,
       prompt: question.prompt,
       choices: question.choices,
       explanation: question.explanation,
@@ -79,6 +82,7 @@ type Row = {
   answer: number;
   payload: {
     passage?: Question["passage"] | null;
+    figure?: Question["figure"] | null;
     prompt: Question["prompt"];
     choices: Question["choices"];
     explanation: Question["explanation"];
@@ -109,6 +113,7 @@ function toQuestion(row: Row): Question {
     domain: row.domain ?? undefined,
     difficulty: row.difficulty as Question["difficulty"],
     passage: row.payload?.passage ?? undefined,
+    figure: row.payload?.figure ?? undefined,
     prompt: row.payload?.prompt,
     choices: row.payload?.choices ?? [],
     answer: row.answer,

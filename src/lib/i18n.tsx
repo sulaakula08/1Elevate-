@@ -665,6 +665,23 @@ const D: Dict = {
   "admin.choice": { en: "Choice" },
   "admin.preview": { en: "Preview — how a student sees it" },
   /* ---------------- duplicate detection ---------------- */
+  /* ---------------- figures ---------------- */
+  "admin.figure": { en: "Figure (diagram, graph or table)" },
+  "admin.figureAdd": { en: "Upload an image" },
+  "admin.figureUploading": { en: "Uploading…" },
+  "admin.figureOr": { en: "or" },
+  "admin.figureUrl": { en: "Paste an image URL" },
+  "admin.figureRemove": { en: "Remove figure" },
+  "admin.figureAlt": { en: "What does it show?" },
+  "admin.figureAltPlaceholder": { en: "Scatterplot of height against age, with a line of best fit",
+  },
+  "admin.figureAltNeeded": { en: "Needed before this saves — it is what a screen reader reads out, and what the tutor sees instead of the image.",
+  },
+  "admin.figureNoAlt": { en: "Figure with no description yet" },
+  "admin.figureFailed": { en: "That image did not upload." },
+  "admin.figureHint": { en: "PNG, JPEG, WebP or SVG, up to 6 MB. Screenshots of a graph are fine; SVG stays sharp at any size. Large images are shrunk to 1400px and kept as PNG, so thin axes and gridlines survive.",
+  },
+
   "admin.dupExactTitle": { en: "This question is already in the bank" },
   "admin.dupNearTitle": { en: "This looks like a question already in the bank" },
   "admin.dupIdentical": { en: "identical" },

@@ -9,6 +9,20 @@ export type ExamId = "sat";
 
 export type Difficulty = 1 | 2 | 3;
 
+/**
+ * An image belonging to a question.
+ *
+ * `src` is whatever an <img> can load: a public storage URL for an upload, or a
+ * data URI for a small inline SVG. Kept as one string rather than a storage path
+ * plus a bucket, so a figure can also come from somewhere else entirely — a
+ * College Board practice figure an admin links, say — without a second code path.
+ */
+export type QuestionFigure = {
+  src: string;
+  /** What the figure shows, in words. Required — see `Question.figure`. */
+  alt: string;
+};
+
 export type Question = {
   id: string;
   exam: ExamId;
@@ -36,6 +50,19 @@ export type Question = {
   difficulty: Difficulty;
   /** Optional reading passage / shared stimulus shown above the prompt. */
   passage?: LocalizedText;
+  /**
+   * A diagram, graph, table or figure the question depends on.
+   *
+   * Text cannot carry a scatterplot. Roughly a fifth of real SAT Math items and
+   * most Problem-Solving and Data Analysis items are built on one, so a bank
+   * without figures cannot hold a representative test however many items it has.
+   *
+   * `alt` is required rather than optional, and not for form's sake: it is what a
+   * screen reader announces, what the AI tutor is given instead of the picture,
+   * and what tells an admin what they are looking at in a list. A figure with no
+   * description is a question some students cannot answer at all.
+   */
+  figure?: QuestionFigure;
   prompt: LocalizedText;
   choices: LocalizedText[];
   /** Index into `choices`. */

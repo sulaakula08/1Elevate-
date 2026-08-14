@@ -3294,3 +3294,82 @@ body[data-exam] .test-foot {
     color: var(--muted);
   }
 }
+
+@layer components {
+  /* ---------------- a question's figure ----------------
+     Bounded by height rather than width: a tall bar chart and a wide scatterplot
+     both have to fit beside a question without pushing the choices off screen,
+     and height is what threatens that. */
+  .q-figure {
+    margin: 0 0 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    text-align: center;
+  }
+  .q-figure img {
+    display: inline-block;
+    max-width: 100%;
+    max-height: 22rem;
+    height: auto;
+    /* Diagrams are line art: smoothing them on upscale turns thin axes grey. */
+    image-rendering: -webkit-optimize-contrast;
+  }
+  /* A figure on a dark theme is usually a white-background PNG from a paper
+     source. Left alone it is a glaring rectangle; a slight dim and a rounded
+     corner make it sit in the page without touching the data in it. */
+  :root[data-theme="dark"] .q-figure img {
+    border-radius: 4px;
+    filter: brightness(0.92);
+  }
+}
+
+@layer components {
+  /* ---------------- figure field (question editor) ---------------- */
+  .fig-field {
+    margin-top: 1rem;
+  }
+  .fig-empty {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.625rem;
+    margin-top: 0.375rem;
+  }
+  .fig-or {
+    font-size: 0.75rem;
+    color: var(--faint);
+  }
+  .fig-url {
+    flex: 1;
+    min-width: 12rem;
+  }
+  /* The figure beside its description, so an author writes the words while
+     looking at the picture rather than from memory. */
+  .fig-have {
+    display: grid;
+    gap: 1rem;
+    margin-top: 0.375rem;
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+  }
+  @media (min-width: 40rem) {
+    .fig-have {
+      grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+  .fig-have img {
+    width: 100%;
+    max-height: 12rem;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #fff;
+  }
+  .fig-have-side {
+    min-width: 0;
+  }
+}

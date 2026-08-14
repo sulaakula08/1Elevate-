@@ -956,3 +956,45 @@ delete from public.custom_questions where trim(coalesce(id, '')) = '';
 alter table public.custom_questions drop constraint if exists custom_questions_id_present;
 alter table public.custom_questions
   add constraint custom_questions_id_present check (length(trim(id)) > 0);
+
+-- ------------------------------------------------------- question figures --
+-- Diagrams, graphs and tables belonging to questions.
+--
+-- Public, unlike feedback-shots. A figure is part of a question every signed-in
+-- student loads, and a signed URL per figure would mean a round trip per image
+-- plus an expiry that could strand a figure mid-test. Nothing private goes in
+-- here: if it is in a question, every student is meant to see it.
+--
+-- Writing is admin-only, and the path convention is <uploader id>/<uuid>, the
+-- same shape the feedback bucket uses, so the policies can key on the folder.
+
+insert into storage.buckets (id, name, public)
+values ('question-figures', 'question-figures', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "figures: read" on storage.objects;
+create policy "figures: read"
+  on storage.objects for select
+  using (bucket_id = 'question-figures');
+
+drop policy if exists "figures: admin writes own folder" on storage.objects;
+create policy "figures: admin writes own folder"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'question-figures'
+    and public.is_admin()
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Replacing a figure means uploading a new one, so update is only needed for the
+-- overwrite case; delete lets an admin tidy up a figure they attached by mistake.
+drop policy if exists "figures: admin manages own folder" on storage.objects;
+create policy "figures: admin manages own folder"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'question-figures'
+    and public.is_admin()
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

@@ -37,6 +37,33 @@ type Props = {
   showExplanation?: boolean;
 };
 
+/**
+ * A question's figure.
+ *
+ * Zoomable by opening it in a new tab rather than with a lightbox of our own: a
+ * student on a small screen needs the browser's pinch and pan, which no modal we
+ * write would match, and a figure is the one thing in a question worth leaving
+ * the page for.
+ */
+export function QuestionFigureView({ question }: { question: Question }) {
+  const figure = question.figure;
+  if (!figure?.src) return null;
+
+  return (
+    <figure className="q-figure">
+      {/* eslint-disable-next-line @next/next/no-img-element --
+          next/image cannot serve these. A figure's URL is whatever an admin
+          attached — our storage bucket, or a host they pasted — and next/image
+          refuses any remote host not listed in next.config, which would turn a
+          pasted figure into a broken question. Nothing is lost: these are already
+          shrunk to 1400px on upload and loaded lazily. */}
+      <img src={figure.src} alt={figure.alt} loading="lazy" />
+      {/* The description is not repeated on screen — it is the alt text, for
+          anyone who cannot see the image. Sighted students have the image. */}
+    </figure>
+  );
+}
+
 export function QuestionPassage({
   question,
   labelled = true,
@@ -45,14 +72,19 @@ export function QuestionPassage({
   labelled?: boolean;
 }) {
   const { tx, t } = useI18n();
-  if (!question.passage) return null;
+  // A figure is a stimulus in its own right: a question can have one with no
+  // passage at all, which is most of Problem-Solving and Data Analysis.
+  if (!question.passage && !question.figure) return null;
 
   return (
     <div className="q-passage-wrap">
-      {labelled && <p className="label-xs mb-2">{t("study.passage")}</p>}
-      <blockquote className="q-passage">
-        <RichText text={tx(question.passage)} block />
-      </blockquote>
+      {labelled && question.passage && <p className="label-xs mb-2">{t("study.passage")}</p>}
+      <QuestionFigureView question={question} />
+      {question.passage && (
+        <blockquote className="q-passage">
+          <RichText text={tx(question.passage)} block />
+        </blockquote>
+      )}
     </div>
   );
 }
@@ -124,6 +156,9 @@ export function QuestionView({
   return (
     <div className={`q-view ${variant === "exam" ? "q-view-exam" : "space-y-5"}`}>
       {showPassage && <QuestionPassage question={question} />}
+
+      {/* When the passage pane is showing, it already carries the figure. */}
+      {!showPassage && <QuestionFigureView question={question} />}
 
       <RichText className="q-prompt" text={tx(question.prompt)} block />
 

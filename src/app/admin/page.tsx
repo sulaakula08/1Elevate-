@@ -3,9 +3,16 @@
 import { useMemo, useRef, useState } from "react";
 import { SUBJECTS, getSubject } from "@/data/exams";
 import { SEED_QUESTIONS } from "@/data";
-import type { Difficulty, ExamId, LocalizedText, Question } from "@/data/types";
+import type {
+  Difficulty,
+  ExamId,
+  LocalizedText,
+  Question,
+  QuestionFigure,
+} from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { findDuplicates } from "@/lib/duplicates";
+import { uploadFigure } from "@/lib/figures";
 import { useI18n } from "@/lib/i18n";
 
 import { domainsFor, skillsFor } from "@/data/taxonomy";
@@ -29,6 +36,8 @@ type Draft = {
   skill: string;
   difficulty: Difficulty;
   passage: LocalizedText;
+  /** A diagram or graph the question needs, and what it shows. */
+  figure?: QuestionFigure;
   prompt: LocalizedText;
   choices: LocalizedText[];
   answer: number;
@@ -87,6 +96,7 @@ function emptyDraft(): Draft {
     skill: RW_FIRST.skills[0],
     difficulty: 1,
     passage: { ...EMPTY_TEXT },
+    figure: undefined,
     prompt: { ...EMPTY_TEXT },
     choices: [{ ...EMPTY_TEXT }, { ...EMPTY_TEXT }, { ...EMPTY_TEXT }, { ...EMPTY_TEXT }],
     answer: 0,
@@ -104,6 +114,7 @@ function toDraft(question: Question): Draft {
     skill: question.skill ?? "",
     difficulty: question.difficulty,
     passage: { ...EMPTY_TEXT, ...(question.passage ?? {}) },
+    figure: question.figure,
     prompt: { ...EMPTY_TEXT, ...question.prompt },
     choices: question.choices.map((c) => ({ ...EMPTY_TEXT, ...c })),
     answer: question.answer,
@@ -137,7 +148,10 @@ function AdminInner() {
    * does not silently cover the next.
    */
   const [duplicateOk, setDuplicateOk] = useState(false);
+  const [figureBusy, setFigureBusy] = useState(false);
+  const [figureError, setFigureError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const figureInput = useRef<HTMLInputElement>(null);
 
   /**
    * Questions already in the bank that look like this one.
@@ -199,6 +213,7 @@ function AdminInner() {
     skill: draft.skill || undefined,
     difficulty: draft.difficulty,
     passage: draft.passage.en.trim() ? draft.passage : undefined,
+    figure: draft.figure,
     prompt: draft.prompt,
     choices: previewChoices.length > 0 ? previewChoices : [{ en: "—" }],
     answer: Math.max(0, Math.min(draft.answer, previewChoices.length - 1)),
@@ -259,6 +274,13 @@ function AdminInner() {
     skill: draft.skill || undefined,
       difficulty: draft.difficulty,
       passage: draft.passage.en.trim() ? clean(draft.passage) : undefined,
+      // A figure with no description is dropped rather than saved half-made: the
+      // description is what a screen reader and the tutor are given instead of
+      // the picture, so a figure without one is unusable for some students.
+      figure:
+        draft.figure?.src && draft.figure.alt.trim()
+          ? { src: draft.figure.src, alt: draft.figure.alt.trim() }
+          : undefined,
       prompt: clean(draft.prompt),
       choices: choices.map(clean),
       answer: Math.min(draft.answer, choices.length - 1),
@@ -499,6 +521,111 @@ function AdminInner() {
             value={draft.prompt.en}
             onChange={(e) => setText("prompt", e.target.value)}
           />
+          {/* ---------------- the figure ----------------
+              A question can depend on a picture — a scatterplot, a right triangle,
+              a two-way table — and no amount of prose substitutes for one. About a
+              fifth of real Math items have one, so a bank without figures cannot
+              hold a representative test at any size.
+
+              Two ways in, because admins have both: upload a file, or paste a URL
+              from wherever the figure already lives. The description is not
+              optional: it is what a screen reader announces and what the tutor is
+              given instead of the image. */}
+          <div className="fig-field">
+            <span className="label">{t("admin.figure")}</span>
+
+            {draft.figure?.src ? (
+              <div className="fig-have">
+                {/* eslint-disable-next-line @next/next/no-img-element --
+                    same reason as the player: the host is whatever the admin
+                    attached, and next/image would refuse an unlisted one. */}
+                <img src={draft.figure.src} alt={draft.figure.alt || t("admin.figureNoAlt")} />
+                <div className="fig-have-side">
+                  <label className="block">
+                    <span className="label">{t("admin.figureAlt")}</span>
+                    <input
+                      className="field"
+                      value={draft.figure.alt}
+                      placeholder={t("admin.figureAltPlaceholder")}
+                      onChange={(event) =>
+                        setDraft((previous) => ({
+                          ...previous,
+                          figure: { src: previous.figure?.src ?? "", alt: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                  {!draft.figure.alt.trim() && (
+                    <p className="text-2xs mt-1.5" style={{ color: "var(--warning)" }}>
+                      {t("admin.figureAltNeeded")}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-sm mt-3"
+                    onClick={() => setDraft((previous) => ({ ...previous, figure: undefined }))}
+                  >
+                    {t("admin.figureRemove")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="fig-empty">
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={figureBusy}
+                  onClick={() => figureInput.current?.click()}
+                >
+                  {figureBusy ? t("admin.figureUploading") : t("admin.figureAdd")}
+                </button>
+                <input
+                  ref={figureInput}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (!file) return;
+                    setFigureBusy(true);
+                    setFigureError(null);
+                    try {
+                      const { src } = await uploadFigure(file);
+                      setDraft((previous) => ({ ...previous, figure: { src, alt: "" } }));
+                    } catch (uploadError) {
+                      setFigureError(
+                        uploadError instanceof Error ? uploadError.message : t("admin.figureFailed"),
+                      );
+                    } finally {
+                      setFigureBusy(false);
+                    }
+                  }}
+                />
+
+                <span className="fig-or">{t("admin.figureOr")}</span>
+
+                <input
+                  className="field fig-url"
+                  placeholder={t("admin.figureUrl")}
+                  onPaste={(event) => {
+                    const pasted = event.clipboardData.getData("text").trim();
+                    if (!/^https?:\/\//.test(pasted)) return;
+                    event.preventDefault();
+                    setDraft((previous) => ({ ...previous, figure: { src: pasted, alt: "" } }));
+                  }}
+                />
+              </div>
+            )}
+
+            {figureError && (
+              <p className="text-2xs mt-2" style={{ color: "var(--danger)" }}>
+                {figureError}
+              </p>
+            )}
+            <p className="text-2xs text-muted mt-2">{t("admin.figureHint")}</p>
+          </div>
+
           {/* Where authors need it: beside the field they are pasting into. */}
           <p className="text-micro leading-relaxed text-muted mt-2">
             {t("admin.mathHint")}
