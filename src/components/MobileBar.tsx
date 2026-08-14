@@ -9,6 +9,7 @@ import { Logo } from "./Logo";
 import { NotificationsBell } from "./NotificationsBell";
 import { ThemeToggle } from "./ThemeToggle";
 import { useClosedHrefs } from "./SectionGate";
+import { useUnreleasedHrefs } from "@/lib/unreleased";
 import {
   NavAdmin,
   NavCommunity,
@@ -73,8 +74,11 @@ export function MobileTabs() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const closed = useClosedHrefs();
+  const unreleased = useUnreleasedHrefs();
   const staff = Boolean(account && account.role !== "student");
-  const tabs = TABS.filter(({ href }) => staff || !closed.has(href));
+  const tabs = TABS.filter(
+    ({ href }) => (staff || !closed.has(href)) && !unreleased.has(href),
+  );
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);

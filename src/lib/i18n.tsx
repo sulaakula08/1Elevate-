@@ -199,6 +199,15 @@ const D: Dict = {
   "settings.confirmSignOutBody": { en: "You will be signed out on this device. Your synced history comes back the next time you sign in.",
   },
 
+  /* ---------------- not launched yet ---------------- */
+  "soon.title": { en: "Community is coming soon" },
+  "soon.body": { en: "We are still building it. When it opens you will be able to compare explanations, ask about a question you are stuck on, and see how other people worked it out.",
+  },
+  "soon.home": { en: "Back to dashboard" },
+  "soon.badge": { en: "Soon" },
+  "soon.staffNotice": { en: "Not public yet — students cannot open this section. You can see it because you are staff.",
+  },
+
   "nav.darkMode": { en: "Dark theme" },
   "nav.lightMode": { en: "Light theme" },
 
@@ -458,6 +467,12 @@ const D: Dict = {
   "home.nextPendingMeta": { en: "Nothing to practise here yet. See what other students are working on while the first questions land.",
   },
   "home.nextPendingCta": { en: "Open Community" },
+  /* The same empty-bank state for a student who has no community to be sent to.
+     Pointing them at a section they cannot open would be the one dead end on
+     the dashboard, and it would land on the day the app has least to offer. */
+  "home.nextPendingAloneMeta": { en: "Nothing to practise here yet. The first questions are on their way — this is where they will appear.",
+  },
+  "home.nextPendingAloneCta": { en: "Check your progress" },
   "home.actGoalMet": { en: "daily goal met" },
   "home.actGoalToday": { en: "today" },
   "home.actStreak": { en: "day streak" },

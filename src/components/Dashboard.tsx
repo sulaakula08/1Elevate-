@@ -12,11 +12,13 @@ import { CountUp, ProgressBar, Reveal } from "./motion";
 import { ExamCountdown } from "./dashboard/ExamCountdown";
 import { StudyActivity } from "./dashboard/StudyActivity";
 import { CommunityPreview } from "./community/CommunityPreview";
+import { useUnreleasedHrefs } from "@/lib/unreleased";
 
 /** Slightly darker second stop, so each card is a gradient of its own hue. */
 export function Dashboard({ account }: { account: Account }) {
   const { t, tx } = useI18n();
   const { data, bank } = useApp();
+  const communityHidden = useUnreleasedHrefs().has("/community");
 
   const exam = SAT.exam;
   const examAttempts = data.attempts.filter((a) => a.exam === exam);
@@ -104,12 +106,23 @@ export function Dashboard({ account }: { account: Account }) {
             href: "/practice",
           }
         : data.mocks.length === 0 && totals.total === 0
-          ? {
-              title: t("home.nextPending"),
-              meta: t("home.nextPendingMeta"),
-              cta: t("home.nextPendingCta"),
-              href: "/community",
-            }
+          ? // The empty-bank state used to send the student to Community, which
+            // is the one place they now cannot go. Sent to their own progress
+            // instead — a dead end on the day the app has least to show is the
+            // worst possible one.
+            communityHidden
+            ? {
+                title: t("home.nextPending"),
+                meta: t("home.nextPendingAloneMeta"),
+                cta: t("home.nextPendingAloneCta"),
+                href: "/progress",
+              }
+            : {
+                title: t("home.nextPending"),
+                meta: t("home.nextPendingMeta"),
+                cta: t("home.nextPendingCta"),
+                href: "/community",
+              }
           : {
               title: t("home.nextMock"),
               meta: t("home.nextMockMeta"),
@@ -326,8 +339,11 @@ export function Dashboard({ account }: { account: Account }) {
         </section>
       )}
 
-      {/* ---------------- level 5: social signal ---------------- */}
-      <CommunityPreview />
+      {/* ---------------- level 5: social signal ----------------
+          Gone entirely until community launches. A preview of a feed nobody can
+          open is an advert with a dead link on the end of it, and every row in
+          it goes to /community. */}
+      {!communityHidden && <CommunityPreview />}
     </div>
   );
 }

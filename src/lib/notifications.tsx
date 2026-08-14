@@ -5,6 +5,7 @@ import { useApp } from "./app-state";
 import { useI18n } from "./i18n";
 import { useCommunity } from "./community-state";
 import { useSettings } from "./settings";
+import { useUnreleasedHrefs } from "./unreleased";
 import { loadSeenNotifications, saveSeenNotifications } from "./storage";
 import { reviewQueue, streak } from "./stats";
 
@@ -42,6 +43,7 @@ export function useNotifications() {
   const { account, data, bank } = useApp();
   const { posts } = useCommunity();
   const { settings } = useSettings();
+  const communityHidden = useUnreleasedHrefs().has("/community");
 
   const [seenAt, setSeenAt] = useState(0);
 
@@ -58,8 +60,12 @@ export function useNotifications() {
     /* ---------------- community ----------------
        Replies to posts this account wrote. Matched on the author id, so a post
        from before ids were carried simply does not match — better than guessing
-       from a display name two students could share. */
-    for (const post of posts) {
+       from a display name two students could share.
+
+       Skipped wholesale while community is unreleased: every one of these links
+       to /community, and a notification a student cannot follow is worse than no
+       notification — it advertises a section, then refuses them at the door. */
+    for (const post of communityHidden ? [] : posts) {
       if (post.author.id !== account.id) continue;
       for (const comment of post.comments) {
         if (comment.author.id === account.id) continue;
@@ -127,7 +133,7 @@ export function useNotifications() {
     }
 
     return out.sort((a, b) => b.at - a.at).slice(0, 30);
-  }, [account, bank, data, posts, settings.notifications, t]);
+  }, [account, bank, communityHidden, data, posts, settings.notifications, t]);
 
   const unread = useMemo(() => items.filter((item) => item.at > seenAt).length, [items, seenAt]);
 

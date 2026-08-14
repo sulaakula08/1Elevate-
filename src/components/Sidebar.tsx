@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SAT } from "@/data/exams";
+import { UNRELEASED_HREFS } from "@/lib/sections";
 import type { Account } from "@/lib/storage";
 import { useI18n } from "@/lib/i18n";
 import { Logo } from "./Logo";
 import { useClosedHrefs } from "./SectionGate";
+import { useUnreleasedHrefs } from "@/lib/unreleased";
 import {
   NavAdmin,
   NavCommunity,
@@ -62,6 +64,8 @@ export function Sidebar({
   const { t, tx } = useI18n();
   const pathname = usePathname();
   const closed = useClosedHrefs();
+  // Empty for staff, so only students lose the entry.
+  const unreleased = useUnreleasedHrefs();
   const staff = account.role !== "student";
 
   const isActive = (href: string) =>
@@ -69,8 +73,9 @@ export function Sidebar({
 
   const renderGroup = (items: Item[]) =>
     items
-      // A student is not shown a way into a section that will refuse them.
-      .filter(({ href }) => staff || !closed.has(href))
+      // A student is not shown a way into a section that will refuse them —
+      // whether it is shut for maintenance or has not launched at all.
+      .filter(({ href }) => (staff || !closed.has(href)) && !unreleased.has(href))
       .map(({ href, key, Icon }) => (
         <Link
           key={href}
@@ -84,6 +89,13 @@ export function Sidebar({
           {/* Staff see what they closed, from wherever they are. */}
           {closed.has(href) && !collapsed && (
             <span className="side-closed" title={t("closed.title")} aria-hidden />
+          )}
+          {/* And which of the doors in their rail are theirs alone. Only staff
+              ever render this — for anyone else the link is gone entirely. */}
+          {href in UNRELEASED_HREFS && !collapsed && (
+            <span className="side-soon" title={t("soon.staffNotice")}>
+              {t("soon.badge")}
+            </span>
           )}
         </Link>
       ));

@@ -1778,6 +1778,21 @@ p {
     background: var(--warning);
     flex-shrink: 0;
   }
+  /* "Soon": a word, where closed gets a dot. Only staff ever see this, and it
+     is telling them something a dot cannot — not that this section is off, but
+     that they are the only ones who can see it at all. */
+  .side-soon {
+    margin-left: auto;
+    padding: 0.0625rem 0.375rem;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.13);
+    color: var(--sidebar-fg);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
   /* Exam switcher: small tabs, like a segmented control. */
   .exam-tabs {
     display: flex;
@@ -2486,6 +2501,19 @@ body[data-exam] .notif-dock {
   border-radius: var(--radius-pill);
   background: var(--warning-soft);
   color: var(--warning);
+}
+/* The same badge in the brand hue rather than the warning one: "not yet" is an
+   announcement, not a fault, and amber on this screen would tell the student
+   something has gone wrong when nothing has. */
+.soon-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-pill);
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 @layer components {
   /* ---------------- select ----------------

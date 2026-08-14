@@ -11,13 +11,20 @@ import { ComposerModal } from "@/components/community/ComposerModal";
 import { PostCard } from "@/components/community/PostCard";
 import { EmptyFeedState } from "@/components/community/EmptyFeedState";
 import { SectionGate } from "@/components/SectionGate";
+import { ComingSoonGate } from "@/components/ComingSoon";
 
 export default function CommunityPage() {
   return (
     <RequireAccount>
-      <SectionGate section="community">
-        <CommunityInner />
-      </SectionGate>
+      {/* Two gates, outermost first. "Not launched" is the stronger statement —
+          a student turned away here should be told the section is coming, not
+          that it is temporarily down — and it is the one the owner's
+          maintenance switch cannot override. */}
+      <ComingSoonGate section="community">
+        <SectionGate section="community">
+          <CommunityInner />
+        </SectionGate>
+      </ComingSoonGate>
     </RequireAccount>
   );
 }
