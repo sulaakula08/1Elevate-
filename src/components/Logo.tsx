@@ -11,10 +11,18 @@
  * 1.8 units of air between them, and the smallest detail — the gap under the
  * flag — is still 2.7px at navbar size.
  *
- * One SVG serves both themes. The climb resolves from `--brand`, which each
- * theme redefines, and the numeral takes `currentColor` from whatever it sits
- * in — so switching theme repaints in place with no second asset to swap and
- * nothing to shift. The mark is decorative: `Logo` carries the text label.
+ * One SVG serves both themes. The climb resolves from `--brand` and the numeral
+ * takes `currentColor` from whatever it sits in — so switching theme repaints in
+ * place with no second asset to swap and nothing to shift. The mark is
+ * decorative: `Logo` carries the text label.
+ *
+ * Neither colour is set here, and that is the point. The mark used to hard-code
+ * `text-foreground` on itself, which is a Tailwind utility and therefore beats
+ * the rail's own `color` rule a cascade layer below it. --foreground follows the
+ * theme, the rail no longer does, so in light mode the numeral came out dark on
+ * a dark rail — the 1 all but disappearing out of its own wordmark. Inheriting
+ * lets each host say what the mark sits on: white on the rail, page foreground
+ * everywhere else.
  */
 export function LogoMark({ size = 26, className = "" }: { size?: number; className?: string }) {
   return (
@@ -32,7 +40,7 @@ export function LogoMark({ size = 26, className = "" }: { size?: number; classNa
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <LogoMark size={24} className="text-foreground shrink-0" />
+      <LogoMark size={24} className="shrink-0" />
       {compact ? (
         // The mark alone is not a name. Call sites that wrap it in a labelled
         // link already win the name computation; this is for the ones that don't.
