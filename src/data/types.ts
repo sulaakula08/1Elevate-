@@ -71,6 +71,15 @@ export type Question = {
   /** True for questions created in the admin editor (stored in the browser). */
   custom?: boolean;
   /**
+   * A draft being tried out on this device and nowhere else.
+   *
+   * Set only by the generator's "keep locally" path. Nothing writes it to the
+   * database — the flag exists so every surface that shows a question can say
+   * plainly that this one is not in the bank, and so the drafts can be told
+   * apart from real items when it is time to clear them out.
+   */
+  local?: boolean;
+  /**
    * Provenance for the admin dashboard: who wrote the item and when. Both come
    * from the database and are absent on seed questions, so treat them as
    * display-only — nothing schedules or scores on them.

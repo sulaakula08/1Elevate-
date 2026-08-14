@@ -19,12 +19,14 @@ import {
   ensureDataEpoch,
   ensureVersion,
   loadCustomQuestions,
+  loadLocalDrafts,
   loadTheme,
   loadUserData,
   migrateKeys,
   purgeLegacyAccounts,
   resetEverything,
   saveCustomQuestions,
+  saveLocalDrafts,
   saveTheme,
   saveUserData,
 } from "./storage";
@@ -57,6 +59,7 @@ type ProfileResponse = {
     grade: string | null;
     role: "student" | "admin";
     targetScore: number;
+    avatarUrl?: string;
   };
 };
 
@@ -94,6 +97,15 @@ type Ctx = {
   deleteQuestions: (ids: string[]) => void;
   replaceCustomQuestions: (questions: Question[]) => void;
 
+  /* ---------------- local AI drafts ----------------
+     Kept out of the database on purpose: these are questions an admin is still
+     deciding about, and the way to decide is to meet one in practice rather
+     than to read it in a review card. */
+  localDrafts: Question[];
+  keepLocally: (question: Question) => void;
+  dropLocalDraft: (id: string) => void;
+  clearLocalDrafts: () => void;
+
   resetAll: () => void;
 };
 
@@ -105,6 +117,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [account, setAccount] = useState<Account | null>(null);
   const [data, setData] = useState<UserData>(EMPTY_USER_DATA);
   const [custom, setCustom] = useState<Question[]>([]);
+  /** Read from localStorage after mount, like every other stored preference. */
+  const [localDrafts, setLocalDrafts] = useState<Question[]>([]);
   /**
    * Seeded from what the boot script already decided, not from a guess.
    *
@@ -137,6 +151,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       role: p.role,
       createdAt: Date.now(),
       targetScore: p.targetScore,
+      avatarUrl: p.avatarUrl ?? "",
     };
   }, []);
 
@@ -154,6 +169,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // The pre-Supabase browser profiles go here, once.
     purgeLegacyAccounts();
     setCustom(loadCustomQuestions());
+    // Unlike the custom bank, these are never refetched or replaced — this read
+    // is the only place they come from.
+    setLocalDrafts(loadLocalDrafts());
 
     const applied = document.documentElement.dataset.theme;
     setTheme(loadTheme() ?? (applied === "dark" ? "dark" : "light"));
@@ -240,7 +258,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("online", flush);
   }, [accountId]);
 
-  const bank = useMemo(() => [...SEED_QUESTIONS, ...custom], [custom]);
+  /*
+   * Seed, database, then whatever is being tried out here.
+   *
+   * Local drafts join the bank rather than sitting in a preview pane, because
+   * the questions worth testing are exactly the ones a card cannot answer for:
+   * whether a generated chart survives a phone-width column, whether a passage
+   * is too long once the timer is running, whether four choices fit. Last in the
+   * list, so an id collision with a real question resolves to the real one.
+   */
+  const bank = useMemo(
+    () => [...SEED_QUESTIONS, ...custom, ...localDrafts],
+    [custom, localDrafts],
+  );
 
   /**
    * Always derive the next value from the previous state. `recordAttempts` and
@@ -303,6 +333,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           name: patch.name,
           grade: patch.grade,
           targetScore: patch.targetScore,
+          avatarUrl: patch.avatarUrl,
         }),
       });
     },
@@ -342,6 +373,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCustom(next);
     saveCustomQuestions(next);
   }, []);
+
+  /* ---------------- local AI drafts ---------------- */
+
+  const persistLocalDrafts = useCallback((next: Question[]) => {
+    setLocalDrafts(next);
+    saveLocalDrafts(next);
+  }, []);
+
+  /**
+   * Park a generated draft in this browser's bank and nowhere else.
+   *
+   * Given its own id namespace so it can never be mistaken for a database row,
+   * and stamped `local` so every surface that renders it can say what it is.
+   */
+  const keepLocally = useCallback<Ctx["keepLocally"]>(
+    (question) => {
+      const draft: Question = {
+        ...question,
+        id: `local-${crypto.randomUUID()}`,
+        custom: true,
+        local: true,
+        createdAt: question.createdAt ?? Date.now(),
+      };
+      setLocalDrafts((previous) => {
+        const next = [...previous, draft];
+        saveLocalDrafts(next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const dropLocalDraft = useCallback<Ctx["dropLocalDraft"]>((id) => {
+    setLocalDrafts((previous) => {
+      const next = previous.filter((question) => question.id !== id);
+      saveLocalDrafts(next);
+      return next;
+    });
+  }, []);
+
+  const clearLocalDrafts = useCallback(() => persistLocalDrafts([]), [persistLocalDrafts]);
 
   /** Pulls the shared bank back from the database and replaces the cache. */
   const refreshBank = useCallback(async () => {
@@ -493,6 +565,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteQuestion,
     deleteQuestions,
     replaceCustomQuestions: replaceCustom,
+    localDrafts,
+    keepLocally,
+    dropLocalDraft,
+    clearLocalDrafts,
     resetAll,
   };
 

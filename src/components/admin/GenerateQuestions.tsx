@@ -6,7 +6,7 @@ import { domainsFor, skillsFor } from "@/data/taxonomy";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { apiFetch } from "@/lib/supabase/client";
-import { RichText } from "@/lib/math/markdown";
+import { QuestionView } from "@/components/QuestionView";
 
 /**
  * Drafting questions with the model, then reviewing them one at a time.
@@ -34,7 +34,8 @@ const MIN_ATTEMPTS = 30;
 type Draft = Question & { keep: boolean };
 
 export function GenerateQuestions() {
-  const { bank, data, saveQuestion } = useApp();
+  const { bank, data, saveQuestion, localDrafts, keepLocally, dropLocalDraft, clearLocalDrafts } =
+    useApp();
   const subjects = subjectsFor("sat");
 
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "sat-rw");
@@ -272,36 +273,27 @@ export function GenerateQuestions() {
                 {draft.skill ? ` · ${draft.skill}` : ""} · difficulty {draft.difficulty}
               </p>
 
-              {draft.passage?.en && (
-                <div className="mt-2 text-[14px] cm-quote">
-                  <RichText text={draft.passage.en} block />
-                </div>
-              )}
-
-              <div className="mt-2 text-[15px]">
-                <RichText text={draft.prompt.en ?? ""} block />
+              {/*
+                The draft as a student will actually see it, rendered by the
+                component the player uses — the same block the hand-written
+                editor shows, and for the same reason. The hand-rolled preview
+                that used to be here listed the prompt and four lines of choices,
+                which is enough to check the wording and nothing else: it did not
+                draw the figure at all, so the one thing a generated Math item
+                most needs checking for was the one thing it could not show.
+              */}
+              <div className="mt-3 rounded-[var(--radius-sm)] border p-4">
+                <QuestionView
+                  question={draft}
+                  selected={draft.answer}
+                  onSelect={() => {}}
+                  revealed
+                  disabled
+                  keyboard={false}
+                />
               </div>
 
-              <ol className="mt-2 space-y-1 text-[14px]">
-                {draft.choices.map((choice, i) => (
-                  <li
-                    key={i}
-                    className={i === draft.answer ? "text-success font-medium" : "text-muted"}
-                  >
-                    {String.fromCharCode(65 + i)}. <RichText text={choice.en ?? ""} />
-                    {i === draft.answer && " ✓"}
-                  </li>
-                ))}
-              </ol>
-
-              <details className="mt-2">
-                <summary className="text-[13px] text-muted cursor-pointer">Explanation</summary>
-                <div className="mt-1 text-[13.5px] text-muted">
-                  <RichText text={draft.explanation.en ?? ""} block />
-                </div>
-              </details>
-
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   className="btn btn-sm btn-primary"
@@ -309,6 +301,26 @@ export function GenerateQuestions() {
                   onClick={() => void keepDraft(draft)}
                 >
                   {savingId === draft.id ? "Saving…" : "Add to bank"}
+                </button>
+                {/*
+                  The middle option the generator was missing. Reading a draft in
+                  a card tells you whether the English is right; it cannot tell
+                  you whether the chart is legible at 360px, whether the passage
+                  still fits once a timer is running, or whether the explanation
+                  reads as an explanation after you have got the item wrong. This
+                  puts it in this browser's bank so it can be sat like any other
+                  question — and in no database, so trying one out costs nothing
+                  and commits nothing.
+                */}
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    keepLocally(draft);
+                    setDrafts((current) => current.filter((d) => d.id !== draft.id));
+                  }}
+                >
+                  Test locally
                 </button>
                 <button
                   type="button"
@@ -323,6 +335,51 @@ export function GenerateQuestions() {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* ---------------- what is being tried out ----------------
+          Visible whenever there is anything in it, and never collapsed away: a
+          question that is in the bank on this machine and in no other is exactly
+          the kind of thing that gets forgotten, and then turns up in a mock six
+          weeks later looking like a database fault. */}
+      {localDrafts.length > 0 && (
+        <div className="mt-10 pt-6 border-t">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h3 className="text-[15px] font-semibold">
+              Testing locally · <span className="num">{localDrafts.length}</span>
+            </h3>
+            <button type="button" className="btn btn-sm ml-auto" onClick={clearLocalDrafts}>
+              Clear all
+            </button>
+          </div>
+
+          <p className="mt-1.5 text-[12.5px] text-muted">
+            In this browser only — not in the database, and gone for everyone else. They appear in
+            practice and mock tests here so you can sit them; clear them when you are done, or they
+            will keep turning up in your own results.
+          </p>
+
+          <ul className="mt-4 space-y-2">
+            {localDrafts.map((draft) => (
+              <li key={draft.id} className="flex items-baseline gap-3 py-2 border-b text-[13.5px]">
+                <span className="text-[12px] text-faint shrink-0">
+                  {draft.subjectId === "sat-math" ? "Math" : "R&W"} · d{draft.difficulty}
+                  {draft.figure ? " · figure" : ""}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-muted">
+                  {draft.prompt.en ?? ""}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-sm shrink-0"
+                  onClick={() => dropLocalDraft(draft.id)}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

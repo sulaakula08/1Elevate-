@@ -26,6 +26,14 @@ export type Account = {
   createdAt: number;
   /** Score the student is aiming for, on the 400–1600 scale. */
   targetScore: number;
+  /**
+   * Public URL of the profile picture, or "" for none.
+   *
+   * Empty rather than optional so every reader has one case to handle: a
+   * database without the avatars migration returns "" exactly like a student who
+   * has not chosen a photo, and neither is a special path.
+   */
+  avatarUrl?: string;
 };
 
 export type QuizMode = "practice" | "mock" | "review";
@@ -94,6 +102,14 @@ const K = {
   accounts: `${NS}.accounts`,
   session: `${NS}.session`,
   custom: `${NS}.customQuestions`,
+  /**
+   * AI drafts kept for testing, on this device only.
+   *
+   * Its own key rather than a flag inside `custom`, because the custom bank is
+   * replaced outright by the server on every boot — the database is the record
+   * there, so anything parked in it to "try later" is gone by the next reload.
+   */
+  localDrafts: `${NS}.localDrafts`,
   theme: `${NS}.theme`,
   tour: `${NS}.tourDone`,
   sidebar: `${NS}.sidebarCollapsed`,
@@ -255,6 +271,21 @@ export function loadCustomQuestions(): Question[] {
 
 export function saveCustomQuestions(questions: Question[]) {
   write(K.custom, questions);
+}
+
+/* ---------------- local AI drafts ----------------
+   Questions an admin is trying out before deciding whether the bank should have
+   them. They join the bank in this browser so a draft can be practised, sat in a
+   mock and read on a phone-width screen like any other item — which is the only
+   way to find out whether a generated figure is legible or a passage is too long
+   — and they are never sent anywhere. */
+
+export function loadLocalDrafts(): Question[] {
+  return read<Question[]>(K.localDrafts, []);
+}
+
+export function saveLocalDrafts(questions: Question[]) {
+  write(K.localDrafts, questions);
 }
 
 /* ---------------- theme ---------------- */
