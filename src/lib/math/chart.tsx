@@ -18,9 +18,29 @@
  *   series: Argentina = 66, 67, 80
  *   series: Brazil = 21, 16, 34
  *   ```
+ *
+ * A table is the same block with `type: table`, and it earns its own kind rather
+ * than being a chart drawn as a grid. Two-way tables are everywhere on the real
+ * test — most "which choice most effectively uses data from the table" items and
+ * a good part of Problem-Solving and Data Analysis are built on one — and a table
+ * is text, so it belongs in a real <table> that a screen reader can navigate by
+ * row and column, not in an SVG that reads as one opaque image:
+ *
+ *   ```chart
+ *   type: table
+ *   title: Students by year and subject
+ *   col: Year, Physics, Biology, Total
+ *   row: 2022, 34, 51, 85
+ *   row: 2023, 41, 47, 88
+ *   ```
+ *
+ * Cells stay strings rather than being coerced to numbers: a real table holds
+ * "12%", "1,240" and "—" beside its integers, and parsing those into NaN would
+ * lose exactly the cell a question turns on. A cell containing a comma is quoted,
+ * because the cell separator and the thousands separator are the same character.
  */
 
-export type ChartKind = "line" | "bar" | "scatter";
+export type ChartKind = "line" | "bar" | "scatter" | "table";
 
 export type ChartSeries = { name: string; values: (number | null)[] };
 
@@ -31,9 +51,41 @@ export type ChartSpec = {
   xLabel?: string;
   yLabel?: string;
   series: ChartSeries[];
+  /** Table only: the header row, then the body rows, as written. */
+  columns?: string[];
+  rows?: string[][];
 };
 
-const KINDS: ChartKind[] = ["line", "bar", "scatter"];
+const KINDS: ChartKind[] = ["line", "bar", "scatter", "table"];
+
+/**
+ * Splits a comma-separated line into cells, respecting double quotes.
+ *
+ * Needed because the separator and the thousands separator are the same
+ * character: `row: Astana, 1,240` would otherwise become three cells and put
+ * "240" in the next column. A quoted cell — `row: Astana, "1,240"` — is one
+ * cell, and the quotes are not part of the value.
+ */
+function splitCells(value: string): string[] {
+  const cells: string[] = [];
+  let current = "";
+  let quoted = false;
+
+  for (const character of value) {
+    if (character === '"') {
+      quoted = !quoted;
+      continue;
+    }
+    if (character === "," && !quoted) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += character;
+  }
+  cells.push(current.trim());
+  return cells;
+}
 
 /** Returns null when the block is not a usable chart, so the caller can fall back. */
 export function parseChart(source: string): ChartSpec | null {
@@ -68,6 +120,13 @@ export function parseChart(source: string): ChartSpec | null {
       case "ylabel":
         spec.yLabel = value;
         break;
+      case "col":
+      case "columns":
+        spec.columns = splitCells(value);
+        break;
+      case "row":
+        (spec.rows ??= []).push(splitCells(value));
+        break;
       case "series": {
         // `name = 1, 2, 3`. A series with no name is still plotted, because a
         // single-series chart rarely needs a legend entry.
@@ -87,6 +146,17 @@ export function parseChart(source: string): ChartSpec | null {
       default:
         break;
     }
+  }
+
+  // A table is complete without any series, and a chart is nothing without one.
+  if (spec.kind === "table") {
+    const rows = spec.rows ?? [];
+    if (rows.length === 0) return null;
+    // Ragged rows are padded rather than rejected: a missing trailing cell is a
+    // typo an author can see and fix, while a dropped table is a broken question.
+    const width = Math.max(spec.columns?.length ?? 0, ...rows.map((row) => row.length));
+    spec.rows = rows.map((row) => [...row, ...Array(Math.max(0, width - row.length)).fill("")]);
+    return spec;
   }
 
   if (spec.series.length === 0) return null;
@@ -149,7 +219,58 @@ function Marker({ shape, x, y }: { shape: (typeof MARKERS)[number]; x: number; y
 const W = 460;
 const H = 300;
 
+/**
+ * A table figure.
+ *
+ * A real <table> with a <caption> and header cells, so a screen reader can
+ * announce "row 3, Biology, 47" instead of describing a picture, and so the
+ * numbers can be selected and copied — which is what a student does with a table
+ * they are working from.
+ */
+function TableView({ spec }: { spec: ChartSpec }) {
+  const rows = spec.rows ?? [];
+  return (
+    <div className="ch-table-wrap">
+      <table className="ch-table">
+        {spec.title && <caption className="ch-table-caption">{spec.title}</caption>}
+        {spec.columns && spec.columns.length > 0 && (
+          <thead>
+            <tr>
+              {spec.columns.map((column, i) => (
+                <th key={i} scope="col">
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+        )}
+        <tbody>
+          {rows.map((row, r) => (
+            <tr key={r}>
+              {row.map((cell, c) =>
+                // The first cell of a row labels it, which is what makes a
+                // two-way table navigable rather than a grid of loose numbers.
+                c === 0 ? (
+                  <th key={c} scope="row">
+                    {cell}
+                  </th>
+                ) : (
+                  <td key={c} className="num">
+                    {cell}
+                  </td>
+                ),
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function ChartView({ spec }: { spec: ChartSpec }) {
+  if (spec.kind === "table") return <TableView spec={spec} />;
+
   const { kind, categories, series } = spec;
 
   const all = series.flatMap((s) => s.values.filter((v): v is number => v !== null));

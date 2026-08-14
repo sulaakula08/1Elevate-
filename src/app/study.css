@@ -3373,3 +3373,53 @@ body[data-exam] .test-foot {
     min-width: 0;
   }
 }
+
+@layer components {
+  /* ---------------- table figures ----------------
+     Ruled, not boxed: the SAT's own tables are hairlines and whitespace, and a
+     heavy grid makes a five-column table look like a spreadsheet. */
+  .ch-table-wrap {
+    margin: 1rem 0;
+    /* A wide table scrolls inside its own box rather than widening the question
+       column, which on a two-pane reading layout would push the choices off. */
+    overflow-x: auto;
+  }
+  .ch-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.875rem;
+  }
+  .ch-table-caption {
+    caption-side: top;
+    padding-bottom: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: left;
+    color: var(--foreground);
+  }
+  .ch-table th,
+  .ch-table td {
+    padding: 0.4375rem 0.75rem;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    white-space: nowrap;
+  }
+  .ch-table thead th {
+    border-bottom: 1px solid var(--line-strong);
+    font-weight: 600;
+    color: var(--muted);
+  }
+  /* Numbers right-aligned and tabular, so a column of them can be compared by
+     eye — which is the entire task in a data question. */
+  .ch-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .ch-table tbody th {
+    font-weight: 500;
+  }
+  .ch-table tbody tr:last-child th,
+  .ch-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}

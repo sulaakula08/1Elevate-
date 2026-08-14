@@ -93,9 +93,20 @@ ${request.wantFigures ? `- A question may carry a figure, and some skills need o
   \`\`\`
 
   "type" is line, bar or scatter. One "series" line per data set; a blank value is a gap. Invent your own scenario and your own numbers — never transcribe a figure from a real exam.
+- A table is the same block with "type: table", which is what most data questions on the real test actually show:
+
+  \`\`\`chart
+  type: table
+  title: Students enrolled by year
+  col: Year, Physics, Biology, Total
+  row: 2022, 34, 51, 85
+  row: 2023, 41, 47, 88
+  \`\`\`
+
+  Cells may hold text as well as numbers, and the first cell of a row labels it. A cell containing a comma must be quoted — row: Almaty, "1,240" — because a bare comma separates cells. Prefer a table over a chart when the question turns on reading an exact value, and a chart when it turns on a trend or a comparison.
 - Only include a figure when the skill genuinely requires reading one. A question that can be asked in a sentence must be asked in a sentence.
 - Anything the figure does not show must be stated in words: a question can only be answered from the figure plus the stem.
-- No other images or diagrams. Geometry figures are not supported yet, so do not write a question that needs one.` : "- Every question must be answerable from text alone: no images, diagrams, graphs or tables."}
+- No other images or diagrams. Geometry figures — triangles, circles, coordinate diagrams — are not supported yet, so do not write a question that needs one; a geometry item has to state its measurements in words instead.` : "- Every question must be answerable from text alone: no images, diagrams, graphs or tables."}
 - "explanation" teaches the rule that makes the answer work, in two to four sentences, so it transfers to the next question. Write math as plain text: / for division, ^ for powers, no LaTeX.
 
 Subject matter — this is where the exam's character comes from, so follow it closely:
