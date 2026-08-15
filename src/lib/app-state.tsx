@@ -66,6 +66,12 @@ type ProfileResponse = {
 type Ctx = {
   /** False until localStorage has been read (avoids SSR/hydration mismatches). */
   ready: boolean;
+  /**
+   * An identity change is in flight: signing in, signing out, or restoring a
+   * session. Distinct from `ready`, which only ever answers "has the first
+   * check finished" and stays true through every change after it.
+   */
+  authBusy: boolean;
   /** True once the shared question bank has either loaded or definitively failed. */
   bankReady: boolean;
   account: Account | null;
@@ -113,6 +119,17 @@ const AppContext = createContext<Ctx | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
+  /*
+   * True from the moment an identity starts changing until the app knows who
+   * it is talking to.
+   *
+   * Without it, signing in showed the marketing page: `ready` was already true
+   * from the initial boot, `account` was still null while /api/profile
+   * answered, and "ready and nobody" is exactly what a signed-out visitor
+   * looks like. Signing out had the mirror image — the account was cleared
+   * synchronously, so the landing arrived in the same frame as the click.
+   */
+  const [authBusy, setAuthBusy] = useState(false);
   const [bankReady, setBankReady] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
   const [data, setData] = useState<UserData>(EMPTY_USER_DATA);
@@ -198,6 +215,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     async function adopt(hasSession: boolean) {
       setBankReady(false);
+      setAuthBusy(true);
       const profile = hasSession ? await loadProfile() : null;
       if (!live) return;
 
@@ -206,6 +224,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setData(EMPTY_USER_DATA);
         setBankReady(true);
         setReady(true);
+        setAuthBusy(false);
         return;
       }
 
@@ -215,6 +234,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const cached = loadUserData(profile.id);
       setData(cached);
       setReady(true);
+      // Cleared here, not after the reconciliation below: the student can be
+      // shown their dashboard as soon as it can be drawn, and the rest of this
+      // function only sharpens what is already on screen.
+      setAuthBusy(false);
 
       const result = await mergeHistory(profile.id, cached);
       if (live && !result.offline) {
@@ -331,9 +354,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(() => {
     // onAuthStateChange clears account and data; this keeps the UI honest even
     // if the network call is slow.
+    setAuthBusy(true);
     setAccount(null);
     setData(EMPTY_USER_DATA);
-    void signOutEverywhere();
+    // The auth event normally ends the busy state through adopt(). This is the
+    // backstop for the case where it never arrives — a failed network call
+    // must not leave the app showing a loader with nothing behind it.
+    void signOutEverywhere().finally(() => setAuthBusy(false));
   }, []);
 
   const updateAccount = useCallback<Ctx["updateAccount"]>(
@@ -560,6 +587,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value: Ctx = {
     ready,
+    authBusy,
     bankReady,
     account,
     accounts: [],

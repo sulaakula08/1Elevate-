@@ -2695,3 +2695,11 @@ body[data-exam] .notif-dock {
     opacity: 0.5;
   }
 }
+
+/* Rendered by choice rather than revealed by the boot attribute — the sign-in
+   and sign-out transitions, which happen long after the first paint. */
+.boot-screen[data-standalone="true"] {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+}

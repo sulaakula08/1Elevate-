@@ -16,13 +16,28 @@ import { Logo } from "./Logo";
  * Deliberately quiet: a wordmark and a line. It is on screen for under two
  * seconds and anything more energetic would draw the eye to a wait.
  */
-export function BootScreen() {
+type Props = {
+  /**
+   * Rendered because the app decided to, rather than sitting in the markup
+   * waiting for CSS. Sign-in and sign-out happen long after hydration, so a
+   * React branch is free of the constraint that shaped the pre-paint path.
+   */
+  standalone?: boolean;
+  label?: string;
+};
+
+export function BootScreen({ standalone = false, label = "Signing you in…" }: Props) {
   return (
-    <div className="boot-screen" role="status" aria-live="polite">
+    <div
+      className="boot-screen"
+      data-standalone={standalone ? "true" : undefined}
+      role="status"
+      aria-live="polite"
+    >
       <div className="boot-screen-inner">
         <Logo />
         <span className="boot-bar" aria-hidden />
-        <span className="sr-only">Signing you in…</span>
+        <span className="sr-only">{label}</span>
       </div>
     </div>
   );

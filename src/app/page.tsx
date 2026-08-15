@@ -6,7 +6,15 @@ import { Dashboard } from "@/components/Dashboard";
 import { BootScreen } from "@/components/BootScreen";
 
 export default function HomePage() {
-  const { account, ready, bank } = useApp();
+  const { account, ready, authBusy, bank } = useApp();
+
+  /*
+   * An identity in flight beats both branches below. Signing in used to fall
+   * through to the landing — `ready` was true from the initial boot and
+   * `account` was still null while the profile loaded, which is indistinguishable
+   * from a visitor — and signing out reached it in the same frame as the click.
+   */
+  if (authBusy) return <BootScreen standalone label="One moment…" />;
 
   if (ready && account) return <Dashboard account={account} />;
 
