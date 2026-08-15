@@ -166,3 +166,66 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
+/**
+ * Closes the caller's own account, permanently.
+ *
+ * The work is done by `delete_own_account`, a SECURITY DEFINER function, for
+ * the reason set out in its migration: removing a row from auth.users would
+ * otherwise mean giving this application a service-role key, and nothing in it
+ * can bypass row-level security today.
+ *
+ * The typed name is passed straight through rather than compared here. The
+ * function checks it, which is the check that counts — this route is not the
+ * only way in, and a confirmation performed only by the caller is not a
+ * confirmation at all.
+ */
+export async function DELETE(request: Request) {
+  if (!supabaseConfigured()) return notConfigured();
+
+  const found = await caller(request);
+  if ("error" in found) {
+    if (found.error === "unconfigured") return notConfigured();
+    return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  }
+
+  let body: { confirmName?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  if (typeof body.confirmName !== "string" || !body.confirmName.trim()) {
+    return NextResponse.json({ error: "Type your name to confirm." }, { status: 400 });
+  }
+
+  const { error } = await found.client.rpc("delete_own_account", {
+    confirm_name: body.confirmName,
+  });
+
+  if (error) {
+    if (process.env.NODE_ENV !== "production") console.error("[profile:delete]", error);
+
+    // These three are the caller's to fix, so they are worth saying plainly.
+    // Anything else is ours and stays in the log.
+    if (/does not match/i.test(error.message)) {
+      return NextResponse.json({ error: "That name does not match." }, { status: 400 });
+    }
+    if (/owner cannot delete/i.test(error.message)) {
+      return NextResponse.json(
+        { error: "An owner cannot delete their own account." },
+        { status: 403 },
+      );
+    }
+    if (/delete_own_account/i.test(error.message)) {
+      return NextResponse.json(
+        { error: "Account deletion needs its migration — see supabase/migrations." },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: "Could not delete the account." }, { status: 502 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

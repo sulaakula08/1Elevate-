@@ -985,3 +985,56 @@
     overflow: hidden;
   }
 }
+
+/* ---------------- danger zone ----------------
+   Set apart rather than styled loudly. A red panel shouting at the bottom of
+   every visit becomes wallpaper; a bordered block that reads calmly and asks
+   you to type your own name is harder to do by accident. */
+@layer components {
+  .danger-zone {
+    margin-top: 4rem;
+    padding: 1.25rem;
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--danger) 4%, transparent);
+  }
+  .danger-title {
+    font-size: var(--t-h3);
+    font-weight: 600;
+    color: var(--danger);
+  }
+  .danger-body {
+    margin-top: 0.5rem;
+    font-size: var(--t-body);
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 46rem;
+  }
+  .danger-list {
+    margin: 0.75rem 0 0 1.1rem;
+    padding: 0;
+    list-style: disc;
+    font-size: var(--t-body);
+    line-height: 1.7;
+    color: var(--muted);
+  }
+  .danger-field {
+    display: block;
+    margin-top: 1.25rem;
+    max-width: 22rem;
+  }
+  .danger-hint {
+    margin-top: 0.35rem;
+    font-size: var(--t-micro, 0.75rem);
+    color: var(--faint);
+  }
+  /* Only ever reachable once the name matches, so it can afford to look final. */
+  .danger-action:not(:disabled) {
+    border-color: var(--danger);
+    background: var(--danger);
+    color: #fff;
+  }
+  .danger-action:not(:disabled):hover {
+    filter: brightness(1.08);
+  }
+}

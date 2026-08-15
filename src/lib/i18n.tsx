@@ -226,6 +226,27 @@ const D: Dict = {
   /* ---------------- profile identity ---------------- */
   "account.changePhoto": { en: "Change your profile picture" },
   "account.photoVerb": { en: "Change" },
+  /* ---------------- closing an account ---------------- */
+  "danger.title": { en: "Danger zone" },
+  "danger.body": {
+    en: "Deleting your account removes it from the database entirely. This cannot be undone, and support cannot bring it back.",
+  },
+  "danger.itemProgress": { en: "Every answer, mock result and review-queue item" },
+  "danger.itemCommunity": { en: "Your posts, comments, reactions and saved items" },
+  "danger.itemLogin": { en: "Your profile, picture and the ability to sign in" },
+  "danger.keepsNote": {
+    en: "Questions you wrote for the shared bank stay, credited to nobody — removing them would take them away from every other student too.",
+  },
+  "danger.typeName": { en: "Type your name to continue" },
+  "danger.hint": { en: "Exactly as it appears above, including capitals." },
+  "danger.action": { en: "Delete my account" },
+  "danger.deleting": { en: "Deleting…" },
+  "danger.confirmTitle": { en: "Delete your account?" },
+  "danger.confirmBody": {
+    en: "Everything listed above is destroyed immediately. There is no undo and no recovery.",
+  },
+  "danger.failed": { en: "Could not delete the account. Try again in a moment." },
+
   "account.renameVerb": { en: "Edit" },
   "account.renameLabel": { en: "Change your name" },
   "account.yourName": { en: "Your name" },

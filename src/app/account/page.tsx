@@ -18,6 +18,7 @@ import {
 } from "@/lib/stats";
 import { CountUp, ProgressBar } from "@/components/motion";
 import { RequireAccount } from "@/components/ui";
+import { DangerZone } from "@/components/account/DangerZone";
 
 export default function AccountPage() {
   return (
@@ -420,6 +421,10 @@ function Profile() {
           {t("auth.signOut")}
         </button>
       </div>
+
+      {/* Last on the page on purpose: nothing routine sits below it, so it is
+          never something you scroll past on the way to somewhere else. */}
+      <DangerZone name={account!.name} />
     </div>
   );
 }
