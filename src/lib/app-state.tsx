@@ -134,6 +134,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
   });
 
+  /*
+   * Releases the pre-paint boot screen.
+   *
+   * The boot script stamps `data-session="restoring"` when it finds a Supabase
+   * token, and CSS shows the loading screen instead of the landing for as long
+   * as it is there. Only this knows when the question has actually been
+   * answered — including the case the script cannot judge, a token that has
+   * expired, where the honest outcome is the landing after a brief wait.
+   */
+  useEffect(() => {
+    if (ready) delete document.documentElement.dataset.session;
+  }, [ready]);
+
   /**
    * Loads the profile behind the current Supabase session. Returns null when
    * nobody is signed in, so the caller can clear state either way.

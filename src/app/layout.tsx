@@ -25,6 +25,32 @@ try {
 } catch (e) {
   document.documentElement.dataset.theme = 'light';
 }
+
+/*
+ * Whether a session is about to be restored, decided before the first paint.
+ *
+ * A signed-in student used to watch the landing page for as long as it took
+ * /api/profile to answer — over a second — because the page cannot know who
+ * they are until it does. The server cannot know either, so the markup it
+ * sends is the landing either way; this stamps the root element and CSS hides
+ * that markup in favour of a loading screen, which is a decision made before
+ * anything is drawn rather than one render later.
+ *
+ * Supabase keeps its session under a key of the form sb-PROJECT-auth-token,
+ * so the presence of such a key is the question being asked. It is not proof the token is still
+ * valid — an expired one still shows the loader briefly, then the landing —
+ * but it is exactly right for the common case and wrong only for a session
+ * that has already ended.
+ */
+try {
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key && key.indexOf('sb-') === 0 && key.indexOf('-auth-token') > 0) {
+      document.documentElement.dataset.session = 'restoring';
+      break;
+    }
+  }
+} catch (e) {}
 `;
 
 /**
