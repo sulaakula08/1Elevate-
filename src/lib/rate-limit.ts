@@ -1,19 +1,24 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 /**
  * A per-caller ceiling on the two routes that cost money.
  *
- * ── What this is honestly worth ────────────────────────────────────────────
- * The counter lives in the memory of one server instance. Vercel runs several,
- * and recycles them, so a determined attacker spreading requests around will
- * get more through than the numbers below suggest, and a cold start forgets
- * everything. It is not a quota.
+ * The count lives in Postgres, in `public.rate_limits`, and is reached only
+ * through `consume_rate` — a SECURITY DEFINER function that takes the subject
+ * from `auth.uid()` rather than from a parameter. The table has row-level
+ * security on and no policies, so a caller can neither read the count nor
+ * reset it. See the migration for the reasoning.
  *
- * It is still worth having, because the realistic attack is not determined: it
- * is a loop in a terminal against an endpoint someone noticed. That this stops
- * outright. A real quota needs shared state — Upstash, or a counter table in
- * Postgres — and is worth adding the day the bill says so.
+ * ── Why not in memory ──────────────────────────────────────────────────────
+ * It was, and that version could be walked around by accident: Vercel runs
+ * several instances and recycles them, so the count an attacker met depended on
+ * which instance answered and how recently it had started. Every instance now
+ * consults the same number.
  *
- * Anonymous callers are not the concern here: both routes now require a signed
- * -in account, so every request already costs an attacker a sign-up.
+ * The in-memory limiter survives as the fallback for exactly one situation: a
+ * database that has not had the migration applied yet. Falling back is the
+ * right failure here — refusing every request would take the tutor down over a
+ * missing table, and allowing every request would remove the ceiling silently.
  */
 
 type Window = { count: number; resetAt: number };
@@ -34,12 +39,8 @@ export type RateVerdict = {
   retryAfter: number;
 };
 
-/**
- * @param key    who is being counted, usually `${route}:${userId}`
- * @param limit  requests allowed per window
- * @param windowMs  how long the window lasts
- */
-export function rateLimit(key: string, limit: number, windowMs: number): RateVerdict {
+/** Best-effort, single instance. Used only when the shared counter is absent. */
+export function rateLimitInMemory(key: string, limit: number, windowMs: number): RateVerdict {
   const now = Date.now();
   sweep(now);
 
@@ -54,4 +55,49 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateVer
     return { ok: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
   }
   return { ok: true, retryAfter: 0 };
+}
+
+/**
+ * The real ceiling: one shared count for every instance.
+ *
+ * @param client   the caller's own client, so `auth.uid()` inside the function
+ *                 is the person being counted
+ * @param bucket   what is being limited, e.g. "explain"
+ * @param userId   only for the in-memory fallback key
+ */
+export async function consumeRate(
+  client: SupabaseClient,
+  bucket: string,
+  userId: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<RateVerdict> {
+  const { data, error } = await client.rpc("consume_rate", {
+    bucket_name: bucket,
+    max_count: limit,
+    window_seconds: windowSeconds,
+  });
+
+  if (error) {
+    // Most likely the migration has not been applied. Say so in development,
+    // where it is actionable, and keep a ceiling on either way.
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`[rate-limit] falling back to memory: ${error.message}`);
+    }
+    return rateLimitInMemory(`${bucket}:${userId}`, limit, windowSeconds * 1000);
+  }
+
+  // A set-returning function comes back as an array of one row.
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { allowed?: boolean; retry_after?: number }
+    | undefined;
+
+  // A shape that cannot be read is treated as refusal rather than as consent:
+  // the counter has already been incremented, and guessing "allowed" here would
+  // turn every future change to that function into an open door.
+  if (!row || typeof row.allowed !== "boolean") {
+    return { ok: false, retryAfter: windowSeconds };
+  }
+
+  return { ok: row.allowed, retryAfter: Math.max(0, Number(row.retry_after ?? 0)) };
 }

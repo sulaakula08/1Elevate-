@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { consumeRate } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/supabase/guard";
 import { getSubject } from "@/data/exams";
 import {
@@ -249,7 +249,13 @@ export async function POST(request: Request) {
   const guarded = await requireUser(request);
   if (!guarded.ok) return guarded.response;
 
-  const verdict = rateLimit(`generate:${guarded.caller.user.id}`, BATCHES_PER_HOUR, 3_600_000);
+  const verdict = await consumeRate(
+    guarded.caller.client,
+    "generate",
+    guarded.caller.user.id,
+    BATCHES_PER_HOUR,
+    3_600,
+  );
   if (!verdict.ok) {
     return NextResponse.json(
       { error: "Generation limit reached. Try again later.", code: "rate-limited" },

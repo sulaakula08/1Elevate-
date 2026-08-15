@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rate-limit";
+import { consumeRate } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/supabase/guard";
 
 export const runtime = "nodejs";
@@ -74,7 +74,13 @@ export async function POST(request: Request) {
   const guarded = await requireUser(request);
   if (!guarded.ok) return guarded.response;
 
-  const verdict = rateLimit(`explain:${guarded.caller.user.id}`, ASKS_PER_MINUTE, 60_000);
+  const verdict = await consumeRate(
+    guarded.caller.client,
+    "explain",
+    guarded.caller.user.id,
+    ASKS_PER_MINUTE,
+    60,
+  );
   if (!verdict.ok) {
     return NextResponse.json(
       { error: "Too many questions in a row. Give it a moment." },
