@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
+import { requireUser } from "@/lib/supabase/guard";
 import { getSubject } from "@/data/exams";
 import {
   MAX_AVOID,
@@ -234,7 +236,27 @@ function readDrafts(text: string): QuestionDraft[] | null {
   }
 }
 
+/**
+ * A batch here is the most expensive thing the app can do — 32k output tokens
+ * with thinking on. Six an hour covers an admin drafting a set and a student
+ * topping up a short mock; it does not cover a loop.
+ */
+const BATCHES_PER_HOUR = 6;
+
 export async function POST(request: Request) {
+  // Signed in, not admin-only: a student meeting a short mock test can press
+  // "generate" on that screen, and locking this to staff would break that.
+  const guarded = await requireUser(request);
+  if (!guarded.ok) return guarded.response;
+
+  const verdict = rateLimit(`generate:${guarded.caller.user.id}`, BATCHES_PER_HOUR, 3_600_000);
+  if (!verdict.ok) {
+    return NextResponse.json(
+      { error: "Generation limit reached. Try again later.", code: "rate-limited" },
+      { status: 429, headers: { "retry-after": String(verdict.retryAfter) } },
+    );
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       {

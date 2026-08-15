@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
+import { requireUser } from "@/lib/supabase/guard";
 
 export const runtime = "nodejs";
 
@@ -61,7 +63,25 @@ Reference explanation: ${question.officialExplanation}
 ${chosen}`;
 }
 
+/** Generous for a student working through a section; useless for a script. */
+const ASKS_PER_MINUTE = 20;
+
 export async function POST(request: Request) {
+  // Signed in, always. This route spends the project's Anthropic budget, and
+  // the caller controls the whole question object that goes into the system
+  // prompt — unauthenticated, it is a free general-purpose model on someone
+  // else's card.
+  const guarded = await requireUser(request);
+  if (!guarded.ok) return guarded.response;
+
+  const verdict = rateLimit(`explain:${guarded.caller.user.id}`, ASKS_PER_MINUTE, 60_000);
+  if (!verdict.ok) {
+    return NextResponse.json(
+      { error: "Too many questions in a row. Give it a moment." },
+      { status: 429, headers: { "retry-after": String(verdict.retryAfter) } },
+    );
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       {

@@ -13,6 +13,7 @@
  */
 
 import type { Question } from "@/data/types";
+import { apiFetch } from "@/lib/supabase/client";
 import {
   MAX_BATCH,
   normalizePrompt,
@@ -53,7 +54,7 @@ async function postBatch(
   body: GenerateRequest,
   signal?: AbortSignal,
 ): Promise<GenerateResponse | GenerateErrorBody> {
-  const response = await fetch("/api/generate", {
+  const response = await apiFetch("/api/generate", {
     method: "POST",
     headers: { "content-type": "application/json" },
     signal,

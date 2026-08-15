@@ -5,6 +5,7 @@ import { getSubject } from "@/data/exams";
 import type { Question } from "@/data/types";
 import { useI18n } from "@/lib/i18n";
 import { RichText } from "@/lib/math/markdown";
+import { apiFetch } from "@/lib/supabase/client";
 import { TutorAvatar, type TutorMood } from "./TutorAvatar";
 
 /**
@@ -153,7 +154,7 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
 
       try {
         const subject = getSubject(question.subjectId);
-        const response = await fetch("/api/explain", {
+        const response = await apiFetch("/api/explain", {
           method: "POST",
           headers: { "content-type": "application/json" },
           signal: controller.signal,
