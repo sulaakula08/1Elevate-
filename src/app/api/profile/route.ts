@@ -262,8 +262,16 @@ export async function DELETE(request: Request) {
     if (error.code === "42501" || /permission denied/i.test(error.message)) {
       return NextResponse.json(
         {
+          /*
+           * 42501 is ambiguous on any database that has not had the newest
+           * migration: it is what Postgres raises for a missing grant, and it
+           * is also what the owner guard used to raise before it was given a
+           * code of its own. Naming only the first sent someone to re-run a
+           * migration when nothing was broken, so the message now admits both
+           * and says which check tells them apart.
+           */
           error:
-            "The database refused the deletion: the function is missing privileges. Re-run the delete_own_account migration.",
+            "The database refused the deletion (42501). Either this account is the owner — owners cannot delete themselves — or the function is missing grants. Run the newest delete_own_account migration; it separates the two.",
           code: error.code,
         },
         { status: 500 },
