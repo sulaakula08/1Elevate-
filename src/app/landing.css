@@ -58,11 +58,11 @@
     overflow-x: clip;
   }
 
-  /* One continuous canvas behind the entire signed-out story. The grid keeps
-     the 64px cadence introduced by the Method section, while the radial fields
-     move the brand colour around the page without turning every section purple.
-     These are static CSS backgrounds: no scroll listener, extra DOM or idle
-     animation is required. */
+  /* One continuous canvas behind the entire signed-out story. Most sections
+     keep the 64px cadence introduced by Method; the hero replaces it locally
+     with a tighter, quieter grid. The radial fields move the brand colour
+     around the page without turning every section purple. These are static CSS
+     backgrounds: no scroll listener, extra DOM or idle animation is required. */
   .landing-main {
     --lp-grid-line: color-mix(in srgb, var(--line) 58%, transparent);
     background-color: var(--background);
@@ -1270,6 +1270,7 @@
     position: relative;
     padding-block: 6rem 4rem;
     border-top: 1px solid;
+    isolation: isolate;
   }
   .lp-caps::before {
     content: "";
@@ -1280,6 +1281,27 @@
     height: 3px;
     border-radius: var(--radius-pill);
     background: linear-gradient(to right, var(--brand), transparent);
+  }
+  /* A low-contrast violet-to-blue field gives the product chapter its own
+     centre of gravity while the page grid remains visible underneath. */
+  .lp-caps::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    margin-inline: calc(50% - 50vw);
+    pointer-events: none;
+    background:
+      radial-gradient(
+        46rem 34rem at 96% 28%,
+        color-mix(in srgb, var(--brand-2) 8%, transparent),
+        transparent 72%
+      ),
+      radial-gradient(
+        38rem 30rem at 4% 82%,
+        color-mix(in srgb, var(--s-blue) 5%, transparent),
+        transparent 74%
+      );
   }
   .lp-caps-title {
     margin-top: 0.875rem;
@@ -1632,15 +1654,25 @@
     padding-block: 6.5rem 6rem;
     isolation: isolate;
   }
-  /* The exam remains a distinct full-window surface, but it is translucent so
-     the page-wide grid continues through it instead of stopping at a solid
-     rectangle. */
+  /* No neutral surface here: even a translucent `surface-2` reads as a large
+     grey slab in dark mode. These colour-only washes preserve the page-wide
+     dark canvas and grid while still giving the exam chapter a focal field. */
   .lp-exam-bleed {
     position: absolute;
     inset: 0;
     z-index: -1;
     margin-inline: calc(50% - 50vw);
-    background: color-mix(in srgb, var(--surface-2) 76%, transparent);
+    background:
+      radial-gradient(
+        48rem 34rem at 88% 12%,
+        color-mix(in srgb, var(--brand) 11%, transparent),
+        transparent 72%
+      ),
+      radial-gradient(
+        38rem 30rem at 8% 88%,
+        color-mix(in srgb, var(--s-blue) 6%, transparent),
+        transparent 74%
+      );
     border-block: 1px solid;
   }
   .lp-exam-title {
