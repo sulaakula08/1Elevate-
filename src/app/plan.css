@@ -1082,3 +1082,28 @@
 .danger-zone {
   border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
 }
+
+@layer components {
+  /* Search sits directly above the list it filters, full width on a phone. */
+  .qb-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .qb-search .field {
+    flex: 1;
+    min-width: 0;
+  }
+  /* The number reads as a label, not as part of the sentence after it. */
+  .qb-number {
+    display: inline-block;
+    margin-right: 0.4rem;
+    padding: 0.05rem 0.35rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--foreground);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+}

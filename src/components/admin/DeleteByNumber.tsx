@@ -7,6 +7,7 @@ import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { RichText } from "@/lib/math/markdown";
 import { ConfirmDialog } from "@/components/ui";
+import { numberOf } from "@/lib/question-number";
 
 /**
  * Delete by number.
@@ -18,13 +19,6 @@ import { ConfirmDialog } from "@/components/ui";
  * the number is what an admin is already holding in their head, and this takes
  * it in the form they would say it out loud: `12, 15, 20-24`.
  */
-
-/** The trailing number of an id, when it carries one for this section. */
-function numberOf(id: string, subjectId: string): number | null {
-  if (!id.startsWith(`${subjectId}-`)) return null;
-  const tail = id.slice(subjectId.length + 1);
-  return /^\d+$/.test(tail) ? Number(tail) : null;
-}
 
 type Parsed = {
   /** Every number the field asked for, in the order it asked. */

@@ -12,6 +12,7 @@ import type {
 } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { findDuplicates } from "@/lib/duplicates";
+import { numberOf } from "@/lib/question-number";
 import { uploadFigure } from "@/lib/figures";
 import { useI18n } from "@/lib/i18n";
 
@@ -139,6 +140,7 @@ function AdminInner() {
   const [error, setError] = useState<string | null>(null);
   // The question the admin has asked to delete but not yet confirmed.
   const [showAllQuestions, setShowAllQuestions] = useState(false);
+  const [search, setSearch] = useState("");
   const [toDelete, setToDelete] = useState<Question | null>(null);
   /** The editor starts folded: most visits here are to read, not to write. */
   const [editorOpen, setEditorOpen] = useState(false);
@@ -190,8 +192,63 @@ function AdminInner() {
     if (b.createdAt) return 1;
     return 0;
   });
-  const shown = showAllQuestions ? recentFirst : recentFirst.slice(0, RECENT_COUNT);
-  const hidden = recentFirst.length - shown.length;
+  /*
+   * Searching a six-hundred item bank.
+   *
+   * A number is treated as a number first, because ids carry a running number
+   * per section and that is what an admin is holding when they say "check 41".
+   * Anything else is read as text across every field that identifies a question
+   * — its prompt, its topic, its skill, its domain and its id — since a person
+   * looking for one remembers whichever of those stuck.
+   */
+  const query = search.trim().toLowerCase();
+  const asNumber = /^\d+$/.test(query) ? Number(query) : null;
+
+  const matches = (question: Question): boolean => {
+    if (!query) return true;
+    if (asNumber !== null) {
+      if (numberOf(question.id) === asNumber) return true;
+      // Falls through to the id rather than stopping: a partial number is still
+      // a reasonable thing to have typed.
+      return question.id.toLowerCase().includes(query);
+    }
+    return [
+      tx(question.prompt),
+      question.topic,
+      question.skill ?? "",
+      question.domain ?? "",
+      question.id,
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+  };
+
+  const found = query ? recentFirst.filter(matches) : recentFirst;
+
+  /*
+   * Typing 41 matches #41, and also 141 and 241 through the id. The partial
+   * matches are worth keeping — a half-remembered number is still a lead — but
+   * the exact one is what was asked for, so it goes first rather than being
+   * left to turn up somewhere in the middle.
+   */
+  if (asNumber !== null) {
+    found.sort((a, b) => {
+      const exact = (q: Question) => (numberOf(q.id) === asNumber ? 0 : 1);
+      return exact(a) - exact(b);
+    });
+  }
+
+  /*
+   * A search overrides the collapse. Someone who has just typed a number wants
+   * the question, not the five newest and a button promising the rest.
+   */
+  const shown = query
+    ? found
+    : showAllQuestions
+      ? recentFirst
+      : recentFirst.slice(0, RECENT_COUNT);
+  const hidden = query ? 0 : recentFirst.length - shown.length;
   const subjectOptions = SUBJECTS.filter((s) => s.exam === draft.exam);
 
   /**
@@ -797,6 +854,32 @@ function AdminInner() {
         {customQuestions.length === 0 ? (
           <EmptyState>—</EmptyState>
         ) : (
+          <>
+            <div className="qb-search">
+              <input
+                className="field"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("admin.searchPlaceholder")}
+                aria-label={t("admin.searchLabel")}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              {query && (
+                <button type="button" className="btn btn-sm" onClick={() => setSearch("")}>
+                  {t("admin.searchClear")}
+                </button>
+              )}
+            </div>
+            {query && (
+              <p className="text-xs text-muted mb-3">
+                {found.length} {t("admin.searchFound")} {recentFirst.length}
+              </p>
+            )}
+
+            {query && found.length === 0 ? (
+              <EmptyState>{t("admin.searchNone")}</EmptyState>
+            ) : (
           <ul className="space-y-2">
             {shown.map((question) => {
               const subject = getSubject(question.subjectId);
@@ -804,6 +887,13 @@ function AdminInner() {
                 <li key={question.id} className="flex items-start gap-3 py-3.5 border-b">
                   <div className="min-w-0">
                     <p className="text-xs text-muted">
+                      {/* The number is part of the id, not a position in this
+                          list, so it survives deleting anything above it — see
+                          lib/question-number. Without it on screen, "search by
+                          number" is a promise the page never keeps. */}
+                      {numberOf(question.id) !== null && (
+                        <span className="qb-number">#{numberOf(question.id)}</span>
+                      )}
                       {question.exam.toUpperCase()} · {subject ? tx(subject.name) : question.subjectId}{" "}
                       · {question.topic}
                       {question.skill && <> · {question.skill}</>}
@@ -854,6 +944,8 @@ function AdminInner() {
               );
             })}
           </ul>
+            )}
+          </>
         )}
 
         {/* Only offered when it would actually change what is on screen. */}

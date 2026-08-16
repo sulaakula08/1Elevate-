@@ -730,6 +730,13 @@ const D: Dict = {
   "admin.cancel": { en: "Cancel" },
   "admin.delete": { en: "Delete" },
   "admin.edit": { en: "Edit" },
+  /* Searching the bank. The placeholder names the number first because that is
+     the fastest way in when an admin already knows which question they mean. */
+  "admin.searchLabel": { en: "Search the bank" },
+  "admin.searchPlaceholder": { en: "Number, or any words from the question" },
+  "admin.searchClear": { en: "Clear" },
+  "admin.searchFound": { en: "of" },
+  "admin.searchNone": { en: "Nothing matches that." },
   "admin.showAll": { en: "Show all" },
   "admin.showRecent": { en: "Show only the latest 5" },
   "admin.yourQuestions": { en: "Questions you added" },
