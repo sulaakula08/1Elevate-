@@ -224,7 +224,30 @@ export async function DELETE(request: Request) {
         { status: 503 },
       );
     }
-    return NextResponse.json({ error: "Could not delete the account." }, { status: 502 });
+
+    // 42501 is insufficient_privilege, and here it means one thing: the
+    // function is not allowed to touch auth.users or storage.objects. Those
+    // belong to Supabase's own roles, not to the role that ran the migration,
+    // so the grants at the end of it are what is missing. Worth naming, because
+    // "could not delete" sends someone looking at their own account instead.
+    if (error.code === "42501" || /permission denied/i.test(error.message)) {
+      return NextResponse.json(
+        {
+          error:
+            "The database refused the deletion: the function is missing privileges. Re-run the delete_own_account migration.",
+          code: error.code,
+        },
+        { status: 500 },
+      );
+    }
+
+    // The Postgres error code, and nothing else from the driver. A code is not
+    // sensitive — the message can name columns and constraints — and without it
+    // an operator has a failure they cannot tell apart from any other.
+    return NextResponse.json(
+      { error: "Could not delete the account.", code: error.code ?? null },
+      { status: 502 },
+    );
   }
 
   return NextResponse.json({ ok: true });

@@ -75,3 +75,37 @@ $$;
 
 revoke execute on function public.delete_own_account(text) from anon, public;
 grant execute on function public.delete_own_account(text) to authenticated;
+
+-- ------------------------------------------------------------- privileges --
+--
+-- SECURITY DEFINER means the function runs as whoever owns it, and that is the
+-- role which ran this migration — normally `postgres`. It does NOT mean the
+-- function can do anything it likes: `auth.users` belongs to
+-- supabase_auth_admin and `storage.objects` to supabase_storage_admin, so the
+-- owner still needs to have been granted a way in. Without these the function
+-- exists, is called, and raises 42501 — which is what "Could not delete the
+-- account" was hiding.
+--
+-- Wrapped in a block that reports rather than aborts: on a project where the
+-- migration runner cannot grant these, the rest of this file has still been
+-- applied and the notice says exactly what to hand to a database owner.
+
+do $$
+begin
+  execute format('grant delete on table auth.users to %I', current_user);
+exception when others then
+  raise notice
+    'Could not grant delete on auth.users to %: %. Account deletion will fail with 42501 until a role that owns auth.users runs that grant.',
+    current_user, sqlerrm;
+end;
+$$;
+
+do $$
+begin
+  execute format('grant delete on table storage.objects to %I', current_user);
+exception when others then
+  raise notice
+    'Could not grant delete on storage.objects to %: %. Avatars and screenshots will survive a deleted account until that grant is made.',
+    current_user, sqlerrm;
+end;
+$$;
