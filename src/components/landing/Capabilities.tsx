@@ -36,7 +36,7 @@ export function Capabilities() {
   const { t } = useI18n();
 
   return (
-    <section className="lp-caps" aria-labelledby="lp-caps-title">
+    <section id="product" className="lp-caps" aria-labelledby="lp-caps-title">
       <header className="lp-caps-head">
         <p className="t-label">{t("lp.capsEyebrow")}</p>
         <h2 id="lp-caps-title" className="lp-caps-title">

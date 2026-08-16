@@ -39,6 +39,7 @@ export function Results() {
 
   return (
     <section
+      id="outcomes"
       ref={scope}
       className="lp-res"
       aria-labelledby="lp-res-title"
@@ -68,8 +69,19 @@ export function Results() {
 
       <ul className="lp-res-wall">
         {DEMO_OUTCOMES.map((outcome, i) => (
-          <li key={outcome.id} className="lp-res-slot" style={{ ["--i" as string]: i }}>
-            <Card outcome={outcome} run={entered} index={i} instant={Boolean(reduced)} />
+          <li
+            key={outcome.id}
+            className="lp-res-slot"
+            data-featured={i === 0 ? "" : undefined}
+            style={{ ["--i" as string]: i }}
+          >
+            <Card
+              outcome={outcome}
+              run={entered}
+              index={i}
+              instant={Boolean(reduced)}
+              featured={i === 0}
+            />
           </li>
         ))}
       </ul>
@@ -119,11 +131,13 @@ function Card({
   run,
   index,
   instant,
+  featured,
 }: {
   outcome: DemoOutcome;
   run: boolean;
   index: number;
   instant: boolean;
+  featured: boolean;
 }) {
   const { t } = useI18n();
   const gain = outcome.to - outcome.from;
@@ -141,7 +155,12 @@ function Card({
      * perform. Every word inside is in the DOM at all times, so a screen reader
      * never depends on the expansion at all.
      */
-    <article className="lp-res-card" tabIndex={0} data-in={run ? "" : undefined}>
+    <article
+      className="lp-res-card"
+      tabIndex={featured ? undefined : 0}
+      data-in={run ? "" : undefined}
+      data-featured={featured ? "" : undefined}
+    >
       <p className="lp-res-scores">
         <span className="num lp-res-from">{outcome.from}</span>
         <span className="lp-res-arrow" aria-hidden />
@@ -151,6 +170,12 @@ function Card({
       <p className="lp-res-delta num">
         +{gain} <span>{t("lp.resultsGain")}</span>
       </p>
+
+      <span
+        className="lp-res-gain-bar"
+        style={{ ["--gain" as string]: Math.min(gain / 160, 1) }}
+        aria-hidden
+      />
 
       {/*
         In the resting state the card ends on the skill that moved, not on white
@@ -167,11 +192,16 @@ function Card({
       </p>
 
       <div className="lp-res-panel">
-        <p className="lp-res-who">
-          <strong>{outcome.name}</strong>
+        <div className="lp-res-person">
+          <span className="lp-res-avatar" aria-hidden>
+            {outcome.name.slice(0, 1)}
+          </span>
+          <p className="lp-res-who">
+            <strong>{outcome.name}</strong>
           <span aria-hidden> · </span>
-          <span className="lp-res-place">{outcome.place}</span>
-        </p>
+            <span className="lp-res-place">{outcome.place}</span>
+          </p>
+        </div>
         <blockquote className="lp-res-quote">{outcome.quote}</blockquote>
         <p className="lp-res-facts num">
           {outcome.answered} {t("lp.resultsAnswered")}

@@ -34,7 +34,7 @@ export function Hero({ bank }: { bank: Question[] }) {
             {t("landing.sub")}
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="hero-actions mt-7 flex flex-wrap items-center gap-3">
             <Link href="/signup" className="btn btn-primary btn-lg" data-motion="action">
               {t("landing.start")}
             </Link>

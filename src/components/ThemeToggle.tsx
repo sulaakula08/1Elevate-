@@ -16,9 +16,9 @@ import { useI18n } from "@/lib/i18n";
  * the rest of the app already follows.
  */
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const { theme, toggleTheme } = useApp();
+  const { toggleTheme } = useApp();
   const { t } = useI18n();
-  const label = t(theme === "dark" ? "nav.lightMode" : "nav.darkMode");
+  const label = t("nav.toggleTheme");
 
   return (
     <button
@@ -28,7 +28,10 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       aria-label={label}
       title={label}
     >
-      {theme === "dark" ? (
+      {/* Both icons are present on the server and the first client render. CSS
+          chooses the one that matches the pre-paint `data-theme` attribute,
+          so a stored dark theme cannot hydrate against light-theme markup. */}
+      <span className="theme-toggle-icon theme-toggle-sun" aria-hidden>
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
           <circle cx="12" cy="12" r="4.1" stroke="currentColor" strokeWidth="1.6" />
           <path
@@ -38,7 +41,8 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
             strokeLinecap="round"
           />
         </svg>
-      ) : (
+      </span>
+      <span className="theme-toggle-icon theme-toggle-moon" aria-hidden>
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden>
           <path
             d="M20 14.4A8.4 8.4 0 1 1 9.6 4a6.9 6.9 0 0 0 10.4 10.4Z"
@@ -48,7 +52,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
             strokeLinejoin="round"
           />
         </svg>
-      )}
+      </span>
     </button>
   );
 }

@@ -134,7 +134,7 @@ export function ExamAnatomy() {
   const activeSegment = segments[live];
 
   return (
-    <section className="lp-exam" aria-labelledby="lp-exam-title">
+    <section id="sat-anatomy" className="lp-exam" aria-labelledby="lp-exam-title">
       <span className="lp-exam-bleed" aria-hidden />
 
       <header className="lp-exam-head">

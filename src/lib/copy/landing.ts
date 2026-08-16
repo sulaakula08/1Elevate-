@@ -110,9 +110,9 @@ export const LANDING_COPY: CopyDict = {
 
   /* ================= section 3: outcomes ================= */
   "lp.resultsEyebrow": { en: "Outcomes" },
-  "lp.resultsTitle": { en: "Where the loop ends up." },
+  "lp.resultsTitle": { en: "The weak skill moves. Then the score does." },
   "lp.resultsSub": {
-    en: "Students who ran it long enough for a second mock score to mean something.",
+    en: "A second mock makes the change visible: the score, the skill behind it, and the work between the two.",
   },
   "lp.resultsHint": { en: "Hover a result for the detail" },
   "lp.resultsHintTouch": { en: "Tap a result for the detail" },
@@ -183,11 +183,29 @@ export const LANDING_COPY: CopyDict = {
   "lp.subjectOpen": { en: "Start here" },
 
   /* ================= closing ================= */
-  "lp.closeEyebrow": { en: "The loop" },
-  "lp.closeTitle": { en: "Find out what your next question should be." },
+  "lp.closeEyebrow": { en: "Your next session" },
+  "lp.closeTitle": { en: "Find the next SAT question worth your time." },
   "lp.closeText": {
-    en: "One session is enough to put something in the queue. After that the product has an opinion about your evening.",
+    en: "Answer one real question. 1Elevate names the skill behind the miss and turns it into a focused next session.",
   },
+  "lp.closePreviewLabel": { en: "Preview of a focused next practice session" },
+  "lp.closePreviewMode": { en: "Next session" },
+  "lp.closePreviewSource": { en: "From your last answer" },
+  "lp.closeRouteLabel": { en: "The 1Elevate learning loop" },
+  "lp.closePreviewWeakest": { en: "Weakest skill" },
+  "lp.closePreviewQuestions": { en: "questions" },
+  "lp.closePreviewSkill": { en: "Linear equations in two variables" },
+  "lp.closePreviewMeta": { en: "Algebra · Medium · focused practice" },
+  "lp.closePreviewAccuracy": { en: "Current accuracy 44%, next target 60%" },
+  "lp.closePreviewReady": { en: "First question ready" },
+
+  /* ================= footer and chrome ================= */
+  "lp.footerExplore": { en: "Explore" },
+  "lp.footerMethod": { en: "How it works" },
+  "lp.footerPreview": { en: "Practice preview" },
+  "lp.footerExam": { en: "SAT format" },
+  "lp.footerBlueprint": { en: "Built around the official SAT blueprint." },
+  "nav.toggleTheme": { en: "Toggle color theme" },
 
   /* ---- restated from the base dictionary ---- */
   /* The old section headings are gone, so the two keys the footer-adjacent CTA

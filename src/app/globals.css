@@ -1082,6 +1082,19 @@ p {
     background: var(--btn-hover);
     color: var(--foreground);
   }
+  .theme-toggle-icon {
+    display: inline-grid;
+    place-items: center;
+  }
+  .theme-toggle-sun {
+    display: none;
+  }
+  :root[data-theme="dark"] .theme-toggle-sun {
+    display: inline-grid;
+  }
+  :root[data-theme="dark"] .theme-toggle-moon {
+    display: none;
+  }
 
   /* Segmented control: a few mutually exclusive options in one track. */
   .seg {
@@ -2641,9 +2654,10 @@ body[data-exam] .notif-dock {
 :root[data-session="restoring"] .boot-screen {
   display: grid;
   place-items: center;
-  /* Sized against the shell rather than the viewport, so it does not sit under
-     a sticky header or push the page into a scroll it does not need. */
-  min-height: 60vh;
+  /* Fill the shell below its 3.5rem bar. At 60vh the marketing footer entered
+     the first mobile viewport while the session was still restoring, turning a
+     quiet loading state into a half-loaded landing page. */
+  min-height: calc(100dvh - 3.5rem);
 }
 .boot-screen-inner {
   display: grid;

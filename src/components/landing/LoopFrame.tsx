@@ -167,13 +167,25 @@ export function LoopFrame({
             {mode}
           </span>
         </span>
-        <span className="lp-fr-meta">
-          <span>{LOOP_MISS_QUESTION.domain}</span>
-          <span aria-hidden>·</span>
-          <span key={level} className="lp-fr-level" data-level={level}>
-            {t(`diff.${level}`)}
+        {/*
+          Domain and difficulty describe *a question*, and by step five there is
+          no longer one on screen — the layer underneath is a multi-skill
+          dashboard. Showing "Algebra · Hard" next to it claimed a difficulty for
+          a screen that has none, which read as a label nobody updated to match
+          what is actually on screen. Rather than invent a replacement fact that
+          duplicates the queue count already stated in the footer, the slot is
+          simply empty here: "Math · Progress" on the left is enough context for
+          a dashboard, the way the real Progress page carries no badge either.
+        */}
+        {stage < 4 && (
+          <span className="lp-fr-meta">
+            <span>{LOOP_MISS_QUESTION.domain}</span>
+            <span aria-hidden>·</span>
+            <span key={level} className="lp-fr-level" data-level={level}>
+              {t(`diff.${level}`)}
+            </span>
           </span>
-        </span>
+        )}
       </header>
 
       {/* ---------------- the four layers ---------------- */}

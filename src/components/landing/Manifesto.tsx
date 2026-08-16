@@ -53,7 +53,7 @@ export function Manifesto() {
   const lines = [t("lp.methodLine1"), t("lp.methodLine2"), t("lp.methodLine3")];
 
   return (
-    <section ref={scope} className="lp-mf" aria-labelledby="lp-mf-title">
+    <section id="method" ref={scope} className="lp-mf" aria-labelledby="lp-mf-title">
       {/* Two ambient layers, both full-bleed and both pointer-transparent: a
           hairline grid that drifts against the scroll, and a single brand wash
           held at an alpha where it reads as light in the room rather than as a

@@ -41,6 +41,9 @@ export function TopBar() {
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
+    // Refreshing halfway down the page must paint the contained state before
+    // the visitor moves the wheel again.
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -70,11 +73,8 @@ export function TopBar() {
   return (
     <>
       <header
-        className="sticky top-0 z-40 transition-colors duration-300"
-        style={{
-          background: "var(--background)",
-          borderBottom: `1px solid ${scrolled ? "var(--line)" : "transparent"}`,
-        }}
+        className="landing-topbar sticky top-0 z-40"
+        data-scrolled={scrolled ? "" : undefined}
       >
         <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center gap-2">
           <Link href="/" className="shrink-0" aria-label="1Elevate">
@@ -111,7 +111,7 @@ export function TopBar() {
               <span className="hero-nav-tagline">{t("hero.navTagline")}</span>
               <nav className="hero-nav-links hidden md:flex" aria-label="Landing page">
                 <a href="#sample-question">{t("hero.navProduct")}</a>
-                <a href="#proof">{t("hero.navMethod")}</a>
+                <a href="#method">{t("hero.navMethod")}</a>
               </nav>
             </div>
           )}

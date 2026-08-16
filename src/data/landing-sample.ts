@@ -192,7 +192,11 @@ export const PROGRESS_PREVIEW = {
     { skill: "Command of Evidence (Textual)", correct: 5, total: 11 },
     { skill: "Linear equations in two variables", correct: 6, total: 10 },
     { skill: "Boundaries", correct: 9, total: 14 },
-    { skill: "Words in Context", correct: 12, total: 15 },
+    /* 11/15 rather than 12/15: `weakTopics()` cuts strictly under 80% accuracy,
+       and 12/15 is exactly 80% — a row that could never actually appear on this
+       list, sitting on it. 11/15 rounds to 73%, keeps this the least-weak of the
+       five (44/45/60/64/73, ascending), and stays honestly inside the cutoff. */
+    { skill: "Words in Context", correct: 11, total: 15 },
   ],
 } as const;
 
