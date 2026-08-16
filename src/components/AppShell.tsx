@@ -82,11 +82,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!account) {
+    const isLanding = pathname === "/";
+
     return (
       <>
         <TopBar />
-        <main className="marketing-main flex-1 w-full px-5 sm:px-8">{children}</main>
-        <Footer />
+        <main
+          className={`marketing-main flex-1 w-full px-5 sm:px-8${isLanding ? " landing-main" : ""}`}
+        >
+          {children}
+        </main>
+        <Footer landing={isLanding} />
       </>
     );
   }

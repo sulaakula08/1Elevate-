@@ -58,6 +58,41 @@
     overflow-x: clip;
   }
 
+  /* One continuous canvas behind the entire signed-out story. The grid keeps
+     the 64px cadence introduced by the Method section, while the radial fields
+     move the brand colour around the page without turning every section purple.
+     These are static CSS backgrounds: no scroll listener, extra DOM or idle
+     animation is required. */
+  .landing-main {
+    --lp-grid-line: color-mix(in srgb, var(--line) 58%, transparent);
+    background-color: var(--background);
+    background-image:
+      radial-gradient(
+        52rem 36rem at 88% 4%,
+        color-mix(in srgb, var(--brand) 10%, transparent),
+        transparent 72%
+      ),
+      radial-gradient(
+        46rem 34rem at 8% 31%,
+        color-mix(in srgb, var(--brand-2) 6%, transparent),
+        transparent 74%
+      ),
+      radial-gradient(
+        52rem 38rem at 90% 60%,
+        color-mix(in srgb, var(--s-blue) 6%, transparent),
+        transparent 74%
+      ),
+      radial-gradient(
+        48rem 34rem at 12% 88%,
+        color-mix(in srgb, var(--brand) 7%, transparent),
+        transparent 74%
+      ),
+      linear-gradient(to right, var(--lp-grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--lp-grid-line) 1px, transparent 1px);
+    background-size: auto, auto, auto, auto, 4rem 4rem, 4rem 4rem;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat;
+  }
+
   :is(#method, #outcomes, #product, #sat-anatomy, #start) {
     scroll-margin-top: 4.5rem;
   }
@@ -89,26 +124,9 @@
     pointer-events: none;
   }
 
-  /* A 64px hairline grid, drifting up against the scroll. Held at an opacity
-     where it is texture rather than graph paper: on a white page it should read
-     as the surface having a grain, not as a chart behind the type. */
-  .lp-mf-grid {
-    position: absolute;
-    inset: -8rem 0;
-    opacity: 0.5;
-    background-image:
-      linear-gradient(to right, var(--line) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
-    background-size: 4rem 4rem;
-    /* Faded at both ends, so the grid has no edge to notice. */
-    -webkit-mask-image: linear-gradient(to bottom, transparent, black 22%, black 62%, transparent);
-    mask-image: linear-gradient(to bottom, transparent, black 22%, black 62%, transparent);
-    transform: translate3d(0, calc((0.5 - var(--p, 0.5)) * 7rem), 0);
-    will-change: transform;
-  }
-
-  /* The one brand wash on the page. 5% at its strongest, top-right, behind the
-     statement — light in the room, not a gradient. */
+  /* The page grid is continuous now; Method keeps only its scroll-linked wash
+     so this editorial turn still brightens as it enters without drawing a
+     second, drifting grid over the global one. */
   .lp-mf-wash {
     position: absolute;
     top: -14rem;
@@ -1614,14 +1632,15 @@
     padding-block: 6.5rem 6rem;
     isolation: isolate;
   }
-  /* The one full-window surface on the page. It makes the exam feel like a
-     different place from the product sections around it, which is what it is. */
+  /* The exam remains a distinct full-window surface, but it is translucent so
+     the page-wide grid continues through it instead of stopping at a solid
+     rectangle. */
   .lp-exam-bleed {
     position: absolute;
     inset: 0;
     z-index: -1;
     margin-inline: calc(50% - 50vw);
-    background: var(--surface-2);
+    background: color-mix(in srgb, var(--surface-2) 76%, transparent);
     border-block: 1px solid;
   }
   .lp-exam-title {
@@ -1860,24 +1879,6 @@
     padding-block: 7rem 7.5rem;
     text-align: left;
     isolation: isolate;
-  }
-  /* The same hairline grid the editorial turn opens on, brought back under the
-     last screen and masked to a soft field. A bookend: the page begins and ends
-     on the same surface, and nothing in between has to carry it. */
-  .lp-close::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    margin-inline: calc(50% - 50vw);
-    background-image:
-      linear-gradient(to right, var(--line) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
-    background-size: 4rem 4rem;
-    opacity: 0.45;
-    -webkit-mask-image: radial-gradient(56% 68% at 50% 46%, black, transparent 100%);
-    mask-image: radial-gradient(56% 68% at 50% 46%, black, transparent 100%);
-    pointer-events: none;
   }
   .lp-close-eyebrow {
     color: var(--brand);

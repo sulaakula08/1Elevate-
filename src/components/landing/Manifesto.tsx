@@ -54,12 +54,10 @@ export function Manifesto() {
 
   return (
     <section id="method" ref={scope} className="lp-mf" aria-labelledby="lp-mf-title">
-      {/* Two ambient layers, both full-bleed and both pointer-transparent: a
-          hairline grid that drifts against the scroll, and a single brand wash
-          held at an alpha where it reads as light in the room rather than as a
-          gradient someone added. */}
+      {/* The 64px grid now belongs to the full landing canvas. This local,
+          pointer-transparent wash still moves with the section so Method gets
+          a small change in light without laying a second grid over the first. */}
       <div className="lp-mf-field" aria-hidden>
-        <span className="lp-mf-grid" />
         <span className="lp-mf-wash" />
       </div>
 

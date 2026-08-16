@@ -5,11 +5,11 @@ import { useI18n } from "@/lib/i18n";
 import { Logo } from "./Logo";
 
 /** A compact marketing footer: product orientation, then the two account paths. */
-export function Footer() {
+export function Footer({ landing = false }: { landing?: boolean }) {
   const { t } = useI18n();
 
   return (
-    <footer className="app-footer border-t">
+    <footer className={`app-footer border-t${landing ? " app-footer-landing" : ""}`}>
       <div className="app-footer-inner marketing-frame mx-auto px-5 sm:px-8 py-12 text-sm">
         <div className="app-footer-brand">
           <Link href="/" aria-label="1Elevate">
