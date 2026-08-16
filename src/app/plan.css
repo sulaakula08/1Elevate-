@@ -994,10 +994,43 @@
   .danger-zone {
     margin-top: 4rem;
     padding: 1.25rem;
-    border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
+    border-width: 1px;
+    border-style: solid;
+    /* Border COLOUR is set outside this layer, at the foot of the file. See the
+       note there: `* { border-color: var(--line) }` in globals.css is unlayered
+       and beats anything written in here, whatever its specificity. */
     border-radius: var(--radius);
-    background: color-mix(in srgb, var(--danger) 4%, transparent);
+    /*
+     * Recessed, not raised.
+     *
+     * The first version mixed the danger colour into `transparent`, which makes
+     * a translucent red — and a translucent red laid over a dark page lightens
+     * it. The panel came out paler than the background it was meant to sit
+     * inside, so it read as something floating on top of the page rather than
+     * as a corner of it you have gone into.
+     *
+     * Mixing into `--surface` did not fix it either: on the dark theme surface
+     * (#121215) is already lighter than the background (#0b0b0d), so anything
+     * built from it rises off the page by construction. The base has to be the
+     * page itself, darkened — hence the per-theme values below.
+     */
+    background: color-mix(in srgb, var(--danger) 6%, var(--surface));
   }
+  /*
+   * Darker than the page, which on this theme takes a plain value rather than
+   * a mix.
+   *
+   * --danger here is a light red (around 255,138,148) so that it reads against
+   * a dark background — which means any proportion of it raises luminance.
+   * Mixed even at 10% into near-black it measured 21.9 against a page of 11.1,
+   * i.e. still lighter, which was the whole complaint. The page is #0b0b0d and
+   * there is very little room beneath it, so the fill drops the tint entirely
+   * and the red stays where it does the work: the border and the heading.
+   */
+  :root[data-theme="dark"] .danger-zone {
+    background: #070709;
+  }
+
   .danger-title {
     font-size: var(--t-h3);
     font-weight: 600;
@@ -1037,4 +1070,15 @@
   .danger-action:not(:disabled):hover {
     filter: brightness(1.08);
   }
+}
+
+/* ---------------- unlayered ----------------
+   globals.css carries `* { border-color: var(--line) }` with no layer, and an
+   unlayered declaration outranks every layered one regardless of specificity —
+   the same trap the .env-badge comment in globals.css describes. A border
+   colour for the danger zone therefore has to live out here or it is silently
+   discarded, which is what happened: it measured as plain --line on both
+   themes until this was moved. */
+.danger-zone {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
 }

@@ -241,6 +241,20 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // 23503 is a foreign key violation: something outside the cascade still
+    // points at this account. Naming it saves an operator from looking at
+    // permissions, which is where the first guess went.
+    if (error.code === "23503") {
+      return NextResponse.json(
+        {
+          error:
+            "Something still references this account and blocked the deletion. Run the latest delete_own_account migration.",
+          code: error.code,
+        },
+        { status: 500 },
+      );
+    }
+
     // The Postgres error code, and nothing else from the driver. A code is not
     // sensitive — the message can name columns and constraints — and without it
     // an operator has a failure they cannot tell apart from any other.
