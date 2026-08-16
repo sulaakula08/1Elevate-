@@ -10,7 +10,7 @@ export function Footer() {
 
   return (
     <footer className="app-footer border-t">
-      <div className="app-footer-inner max-w-5xl mx-auto px-5 sm:px-8 py-12 text-sm">
+      <div className="app-footer-inner marketing-frame mx-auto px-5 sm:px-8 py-12 text-sm">
         <div className="app-footer-brand">
           <Link href="/" aria-label="1Elevate">
             <Logo />

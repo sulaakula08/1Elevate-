@@ -33,9 +33,10 @@ import { useLandingMotion } from "./useLandingMotion";
  * capability surfaces answer "what will I be looking at" rather than "what does
  * the company have".
  *
- * The width is unchanged at `max-w-5xl`. Sections that need the full window take
- * it with a bleed rule in `landing.css` rather than by widening the page — the
- * left edge of the type is the same line from the hero to the footer, and a
+ * The width is unchanged at `max-w-5xl`; the marketing shell supplies its
+ * responsive viewport gutter. Sections that need the full window take it with
+ * a bleed rule in `landing.css` rather than by widening the readable content —
+ * the left edge of the type is the same line from the hero to the footer, and a
  * measure that moves between sections is the fastest way to make a long page
  * feel assembled from parts.
  */

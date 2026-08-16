@@ -45,11 +45,16 @@
      page frame
      --------------------------------------------------------------------------- */
 
-  /* `clip`, not `hidden`: the bleed rule below overshoots the viewport by the
+  /* `clip`, not `hidden`: the bleed rules below overshoot the viewport by the
      width of the scrollbar, and this swallows that overshoot without creating a
      scroll container — which `overflow: hidden` would, and which would break
-     every `position: sticky` on the page. */
-  .lp-page {
+     every `position: sticky` on the page.
+
+     This must live on the full-window marketing main, not `.lp-page`. Clipping
+     on the centred 64rem column also clipped every full-bleed field back to that
+     column, leaving the exam surface and transition textures boxed inside wide
+     gutters. */
+  .marketing-main {
     overflow-x: clip;
   }
 

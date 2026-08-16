@@ -85,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <TopBar />
-        <main className="flex-1 w-full px-5 sm:px-8">{children}</main>
+        <main className="marketing-main flex-1 w-full px-5 sm:px-8">{children}</main>
         <Footer />
       </>
     );

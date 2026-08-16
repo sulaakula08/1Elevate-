@@ -1,6 +1,15 @@
 /* Header, hero and site-chrome component styles. Tokens live in globals.css. */
 
 @layer components {
+  /* The landing content is 64rem wide inside the shell's viewport gutters.
+     Navbar and footer sit outside that shell, so their frame includes the same
+     2rem gutters in its own max width: 64rem + 2 × 2rem. This keeps their
+     visible content edges on the landing grid at desktop sizes without creating
+     a second gutter on phones. */
+  .marketing-frame {
+    max-width: 68rem;
+  }
+
   /* ---------------- hero headline ----------------
      One word carries the brand ramp. Applied to a span inside the h1 rather
      than the h1 itself, because the GSAP reveal animates the character spans

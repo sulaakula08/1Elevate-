@@ -76,7 +76,7 @@ export function TopBar() {
         className="landing-topbar sticky top-0 z-40"
         data-scrolled={scrolled ? "" : undefined}
       >
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center gap-2">
+        <div className="marketing-frame mx-auto px-5 sm:px-8 h-14 flex items-center gap-2">
           <Link href="/" className="shrink-0" aria-label="1Elevate">
             <span className="hidden sm:block">
               <Logo />
