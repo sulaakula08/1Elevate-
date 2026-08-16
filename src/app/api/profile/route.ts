@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseConfigured, tokenFrom, userClient } from "@/lib/supabase/server";
+import { deleteAccountAsAdmin } from "@/lib/supabase/delete-account";
 
 export const runtime = "nodejs";
 
@@ -260,6 +261,23 @@ export async function DELETE(request: Request) {
     // so the grants at the end of it are what is missing. Worth naming, because
     // "could not delete" sends someone looking at their own account instead.
     if (error.code === "42501" || /permission denied/i.test(error.message)) {
+      /*
+       * The function could not reach auth's tables. On a project where that
+       * grant can be made, re-running the migration is the fix and no key is
+       * involved. Where it cannot, Supabase's own answer is the Auth Admin
+       * API — so if a service key happens to be configured, use it rather than
+       * leaving the student with a button that never works.
+       */
+      const viaAdmin = await deleteAccountAsAdmin(
+        found.client,
+        found.user.id,
+        body.confirmName,
+      );
+      if (viaAdmin) {
+        if (viaAdmin.ok) return NextResponse.json({ ok: true });
+        return NextResponse.json({ error: viaAdmin.error }, { status: viaAdmin.status });
+      }
+
       return NextResponse.json(
         {
           /*
