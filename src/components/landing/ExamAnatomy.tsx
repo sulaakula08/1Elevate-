@@ -6,7 +6,7 @@ import { useReducedMotion } from "motion/react";
 import { SAT, SUBJECTS, getSubject, subjectGradient } from "@/data/exams";
 import { domainsFor } from "@/data/taxonomy";
 import { useI18n } from "@/lib/i18n";
-import { SubjectScene } from "../three/SubjectScene";
+import { SubjectIllustration } from "./SubjectIllustration";
 import { useCountTo, useEntered, useScrollStage, useScrollVar } from "./scroll";
 
 /**
@@ -264,7 +264,7 @@ export function ExamAnatomy() {
               }`}
               style={subjectGradient(subject.id) as React.CSSProperties}
             >
-              <SubjectScene kind={isMath ? "math" : "verbal"} />
+              <SubjectIllustration kind={isMath ? "math" : "verbal"} />
               <span className="sc-scrim" aria-hidden />
 
               <span className="sc-body">
