@@ -3,7 +3,7 @@ type SubjectIllustrationProps = {
 };
 
 /**
- * Flat editorial artwork for the two SAT subject cards on the landing page.
+ * Flat editorial artwork shared by the SAT subject cards throughout the app.
  *
  * These deliberately live as inline SVG instead of bitmap assets: the shapes
  * remain crisp at every card width, inherit no theme-dependent contrast, and

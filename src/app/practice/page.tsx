@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SAT, getSubject, subjectColor, subjectGradient, subjectsFor } from "@/data/exams";
-import { SubjectScene } from "@/components/three/SubjectScene";
+import { SubjectIllustration } from "@/components/landing/SubjectIllustration";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
@@ -443,11 +443,12 @@ function BankInner() {
                       </button>
                     </span>
 
-                    {/* Art zone: the subject's own lit scene, the same one the
-                        home cards use. It is what the card was missing — without
-                        it a gradient card is just a coloured rectangle. */}
+                    {/* The same flat subject artwork as the home card, cropped
+                        into this denser card's dedicated art column. */}
                     <span className="bank-art">
-                      <SubjectScene kind={subject.id === "sat-math" ? "math" : "verbal"} />
+                      <SubjectIllustration
+                        kind={subject.id === "sat-math" ? "math" : "verbal"}
+                      />
                     </span>
                   </div>
                 </Reveal>

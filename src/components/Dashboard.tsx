@@ -7,7 +7,7 @@ import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
 import { maxScore, overall, pct, reviewQueue, weakTopics } from "@/lib/stats";
-import { SubjectScene } from "./three/SubjectScene";
+import { SubjectIllustration } from "./landing/SubjectIllustration";
 import { CountUp, ProgressBar, Reveal } from "./motion";
 import { ExamCountdown } from "./dashboard/ExamCountdown";
 import { StudyActivity } from "./dashboard/StudyActivity";
@@ -215,11 +215,12 @@ export function Dashboard({ account }: { account: Account }) {
                     </span>
                   </span>
 
-                  {/* Art zone. The subject's own lit scene, clipped by its own
-                      column and dropped entirely when the card is too narrow to
-                      carry it. */}
+                  {/* The shared 2D subject illustration, clipped to its own
+                      column and dropped when the card is too narrow to carry it. */}
                   <span className="bank-art">
-                    <SubjectScene kind={subject.id === "sat-math" ? "math" : "verbal"} />
+                    <SubjectIllustration
+                      kind={subject.id === "sat-math" ? "math" : "verbal"}
+                    />
                   </span>
                 </Link>
               </Reveal>
