@@ -171,7 +171,19 @@ export function ConfirmDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 fade-in"
-      style={{ background: "color-mix(in srgb, var(--foreground) 32%, transparent)" }}
+      /*
+       * A scrim darkens. It was built from --foreground, which is near-white on
+       * the dark theme, so opening any dialog laid a white veil over the page
+       * and everything behind it got lighter — the opposite of what a scrim is
+       * for, and most obvious exactly where it matters least to be cheerful.
+       *
+       * Black, not the near-black the page is painted in: at #0b0b0d the scrim
+       * and the dark background are the same colour, so it measured 11.1 before
+       * and 11.1 after — invisible, and the dialog floated with nothing pushed
+       * back behind it. Black at 60% takes the dark page to 4.4 and the light
+       * one to 100, which is a scrim on both.
+       */
+      style={{ background: "color-mix(in srgb, #000 60%, transparent)" }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onCancel();
       }}

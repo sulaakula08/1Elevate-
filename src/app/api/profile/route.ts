@@ -207,8 +207,37 @@ export async function DELETE(request: Request) {
   if (error) {
     if (process.env.NODE_ENV !== "production") console.error("[profile:delete]", error);
 
-    // These three are the caller's to fix, so they are worth saying plainly.
-    // Anything else is ours and stays in the log.
+    /*
+     * Matched on SQLSTATE, not on message text.
+     *
+     * The refusals used to raise 42501 — "insufficient privilege" — the same
+     * code Postgres uses when a grant is missing, and matching on the message
+     * did not save it: an owner being correctly refused was told the function
+     * lacked privileges and to re-run a migration. The function now raises
+     * P04xx codes of its own, so a deliberate refusal and a real failure can
+     * never be read as each other again.
+     */
+    if (error.code === "P0422") {
+      return NextResponse.json({ error: "That name does not match." }, { status: 400 });
+    }
+    if (error.code === "P0403") {
+      return NextResponse.json(
+        {
+          error:
+            "An owner cannot delete their own account — it would leave the project with nobody who can appoint admins. Change the role in the SQL editor first, or delete a different account.",
+        },
+        { status: 403 },
+      );
+    }
+    if (error.code === "P0401") {
+      return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+    }
+    if (error.code === "P0404") {
+      return NextResponse.json({ error: "No profile for this account." }, { status: 404 });
+    }
+
+    // Older installations still raise these as text; kept so a database that
+    // has not had the newest migration applied still answers usefully.
     if (/does not match/i.test(error.message)) {
       return NextResponse.json({ error: "That name does not match." }, { status: 400 });
     }

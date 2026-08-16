@@ -1,32 +1,29 @@
 -- Why account deletion is failing. Read-only; run the whole thing at once.
 --
--- Part 1 answered the privilege question: postgres owns the function and may
--- delete from both tables. So the failure is not permission — it is something
--- refusing the delete itself, and the usual candidate is a foreign key from
--- outside the cascade.
+-- Part 1 said the function exists, is owned by postgres, and that postgres may
+-- delete from auth.users and storage.objects. So the refusal is not there.
+--
+-- What it did not check: deleting a user CASCADES into auth's other tables —
+-- identities, sessions, refresh_tokens, mfa factors — and the cascade runs as
+-- the same role. Lacking DELETE on any one of them raises 42501, which is the
+-- message the app is showing.
 
 -- ---------------------------------------------------------------- part 1 --
--- Kept because it is worth re-checking after any change.
+-- Every table in auth and storage, and whether the function's owner may delete
+-- from it. Any `false` here is the answer.
 
 select
-  'function exists' as check,
-  exists (
-    select 1 from pg_proc p
-    join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and p.proname = 'delete_own_account'
-  )::text as answer
-union all
-select 'current role in the SQL editor', current_user;
+  n.nspname || '.' || c.relname as table_name,
+  has_table_privilege('postgres', c.oid, 'delete') as owner_may_delete
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname in ('auth', 'storage')
+  and c.relkind = 'r'
+order by owner_may_delete, table_name;
 
 -- ---------------------------------------------------------------- part 2 --
--- Everything that points at auth.users, and what each does when a user goes.
---
--- `a` — NO ACTION, `r` — RESTRICT: either of these raises 23503 and is the
--- deletion failing. `c` — CASCADE and `n` — SET NULL are fine.
---
--- storage.objects.owner is the one to look for: on several Supabase versions it
--- references auth.users with no cascade, so any file a person ever uploaded
--- blocks their account from being deleted.
+-- The other way a delete is refused: a reference from outside the cascade.
+-- `a` (NO ACTION) or `r` (RESTRICT) against auth.users blocks it.
 
 select
   con.conrelid::regclass::text as referencing_table,
@@ -37,11 +34,10 @@ select
     when 'c' then 'CASCADE — fine'
     when 'n' then 'SET NULL — fine'
     when 'd' then 'SET DEFAULT'
-  end                          as on_delete
+  end as on_delete
 from pg_constraint con
 join unnest(con.conkey) as k(attnum) on true
-join pg_attribute att
-  on att.attrelid = con.conrelid and att.attnum = k.attnum
+join pg_attribute att on att.attrelid = con.conrelid and att.attnum = k.attnum
 where con.contype = 'f'
   and con.confrelid = 'auth.users'::regclass
 order by
@@ -49,20 +45,9 @@ order by
   referencing_table;
 
 -- ---------------------------------------------------------------- part 3 --
--- Which storage columns this project actually has. Older schemas carry only
--- `owner uuid`; newer ones add `owner_id text`, and a fix has to cover both.
+-- Which account is being deleted, and its role. An owner is refused by design
+-- — the function raises rather than leaving a project nobody can administer —
+-- and that refusal currently arrives wearing the same error code as a missing
+-- privilege, which is why the message may be misleading.
 
-select column_name, data_type
-from information_schema.columns
-where table_schema = 'storage'
-  and table_name = 'objects'
-  and column_name in ('owner', 'owner_id');
-
--- ---------------------------------------------------------------- part 4 --
--- Whether the account being deleted actually owns any files. If this is 0,
--- storage is not the cause and the answer is in part 2's first rows.
-
-select bucket_id, count(*) as files
-from storage.objects
-group by bucket_id
-order by files desc;
+select email, role from public.profiles order by role, email;
