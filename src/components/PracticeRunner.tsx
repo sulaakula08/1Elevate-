@@ -537,6 +537,18 @@ export function PracticeRunner({
             onSelect={select}
             revealed={isRevealed}
             disabled={isRevealed}
+            /*
+             * The question's own shortcuts go quiet while the Ask Community
+             * composer is over it.
+             *
+             * QuestionView binds 1-4 and Enter to the window, and only ignores
+             * events aimed at a field. The composer is mostly not fields — its
+             * largest surface is the read-only quote — so with focus anywhere in
+             * that region, "2" would silently pick an answer on the question
+             * underneath and Enter would submit it as an attempt. A student
+             * asking for help would answer the question by accident.
+             */
+            keyboard={!askPrefill}
             crossOutMode={crossOutMode}
             crossedOut={crossed[question.id] ?? []}
             onToggleCross={toggleCross}
