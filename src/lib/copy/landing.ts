@@ -109,17 +109,22 @@ export const LANDING_COPY: CopyDict = {
   "lp.frameFoot4": { en: "The flagged item is right twice running, so it leaves the queue." },
 
   /* ================= section 3: outcomes ================= */
-  "lp.resultsEyebrow": { en: "Outcomes" },
-  "lp.resultsTitle": { en: "The weak skill moves. Then the score does." },
+  "lp.resultsEyebrow": { en: "Future results preview" },
+  "lp.resultsDemoBadge": { en: "Illustrative profiles" },
+  "lp.resultsTitle": { en: "What a wall of 1500s could look like." },
   "lp.resultsSub": {
-    en: "A second mock makes the change visible: the score, the skill behind it, and the work between the two.",
+    en: "A concept for the day verified student outcomes can replace these sample profiles — eight scores, eight paths, one clear standard.",
   },
-  "lp.resultsHint": { en: "Hover a result for the detail" },
-  "lp.resultsHintTouch": { en: "Tap a result for the detail" },
+  "lp.resultsControls": { en: "Carousel controls" },
+  "lp.resultsPrevious": { en: "Show previous result" },
+  "lp.resultsNext": { en: "Show next result" },
+  "lp.resultsCarousel": { en: "Future SAT result profiles" },
+  "lp.resultsSatScore": { en: "SAT score" },
   "lp.resultsGain": { en: "points" },
-  "lp.resultsFixed": { en: "Weakest skill fixed" },
-  "lp.resultsAnswered": { en: "questions answered" },
-  "lp.resultsWeeks": { en: "weeks" },
+  "lp.resultsMoved": { en: "Skill that moved" },
+  "lp.resultsDisclaimer": {
+    en: "Concept preview only — every name, score and profile above is fictional. Replace with verified student outcomes before presenting this section as evidence.",
+  },
 
   /* ================= section 4: capability surfaces ================= */
   "lp.capsEyebrow": { en: "What you actually use" },

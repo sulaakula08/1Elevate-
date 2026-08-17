@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import { syntheticOutcomesEnabled } from "@/data/landing-demo";
 import type { Question } from "@/data/types";
 import { Capabilities } from "./landing/Capabilities";
 import { Closing } from "./landing/Closing";
@@ -20,8 +19,7 @@ import { useLandingMotion } from "./useLandingMotion";
  *   Stats         the evidence strip that closes the first screen.
  *   Manifesto     the turn: a wrong answer is information.
  *   LearningLoop  the proof, and the centre of the page: one mistake, five steps.
- *   Results       where it ends up. Synthetic, and switched off on production —
- *                 see `landing-demo.ts`. The page is complete without it.
+ *   Results       a visibly labelled future-results concept carousel.
  *   Capabilities  the three surfaces the loop actually runs on.
  *   ExamAnatomy   the sitting itself, resolving into its two sections.
  *   Closing       the loop in five words, and one action.
@@ -50,7 +48,7 @@ export function Landing({ bank }: { bank: Question[] }) {
       <Stats />
       <Manifesto />
       <LearningLoop />
-      {syntheticOutcomesEnabled() && <Results />}
+      <Results />
       <Capabilities />
       <ExamAnatomy />
       <Closing />

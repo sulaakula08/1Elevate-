@@ -225,7 +225,7 @@ export const PROGRESS_PREVIEW = {
  *   which is why the queue goes from 12 to 11 and not to 0.
  *
  * Anything that looks like an outcome — a score, a gain, a student — lives in
- * `landing-demo.ts` behind its own switch, and not here.
+ * the visibly labelled concept fixture `future-results.ts`, and not here.
  */
 export const LOOP_PROGRESS_EXAMPLE = {
   skill: "Linear equations in two variables",
