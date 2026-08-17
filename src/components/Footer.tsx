@@ -21,6 +21,7 @@ export function Footer({ landing = false }: { landing?: boolean }) {
         <nav className="app-footer-nav" aria-label={t("lp.footerExplore")}>
           <p className="hero-footer-heading">{t("lp.footerExplore")}</p>
           {[
+            { href: "/about", key: "lp.footerAbout" },
             { href: "/#method", key: "lp.footerMethod" },
             { href: "/#sample-question", key: "lp.footerPreview" },
             { href: "/#sat-anatomy", key: "lp.footerExam" },

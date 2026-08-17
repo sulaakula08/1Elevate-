@@ -12,6 +12,15 @@ import { TopBar } from "./TopBar";
 import { Footer } from "./Footer";
 
 /**
+ * Routes that mean the same thing signed out as signed in, and so never wait
+ * for the session. Kept as a set beside the check that uses it, because adding
+ * a public page and forgetting this is invisible in the browser — the page
+ * appears the moment hydration finishes — and only shows up as a crawler
+ * reading a skeleton.
+ */
+const PUBLIC_ROUTES = new Set(["/", "/about"]);
+
+/**
  * Two shells: a marketing layout (top bar, centred column) for visitors, and an
  * app layout (sidebar on desktop, tab bar on phones) once you're signed in.
  */
@@ -57,10 +66,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // The home route can render its public landing immediately. Holding it behind
-  // session restoration would replace the real product preview with an app
-  // skeleton on every cold visit and on slow connections.
-  if (!ready && pathname !== "/") {
+  // The public pages render immediately. Holding them behind session
+  // restoration would replace real content with an app skeleton on every cold
+  // visit — and, less visibly but worse, on every crawl: `ready` is false on the
+  // server, so /about was served to Google as four words of placeholder. A page
+  // whose content does not depend on who is reading it has nothing to wait for.
+  if (!ready && !PUBLIC_ROUTES.has(pathname)) {
     return (
       <div className="flex min-h-dvh">
         <div className="sidebar hidden md:flex">

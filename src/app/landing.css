@@ -3202,3 +3202,105 @@
 .lp-res-arrow::after {
   border-color: var(--line-strong);
 }
+
+/* ---------------- about ----------------
+   One column of prose at a readable measure. The page is an argument read top
+   to bottom, so nothing here competes with the text: no cards, no icons, and
+   the only colour is the one the rest of the product already uses. */
+@layer components {
+  .about-page {
+    max-width: 44rem;
+    margin-inline: auto;
+    padding: 3.5rem 0 5rem;
+  }
+  .about-title {
+    margin-top: 0.75rem;
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    line-height: 1.1;
+  }
+  .about-lede {
+    margin-top: 1.25rem;
+  }
+  .about-section {
+    margin-top: 3.5rem;
+  }
+  .about-h2 {
+    font-size: var(--t-h3);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .about-section p {
+    margin-top: 1rem;
+    line-height: 1.75;
+    color: var(--muted);
+  }
+  .about-section p strong {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  /* The loop. Numbered because the order is the point — each step exists only
+     because the one above it happened. */
+  .about-loop {
+    margin-top: 1.75rem;
+    counter-reset: loop;
+    display: grid;
+    gap: 1.75rem;
+  }
+  .about-loop > li {
+    counter-increment: loop;
+    position: relative;
+    padding-left: 2.75rem;
+  }
+  .about-loop > li::before {
+    content: counter(loop);
+    position: absolute;
+    left: 0;
+    top: -0.1rem;
+    display: grid;
+    place-items: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  .about-step {
+    display: block;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .about-loop p {
+    margin-top: 0.4rem;
+  }
+
+  .about-facts {
+    margin-top: 1.75rem;
+    display: grid;
+    gap: 1.5rem;
+  }
+  .about-facts dt {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .about-facts dd {
+    margin: 0.4rem 0 0;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .about-cta {
+    margin-top: 4rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--line);
+  }
+  .about-actions {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}

@@ -198,6 +198,7 @@ export const LANDING_COPY: CopyDict = {
 
   /* ================= footer and chrome ================= */
   "lp.footerExplore": { en: "Explore" },
+  "lp.footerAbout": { en: "About 1Elevate" },
   "lp.footerMethod": { en: "How it works" },
   "lp.footerPreview": { en: "Practice preview" },
   "lp.footerExam": { en: "SAT format" },
