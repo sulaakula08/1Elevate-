@@ -1338,35 +1338,52 @@
     color: var(--muted);
     line-height: 1.6;
   }
-  .lp-future-track {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: calc((100% - 2rem) / 3);
-    gap: 1rem;
+  .lp-future-marquee {
+    --future-card-width: clamp(18.5rem, 21vw, 20rem);
+    --future-marquee-duration: 72s;
+    position: relative;
     margin: 2.75rem 0 0;
     padding: 0.25rem 0.125rem 1rem;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: inline mandatory;
-    scroll-padding-inline: 0.125rem;
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--brand) 36%, var(--line)) transparent;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 2.5rem,
+      black calc(100% - 2.5rem),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 2.5rem,
+      black calc(100% - 2.5rem),
+      transparent
+    );
+  }
+  .lp-future-marquee:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--brand) 64%, transparent);
+    outline-offset: 0.375rem;
+  }
+  .lp-future-track {
+    display: flex;
+    width: max-content;
+    animation: lp-future-marquee var(--future-marquee-duration) linear infinite;
+    will-change: transform;
+  }
+  .lp-future-marquee:hover .lp-future-track,
+  .lp-future-marquee:focus-within .lp-future-track {
+    animation-play-state: paused;
+  }
+  .lp-future-group {
+    display: flex;
+    flex: none;
+    gap: 1rem;
+    padding-right: 1rem;
     list-style: none;
   }
-  .lp-future-track::-webkit-scrollbar {
-    height: 5px;
-  }
-  .lp-future-track::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .lp-future-track::-webkit-scrollbar-thumb {
-    border-radius: var(--radius-pill);
-    background: color-mix(in srgb, var(--brand) 36%, var(--line));
-  }
   .lp-future-slide {
-    min-width: 0;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+    flex: 0 0 var(--future-card-width);
+    min-width: var(--future-card-width);
   }
   .lp-future-slide:nth-child(4n + 1) { --future-tone: var(--brand); }
   .lp-future-slide:nth-child(4n + 2) { --future-tone: var(--s-blue); }
@@ -1497,9 +1514,16 @@
     font-weight: 600;
     line-height: 1.35;
   }
+
+  @keyframes lp-future-marquee {
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
   @media (max-width: 63.99rem) {
-    .lp-future-track {
-      grid-auto-columns: calc((100% - 1rem) / 2);
+    .lp-future-marquee {
+      --future-card-width: min(42vw, 20rem);
     }
   }
 
@@ -1511,15 +1535,45 @@
       align-items: flex-end;
       gap: 1rem;
     }
-    .lp-future-track {
-      grid-auto-columns: 86%;
+    .lp-future-marquee {
+      --future-card-width: min(86vw, 20rem);
       margin-top: 2rem;
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 1rem,
+        black calc(100% - 1rem),
+        transparent
+      );
+      mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 1rem,
+        black calc(100% - 1rem),
+        transparent
+      );
     }
     .lp-future-card {
       min-height: 19.5rem;
     }
     .lp-future-score {
       font-size: 3.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lp-future-marquee {
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--brand) 36%, var(--line)) transparent;
+    }
+    .lp-future-track {
+      animation: none;
+      will-change: auto;
+    }
+    .lp-future-group[aria-hidden="true"] {
+      display: none;
     }
   }
 

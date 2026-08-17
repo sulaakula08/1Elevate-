@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useReducedMotion } from "motion/react";
 import { FUTURE_RESULTS, type FutureResult } from "@/data/future-results";
 import { useI18n } from "@/lib/i18n";
 
@@ -12,37 +10,6 @@ import { useI18n } from "@/lib/i18n";
  */
 export function Results() {
   const { t } = useI18n();
-  const track = useRef<HTMLOListElement>(null);
-  const paused = useRef(false);
-  const reduced = useReducedMotion();
-
-  useEffect(() => {
-    const carousel = track.current;
-    if (!carousel || reduced) return;
-
-    const timer = window.setInterval(() => {
-      const firstCard = carousel.querySelector<HTMLElement>(".lp-future-slide");
-      const bounds = carousel.getBoundingClientRect();
-      const visible = bounds.top < window.innerHeight && bounds.bottom > 0;
-      if (!firstCard || paused.current || !visible || document.hidden) return;
-
-      const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
-      const step = firstCard.getBoundingClientRect().width + gap;
-      const maxScroll = carousel.scrollWidth - carousel.clientWidth;
-      const lastStart = Math.max(0, Math.ceil(maxScroll / step));
-      const current = Math.round(carousel.scrollLeft / step);
-      const next = current >= lastStart ? 0 : current + 1;
-
-      carousel.scrollTo({
-        left: Math.min(next * step, maxScroll),
-        behavior: "smooth",
-      });
-    }, 3600);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [reduced]);
 
   return (
     <section
@@ -64,24 +31,29 @@ export function Results() {
         </div>
       </div>
 
-      <ol
-        ref={track}
-        className="lp-future-track"
+      <div
+        className="lp-future-marquee"
+        role="region"
+        aria-roledescription="carousel"
         aria-label={t("lp.resultsCarousel")}
         tabIndex={0}
-        onFocusCapture={() => {
-          paused.current = true;
-        }}
-        onBlurCapture={() => {
-          paused.current = false;
-        }}
       >
-        {FUTURE_RESULTS.map((result, index) => (
-          <li key={result.id} className="lp-future-slide">
-            <ResultCard result={result} index={index} />
-          </li>
-        ))}
-      </ol>
+        <div className="lp-future-track">
+          {[false, true].map((duplicate) => (
+            <ol
+              key={duplicate ? "duplicate" : "primary"}
+              className="lp-future-group"
+              aria-hidden={duplicate || undefined}
+            >
+              {FUTURE_RESULTS.map((result, index) => (
+                <li key={result.id} className="lp-future-slide">
+                  <ResultCard result={result} index={index} />
+                </li>
+              ))}
+            </ol>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
