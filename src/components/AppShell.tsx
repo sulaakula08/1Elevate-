@@ -85,7 +85,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isLanding = pathname === "/";
 
     return (
-      <>
+      <div
+        className={`marketing-shell flex min-h-full flex-1 flex-col${isLanding ? " landing-shell" : ""}`}
+      >
         <TopBar />
         <main
           className={`marketing-main flex-1 w-full px-5 sm:px-8${isLanding ? " landing-main" : ""}`}
@@ -93,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <Footer landing={isLanding} />
-      </>
+      </div>
     );
   }
 

@@ -80,19 +80,15 @@
     isolation: isolate;
     padding-block: 2.75rem 3rem;
   }
-  /* The opening screen uses a tighter, quieter grid than the 64px cadence
-     further down the story. An opaque page-colour base prevents the two grids
-     from crossing and producing a moire pattern; the colour fields above it
-     stay transparent and restrained. */
+  /* The hero adds colour only. The grid itself belongs to `.landing-shell`, so
+     its lines continue through this full-bleed field without restarting. */
   .landing-main .hero-section::before {
-    --lp-hero-grid-line: color-mix(in srgb, var(--line) 42%, transparent);
     content: "";
     position: absolute;
     inset: 0;
     z-index: -1;
     margin-inline: calc(50% - 50vw);
     pointer-events: none;
-    background-color: var(--background);
     background-image:
       radial-gradient(
         48rem 30rem at 82% 4%,
@@ -109,11 +105,8 @@
         transparent 38%,
         color-mix(in srgb, var(--brand-2) 3%, transparent) 58%,
         transparent 76%
-      ),
-      linear-gradient(to right, var(--lp-hero-grid-line) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--lp-hero-grid-line) 1px, transparent 1px);
-    background-size: auto, auto, auto, 3rem 3rem, 3rem 3rem;
-    background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat;
+      );
+    background-repeat: no-repeat;
   }
   .hero-grid {
     display: grid;
@@ -355,21 +348,17 @@
     position: relative;
     background: color-mix(in srgb, var(--surface-2) 58%, var(--background));
   }
-  /* The landing's continuous grid resolves into the footer instead of ending
-     at a solid slab. Other marketing routes keep the quieter plain footer. */
+  /* The landing footer is translucent over the same shell-level grid; it adds
+     a closing colour field without starting another grid at its own top edge. */
   .app-footer-landing {
-    --lp-grid-line: color-mix(in srgb, var(--line) 58%, transparent);
-    background-color: color-mix(in srgb, var(--surface-2) 68%, var(--background));
+    background-color: color-mix(in srgb, var(--surface-2) 58%, transparent);
     background-image:
       radial-gradient(
         38rem 20rem at 18% 0%,
         color-mix(in srgb, var(--brand) 8%, transparent),
         transparent 72%
-      ),
-      linear-gradient(to right, var(--lp-grid-line) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--lp-grid-line) 1px, transparent 1px);
-    background-size: auto, 4rem 4rem, 4rem 4rem;
-    background-repeat: no-repeat, repeat, repeat;
+      );
+    background-repeat: no-repeat;
   }
   .app-footer::before {
     content: "";

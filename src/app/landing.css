@@ -58,12 +58,10 @@
     overflow-x: clip;
   }
 
-  /* One continuous canvas behind the entire signed-out story. Most sections
-     keep the 64px cadence introduced by Method; the hero replaces it locally
-     with a tighter, quieter grid. The radial fields move the brand colour
-     around the page without turning every section purple. These are static CSS
-     backgrounds: no scroll listener, extra DOM or idle animation is required. */
-  .landing-main {
+  /* One coordinate system owns the grid from the top bar through the footer.
+     Section-local colour fields stay transparent, so they can tint this canvas
+     without restarting its 64px cadence and creating misaligned patches. */
+  .landing-shell {
     --lp-grid-line: color-mix(in srgb, var(--line) 58%, transparent);
     background-color: var(--background);
     background-image:
@@ -90,6 +88,7 @@
       linear-gradient(to right, var(--lp-grid-line) 1px, transparent 1px),
       linear-gradient(to bottom, var(--lp-grid-line) 1px, transparent 1px);
     background-size: auto, auto, auto, auto, 4rem 4rem, 4rem 4rem;
+    background-position: 0 0;
     background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat;
   }
 
