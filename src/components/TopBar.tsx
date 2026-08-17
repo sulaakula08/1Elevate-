@@ -38,14 +38,55 @@ export function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
+  /*
+    The bar condenses over the first 120px rather than snapping at 4px. Two
+    custom properties carry the state to CSS, which owns every visual decision:
+
+      --nav-p     0 → 1 over the first 120px. Drives height, translucency,
+                  blur, shadow and the tagline fade — one number, so those five
+                  moves cannot drift out of step with each other.
+      --nav-read  0 → 1 over the whole document. Drives the progress hairline.
+
+    Written to the element in a rAF rather than through React state: this fires
+    on every scroll frame, and re-rendering a header with a menu and a nav in it
+    sixty times a second to change an opacity is the wrong trade. `scrolled`
+    stays a state because it flips once and gates a discrete transition.
+  */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
-    // Refreshing halfway down the page must paint the contained state before
+    let frame = 0;
+
+    const apply = () => {
+      frame = 0;
+      const node = headerRef.current;
+      if (!node) return;
+
+      const y = window.scrollY;
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+
+      node.style.setProperty("--nav-p", Math.min(1, Math.max(0, y / 120)).toFixed(4));
+      node.style.setProperty(
+        "--nav-read",
+        scrollable > 0 ? Math.min(1, Math.max(0, y / scrollable)).toFixed(4) : "0",
+      );
+      setScrolled(y > 4);
+    };
+
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(apply);
+    };
+
+    // Refreshing halfway down the page must paint the condensed state before
     // the visitor moves the wheel again.
-    onScroll();
+    apply();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   // Dismiss the account menu on outside click or Escape.
@@ -73,10 +114,11 @@ export function TopBar() {
   return (
     <>
       <header
+        ref={headerRef}
         className="landing-topbar sticky top-0 z-40"
         data-scrolled={scrolled ? "" : undefined}
       >
-        <div className="marketing-frame mx-auto px-5 sm:px-8 h-14 flex items-center gap-2">
+        <div className="landing-topbar-inner marketing-frame mx-auto px-5 sm:px-8 flex items-center gap-2">
           <Link href="/" className="shrink-0" aria-label="1Elevate">
             <span className="hidden sm:block">
               <Logo />
@@ -204,6 +246,10 @@ export function TopBar() {
               ))}
           </div>
         </div>
+
+        {/* Reading progress. Decorative, so it is hidden from the tree; the
+            page's own scrollbar is the accessible version of this. */}
+        <span className="landing-topbar-progress" aria-hidden />
       </header>
 
       {/* ---------------- mobile bottom tabs ---------------- */}

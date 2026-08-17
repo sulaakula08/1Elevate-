@@ -127,6 +127,14 @@ export const LANDING_COPY: CopyDict = {
   "lp.resultsSatScore": { en: "SAT score" },
   "lp.resultsGain": { en: "points" },
   "lp.resultsMoved": { en: "Skill that moved" },
+  /* Score-report furniture. The card is drawn as the report a student is
+     handed, so it uses the report's own labels rather than marketing ones. */
+  "lp.resultsAdministration": { en: "Administration" },
+  "lp.resultsTotalScore": { en: "Total score" },
+  "lp.resultsRange": { en: "400–1600" },
+  "lp.resultsRw": { en: "Reading and Writing" },
+  "lp.resultsMath": { en: "Math" },
+  "lp.resultsPrevious": { en: "Previous" },
   /* ================= section 4: capability surfaces ================= */
   "lp.capsEyebrow": { en: "What you actually use" },
   "lp.capsTitle": { en: "Three surfaces. One loop." },
