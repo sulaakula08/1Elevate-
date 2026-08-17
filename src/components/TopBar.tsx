@@ -98,6 +98,12 @@ export function TopBar() {
     };
   }, [menuOpen]);
 
+  // The bar is on every signed-out page, but the sections it points at are only
+  // on the landing page. From /about or /login the same items have to be a real
+  // navigation back to it; on / itself they must stay a hash, or every one of
+  // them reloads the page it is already on.
+  const anchor = (hash: string) => (pathname === "/" ? hash : `/${hash}`);
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
@@ -143,9 +149,48 @@ export function TopBar() {
           ) : (
             <div className="hidden sm:flex items-center min-w-0">
               <span className="hero-nav-tagline">{t("hero.navTagline")}</span>
-              <nav className="hero-nav-links hidden md:flex" aria-label="Landing page">
-                <a href="#sample-question">{t("hero.navProduct")}</a>
-                <a href="#method">{t("hero.navMethod")}</a>
+              <nav className="hero-nav-links hidden lg:flex" aria-label="Landing page">
+                {/*
+                  "How it works" is the only item with anywhere to go inside it:
+                  four sections of the page all answer the same question, and
+                  four top-level links answering it would have been the old
+                  problem back again. It opens on hover and on focus — the
+                  trigger is itself a link to the first of the four, so a
+                  visitor who clicks straight through never depends on the menu.
+                */}
+                <span className="hero-nav-group">
+                  <a href={anchor("#method")} className="hero-nav-trigger">
+                    {t("hero.navHow")}
+                    <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden>
+                      <path
+                        d="M2.5 4.5 6 8l3.5-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </a>
+
+                  <div className="hero-nav-menu" role="group" aria-label={t("hero.navHowMenu")}>
+                    {[
+                      { href: "#sample-question", key: "hero.navHowTry", note: "hero.navHowTryNote" },
+                      { href: "#method", key: "hero.navHowMiss", note: "hero.navHowMissNote" },
+                      { href: "#loop", key: "hero.navHowLoop", note: "hero.navHowLoopNote" },
+                      { href: "#sat-anatomy", key: "hero.navHowExam", note: "hero.navHowExamNote" },
+                    ].map((item) => (
+                      <a key={item.href} href={anchor(item.href)}>
+                        <strong>{t(item.key)}</strong>
+                        <span>{t(item.note)}</span>
+                      </a>
+                    ))}
+                  </div>
+                </span>
+
+                <a href={anchor("#product")}>{t("hero.navInside")}</a>
+                <a href={anchor("#outcomes")}>{t("hero.navResults")}</a>
+                <Link href="/about">{t("hero.navAbout")}</Link>
               </nav>
             </div>
           )}

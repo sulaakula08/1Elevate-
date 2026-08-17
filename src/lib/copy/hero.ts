@@ -10,8 +10,22 @@ export const HERO_COPY: CopyDict = {
   /* Sits beside the wordmark in the signed-out bar, where there is no product
      navigation to carry the left half of the row. */
   "hero.navTagline": { en: "SAT preparation" },
-  "hero.navProduct": { en: "Product" },
-  "hero.navMethod": { en: "Method" },
+  /* Landing navigation. "Product" and "Method" were category labels: they named
+     the kind of page you were about to land on rather than what is on it. These
+     name the thing itself, which is also the house rule for the page copy. */
+  "hero.navHow": { en: "How it works" },
+  "hero.navHowTry": { en: "Try a real question" },
+  "hero.navHowTryNote": { en: "One item from the bank, answered here" },
+  "hero.navHowMiss": { en: "What a wrong answer knows" },
+  "hero.navHowMissNote": { en: "The turn the whole page is built on" },
+  "hero.navHowLoop": { en: "One mistake, five steps" },
+  "hero.navHowLoopNote": { en: "The loop, run end to end" },
+  "hero.navHowExam": { en: "The exam itself" },
+  "hero.navHowExamNote": { en: "Both sections, module by module" },
+  "hero.navInside": { en: "Inside the app" },
+  "hero.navResults": { en: "Score results" },
+  "hero.navAbout": { en: "About us" },
+  "hero.navHowMenu": { en: "How it works menu" },
   "hero.tryQuestion": { en: "Try a sample question" },
 
   /* ---------------- live product preview ---------------- */

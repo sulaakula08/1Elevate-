@@ -72,6 +72,7 @@ export function LearningLoop() {
 
   return (
     <section
+      id="loop"
       className="lp-loop"
       data-mode={scrollDriven ? "scroll" : "manual"}
       aria-labelledby="lp-loop-title"
