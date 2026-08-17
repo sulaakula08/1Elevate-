@@ -1301,28 +1301,6 @@
   .lp-future-copy {
     max-width: 46rem;
   }
-  .lp-future-label-row {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-  }
-  .lp-future-demo {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    color: var(--faint);
-    font-size: var(--t-2xs);
-    font-weight: 600;
-    letter-spacing: 0.055em;
-    text-transform: uppercase;
-  }
-  .lp-future-demo::before {
-    content: "";
-    width: 0.25rem;
-    height: 0.25rem;
-    border-radius: var(--radius-pill);
-    background: currentColor;
-  }
   .lp-future-title {
     margin-top: 0.875rem;
     max-width: 19ch;

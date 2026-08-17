@@ -20,10 +20,7 @@ export function Results() {
     >
       <div className="lp-future-head">
         <div className="lp-future-copy">
-          <div className="lp-future-label-row">
-            <p className="t-label">{t("lp.resultsEyebrow")}</p>
-            <span className="lp-future-demo">{t("lp.resultsDemoShort")}</span>
-          </div>
+          <p className="t-label">{t("lp.resultsEyebrow")}</p>
           <h2 id="lp-future-title" className="lp-future-title">
             {t("lp.resultsTitle")}
           </h2>

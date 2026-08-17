@@ -109,8 +109,7 @@ export const LANDING_COPY: CopyDict = {
   "lp.frameFoot4": { en: "The flagged item is right twice running, so it leaves the queue." },
 
   /* ================= section 3: outcomes ================= */
-  "lp.resultsEyebrow": { en: "Student outcomes" },
-  "lp.resultsDemoShort": { en: "Demo data" },
+  "lp.resultsEyebrow": { en: "Sample outcomes" },
   "lp.resultsTitle": { en: "A wall of 1500s, built one skill at a time." },
   "lp.resultsSub": {
     en: "Eight score journeys. Eight different weak points turned into focused practice.",
