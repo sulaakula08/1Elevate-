@@ -115,9 +115,6 @@ export const LANDING_COPY: CopyDict = {
   "lp.resultsSub": {
     en: "Eight score journeys. Eight different weak points turned into focused practice.",
   },
-  "lp.resultsControls": { en: "Carousel controls" },
-  "lp.resultsPrevious": { en: "Show previous result" },
-  "lp.resultsNext": { en: "Show next result" },
   "lp.resultsCarousel": { en: "SAT result profiles" },
   "lp.resultsSatScore": { en: "SAT score" },
   "lp.resultsGain": { en: "points" },
