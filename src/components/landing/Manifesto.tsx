@@ -21,7 +21,7 @@ import { useScrollVar } from "./scroll";
  * `setProperty` per frame and no React render at all.
  */
 
-/** Length of the attempt strip. The caption states this number — keep them equal. */
+/** Length of the answer map. Its visible labels state this number — keep them equal. */
 const STRIP_LENGTH = 48;
 
 /**
@@ -81,11 +81,29 @@ export function Manifesto() {
           the page repeating itself before it has said anything new. */}
       <p className="lp-mf-body">{t("lp.methodBody")}</p>
 
-      {/* ---- the attempt strip ----
-          48 answers, six of them wrong. The misses rise, take the brand colour
-          and keep their height as the section resolves, so the graphic performs
-          the sentence beside it instead of illustrating it. */}
-      <figure className="lp-mf-strip-block">
+      {/* ---- the answer map ----
+          A title, legend and endpoints make the encoding explicit before the
+          reader has to interpret it: one block is one answer; purple is a miss. */}
+      <figure className="lp-mf-strip-block" aria-labelledby="lp-mf-map-title">
+        <figcaption className="lp-mf-strip-head">
+          <div>
+            <p id="lp-mf-map-title" className="lp-mf-strip-title">
+              {t("lp.methodStripTitle")}
+            </p>
+            <p className="lp-mf-strip-sub">{t("lp.methodStripSub")}</p>
+          </div>
+          <div className="lp-mf-legend" aria-label={t("lp.methodStripLegend")}>
+            <span className="lp-mf-legend-item">
+              <span className="lp-mf-key" aria-hidden />
+              {t("lp.methodStripCorrect")}
+            </span>
+            <span className="lp-mf-legend-item">
+              <span className="lp-mf-key" data-miss aria-hidden />
+              {t("lp.methodStripMissed")}
+            </span>
+          </div>
+        </figcaption>
+
         <div className="lp-mf-strip" role="img" aria-label={t("lp.methodStripLabel")}>
           {Array.from({ length: STRIP_LENGTH }, (_, i) => (
             <span
@@ -96,10 +114,15 @@ export function Manifesto() {
             />
           ))}
         </div>
-        <figcaption className="lp-mf-caption">
-          <span>{t("lp.methodStripA")}</span>{" "}
-          <strong>{t("lp.methodStripB")}</strong>
-        </figcaption>
+        <div className="lp-mf-strip-scale" aria-hidden>
+          <span>{t("lp.methodStripStart")}</span>
+          <span>{t("lp.methodStripEnd")}</span>
+        </div>
+        <p className="lp-mf-caption">
+          <strong>{t("lp.methodStripCount")}</strong>
+          <span className="lp-mf-caption-arrow" aria-hidden>→</span>
+          <span>{t("lp.methodStripResult")}</span>
+        </p>
       </figure>
 
       {/* The rule that leaves this section and arrives in the next one. It draws

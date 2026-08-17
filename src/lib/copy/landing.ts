@@ -25,16 +25,25 @@ export const LANDING_COPY: CopyDict = {
   "lp.methodBody": {
     en: "1Elevate keeps it. One miss names a skill, the skill picks your next question, and that question is where the points come back.",
   },
-  /* Caption for the attempt strip. The count is the strip's own length, so the
-     sentence and the graphic cannot drift apart — see `STRIP_LENGTH`.
+  /* Labels for the answer map. The count is the strip's own length, so the
+     copy and the graphic cannot drift apart — see `STRIP_LENGTH`.
 
      It deliberately does not say "a practice session is 48 questions". There is
      no such number — practice runs over whatever the student filtered to, and
      only review has a fixed size (fifteen, in review/page.tsx). The strip is a
      stretch of answers, and the ratio under it is the only claim being made. */
-  "lp.methodStripA": { en: "Forty-eight answers." },
-  "lp.methodStripB": { en: "The six you miss are the ones with something to say." },
-  "lp.methodStripLabel": { en: "Forty-eight answers, six of them wrong" },
+  "lp.methodStripTitle": { en: "Example: 48 recent answers" },
+  "lp.methodStripSub": { en: "Each block is one answered question." },
+  "lp.methodStripLegend": { en: "Answer map legend" },
+  "lp.methodStripCorrect": { en: "Correct" },
+  "lp.methodStripMissed": { en: "Missed" },
+  "lp.methodStripStart": { en: "Answer 1" },
+  "lp.methodStripEnd": { en: "Answer 48" },
+  "lp.methodStripCount": { en: "6 missed answers" },
+  "lp.methodStripResult": { en: "Each one is tagged by skill and added to your review queue." },
+  "lp.methodStripLabel": {
+    en: "Answer map showing 48 recent answers: 42 correct and 6 missed. Missed answers are highlighted in purple.",
+  },
 
   /* ================= section 2: the learning loop ================= */
   "lp.loopEyebrow": { en: "One question, five steps" },
