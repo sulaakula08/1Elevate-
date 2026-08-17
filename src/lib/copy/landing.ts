@@ -128,7 +128,6 @@ export const LANDING_COPY: CopyDict = {
     en: "Eight score journeys. Eight different weak points turned into focused practice.",
   },
   "lp.resultsCarousel": { en: "SAT result profiles" },
-  "lp.resultsSatScore": { en: "SAT score" },
   "lp.resultsGain": { en: "points" },
   "lp.resultsMoved": { en: "Skill that moved" },
   /* Score-report furniture. The card is drawn as the report a student is
@@ -138,10 +137,6 @@ export const LANDING_COPY: CopyDict = {
   "lp.resultsRange": { en: "400–1600" },
   "lp.resultsRw": { en: "Reading and Writing" },
   "lp.resultsMath": { en: "Math" },
-  "lp.resultsPrevious": { en: "Previous" },
-  "lp.resultsBenchmark": {
-    en: "Meets or exceeds the college and career readiness benchmarks in both sections.",
-  },
   /* ================= section 4: capability surfaces ================= */
   "lp.capsEyebrow": { en: "What you actually use" },
   "lp.capsTitle": { en: "Three surfaces. One loop." },

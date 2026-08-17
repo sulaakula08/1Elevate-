@@ -1490,8 +1490,7 @@
      fixed rather than themed for the same reason a report is the same colour on
      any screen you open it on. */
   .lp-future-slide {
-    --future-tone: #1f4fd8;
-    --future-tone-deep: #17389d;
+    --future-tone: #2b3fe0;
   }
 
   /* ---------------- the card, drawn as a score report ----------------
@@ -1509,15 +1508,12 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 24rem;
+    min-height: 20rem;
     height: 100%;
     overflow: hidden;
     border-radius: var(--radius-lg);
-    background: linear-gradient(
-      165deg,
-      var(--future-tone),
-      var(--future-tone-deep)
-    );
+    /* Flat, not a gradient: the report is printed on one colour. */
+    background: var(--future-tone);
     color: #fff;
     box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 8%, transparent);
     transition:
@@ -1531,7 +1527,7 @@
 
   .lp-future-band {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 0.6875rem;
     padding: 1.0625rem 1.125rem 1.125rem;
@@ -1568,12 +1564,7 @@
     color: color-mix(in srgb, #fff 72%, transparent);
     font-size: var(--t-2xs);
   }
-  .lp-future-index {
-    align-self: start;
-    color: color-mix(in srgb, #fff 58%, transparent);
-    font-size: var(--t-2xs);
-  }
-  /* Spans the band's three columns, on the line under the person. */
+  /* Spans both band columns, on the line under the person. */
   .lp-future-admin {
     grid-column: 1 / -1;
     margin-top: 0.75rem;
@@ -1592,18 +1583,16 @@
     --report-ink: #0f1419;
     --report-muted: #5b6675;
     --report-line: rgba(15, 23, 42, 0.12);
-    margin: 0 0.75rem;
-    padding: 1rem 1rem 0.9375rem;
-    border-radius: var(--radius-sm);
-    background: #fff;
-    color: var(--report-ink);
-    box-shadow: 0 6px 18px rgba(8, 20, 60, 0.18);
-  }
-  .lp-future-report-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 0.875rem;
+    margin: 0 0.75rem;
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--report-ink);
+    box-shadow: 0 6px 18px rgba(8, 20, 60, 0.18);
   }
   .lp-future-report-label {
     color: var(--report-muted);
@@ -1643,64 +1632,6 @@
     letter-spacing: -0.03em;
   }
 
-  /* The total's place on the 400–1600 scale: a hairline track, the distance
-     travelled since the previous sitting drawn in the card's tone, and a dot
-     on the total itself. */
-  .lp-future-scale {
-    position: relative;
-    height: 0.25rem;
-    margin-top: 1rem;
-    border-radius: var(--radius-pill);
-    background: var(--report-line);
-  }
-  .lp-future-scale-span {
-    position: absolute;
-    inset-block: 0;
-    left: var(--from-pos);
-    right: calc(100% - var(--to-pos));
-    border-radius: var(--radius-pill);
-    background: linear-gradient(
-      to right,
-      color-mix(in srgb, var(--future-tone) 34%, transparent),
-      var(--future-tone)
-    );
-  }
-  .lp-future-scale-dot {
-    position: absolute;
-    top: 50%;
-    left: var(--to-pos);
-    width: 0.5rem;
-    height: 0.5rem;
-    transform: translate(-50%, -50%);
-    border-radius: var(--radius-pill);
-    background: var(--future-tone);
-    box-shadow: 0 0 0 2px #fff;
-  }
-
-  .lp-future-route {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-top: 0.6875rem;
-    color: var(--report-muted);
-    font-size: var(--t-2xs);
-  }
-  .lp-future-route strong {
-    color: #157347;
-    font-size: var(--t-sm);
-    font-weight: 650;
-  }
-  /* The sentence the real report closes on, kept because it is the line a
-     student actually reads out. */
-  .lp-future-benchmark {
-    margin-top: 0.75rem;
-    padding-top: 0.6875rem;
-    border-top: 1px solid var(--report-line);
-    color: var(--report-muted);
-    font-size: var(--t-2xs);
-    line-height: 1.45;
-  }
 
   .lp-future-skill {
     display: flex;
@@ -1709,16 +1640,30 @@
     margin-top: auto;
     padding: 1rem 1.125rem 1.125rem;
   }
-  .lp-future-skill span {
-    color: color-mix(in srgb, #fff 66%, transparent);
+  /* Direct child only: the gain carries a screen-reader "points" span, which
+     has no business inheriting the eyebrow's case and colour. */
+  .lp-future-skill > span {
+    color: color-mix(in srgb, #fff 62%, transparent);
     font-size: var(--t-2xs);
     letter-spacing: 0.055em;
     text-transform: uppercase;
+  }
+  .lp-future-skill p {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
   }
   .lp-future-skill strong {
     font-size: var(--t-sm);
     font-weight: 600;
     line-height: 1.35;
+  }
+  .lp-future-skill em {
+    flex: none;
+    font-size: var(--t-sm);
+    font-style: normal;
+    font-weight: 650;
   }
 
   @keyframes lp-future-marquee {
@@ -1760,7 +1705,7 @@
       );
     }
     .lp-future-card {
-      min-height: 23rem;
+      min-height: 19rem;
     }
     .lp-future-score {
       font-size: 2.875rem;
