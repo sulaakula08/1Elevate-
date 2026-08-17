@@ -6,6 +6,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { AppShell } from "@/components/AppShell";
 import { IS_PRODUCTION_SITE, SITE_URL } from "@/lib/site";
+import { StructuredData } from "@/components/StructuredData";
 
 const DESCRIPTION =
   "SAT preparation: a question bank written to the official blueprint, mock tests with real timing, progress analytics and Elevate, the AI assistant.";
@@ -119,6 +120,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <StructuredData />
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {THEME_BOOTSTRAP}
         </Script>
