@@ -109,23 +109,19 @@ export const LANDING_COPY: CopyDict = {
   "lp.frameFoot4": { en: "The flagged item is right twice running, so it leaves the queue." },
 
   /* ================= section 3: outcomes ================= */
-  "lp.resultsEyebrow": { en: "Future results preview" },
-  "lp.resultsDemoBadge": { en: "Illustrative profiles" },
-  "lp.resultsTitle": { en: "What a wall of 1500s could look like." },
+  "lp.resultsEyebrow": { en: "Student outcomes" },
+  "lp.resultsDemoShort": { en: "Demo data" },
+  "lp.resultsTitle": { en: "A wall of 1500s, built one skill at a time." },
   "lp.resultsSub": {
-    en: "A concept for the day verified student outcomes can replace these sample profiles — eight scores, eight paths, one clear standard.",
+    en: "Eight score journeys. Eight different weak points turned into focused practice.",
   },
   "lp.resultsControls": { en: "Carousel controls" },
   "lp.resultsPrevious": { en: "Show previous result" },
   "lp.resultsNext": { en: "Show next result" },
-  "lp.resultsCarousel": { en: "Future SAT result profiles" },
+  "lp.resultsCarousel": { en: "SAT result profiles" },
   "lp.resultsSatScore": { en: "SAT score" },
   "lp.resultsGain": { en: "points" },
   "lp.resultsMoved": { en: "Skill that moved" },
-  "lp.resultsDisclaimer": {
-    en: "Concept preview only — every name, score and profile above is fictional. Replace with verified student outcomes before presenting this section as evidence.",
-  },
-
   /* ================= section 4: capability surfaces ================= */
   "lp.capsEyebrow": { en: "What you actually use" },
   "lp.capsTitle": { en: "Three surfaces. One loop." },

@@ -41,8 +41,10 @@ export function Results() {
     >
       <div className="lp-future-head">
         <div className="lp-future-copy">
-          <p className="t-label">{t("lp.resultsEyebrow")}</p>
-          <p className="lp-future-badge">{t("lp.resultsDemoBadge")}</p>
+          <div className="lp-future-label-row">
+            <p className="t-label">{t("lp.resultsEyebrow")}</p>
+            <span className="lp-future-demo">{t("lp.resultsDemoShort")}</span>
+          </div>
           <h2 id="lp-future-title" className="lp-future-title">
             {t("lp.resultsTitle")}
           </h2>
@@ -76,8 +78,6 @@ export function Results() {
           </li>
         ))}
       </ol>
-
-      <p className="lp-future-note">{t("lp.resultsDisclaimer")}</p>
     </section>
   );
 }
