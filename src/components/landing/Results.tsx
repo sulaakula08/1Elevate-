@@ -138,6 +138,8 @@ function ResultCard({ result, index }: { result: FutureResult; index: number }) 
             <span className="sr-only"> {t("lp.resultsGain")}</span>
           </strong>
         </p>
+
+        <p className="lp-future-benchmark">{t("lp.resultsBenchmark")}</p>
       </div>
 
       <div className="lp-future-skill">

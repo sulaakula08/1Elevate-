@@ -41,13 +41,11 @@ export function TopBar() {
   const headerRef = useRef<HTMLElement>(null);
 
   /*
-    The bar condenses over the first 120px rather than snapping at 4px. Two
-    custom properties carry the state to CSS, which owns every visual decision:
-
-      --nav-p     0 → 1 over the first 120px. Drives height, translucency,
-                  blur, shadow and the tagline fade — one number, so those five
-                  moves cannot drift out of step with each other.
-      --nav-read  0 → 1 over the whole document. Drives the progress hairline.
+    The bar detaches over the first 120px rather than snapping at 4px. One
+    custom property carries the state to CSS, which owns every visual decision:
+    `--nav-p` runs 0 → 1 across that distance and drives the drop, the corner
+    radius, the inset, the height, the translucency, the blur and the tagline
+    fade — one number, so those moves cannot drift out of step with each other.
 
     Written to the element in a rAF rather than through React state: this fires
     on every scroll frame, and re-rendering a header with a menu and a nav in it
@@ -63,13 +61,7 @@ export function TopBar() {
       if (!node) return;
 
       const y = window.scrollY;
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-
       node.style.setProperty("--nav-p", Math.min(1, Math.max(0, y / 120)).toFixed(4));
-      node.style.setProperty(
-        "--nav-read",
-        scrollable > 0 ? Math.min(1, Math.max(0, y / scrollable)).toFixed(4) : "0",
-      );
       setScrolled(y > 4);
     };
 
@@ -247,9 +239,6 @@ export function TopBar() {
           </div>
         </div>
 
-        {/* Reading progress. Decorative, so it is hidden from the tree; the
-            page's own scrollbar is the accessible version of this. */}
-        <span className="landing-topbar-progress" aria-hidden />
       </header>
 
       {/* ---------------- mobile bottom tabs ---------------- */}

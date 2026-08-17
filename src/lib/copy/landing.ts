@@ -135,6 +135,9 @@ export const LANDING_COPY: CopyDict = {
   "lp.resultsRw": { en: "Reading and Writing" },
   "lp.resultsMath": { en: "Math" },
   "lp.resultsPrevious": { en: "Previous" },
+  "lp.resultsBenchmark": {
+    en: "Meets or exceeds the college and career readiness benchmarks in both sections.",
+  },
   /* ================= section 4: capability surfaces ================= */
   "lp.capsEyebrow": { en: "What you actually use" },
   "lp.capsTitle": { en: "Three surfaces. One loop." },
