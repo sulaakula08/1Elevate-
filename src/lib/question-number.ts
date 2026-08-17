@@ -34,8 +34,23 @@ export function numberOf(id: string, section?: string): number | null {
   return parsed.n;
 }
 
-/** `#41`, or nothing to show when the id carries no number. */
+/**
+ * Short names for the sections, because the number alone is ambiguous.
+ *
+ * Ids are numbered per section, so `sat-math-238` and `sat-rw-238` both exist
+ * and are different questions. A badge reading `#238` therefore names two of
+ * them, which is how an admin came to open "question 238" and find something
+ * they had not written.
+ */
+const SECTION_SHORT: Record<string, string> = {
+  "sat-math": "M",
+  "sat-rw": "RW",
+};
+
+/** `M 238` — the number with the section it belongs to, or null if it has none. */
 export function questionLabel(question: Question): string | null {
-  const n = numberOf(question.id);
-  return n === null ? null : `#${n}`;
+  const parsed = parseQuestionId(question.id);
+  if (!parsed) return null;
+  const short = SECTION_SHORT[parsed.section] ?? parsed.section.replace(/^sat-/, "");
+  return `${short} ${parsed.n}`;
 }

@@ -3423,3 +3423,15 @@ body[data-exam] .test-foot {
     border-bottom: 0;
   }
 }
+
+@layer components {
+  /* The question's own number, beside its domain. Quiet — it is a reference an
+     admin or a report needs, not something a student is meant to read while
+     answering — but present, because the large numeral above it is only the
+     position in this session. */
+  .test-question-id {
+    font-variant-numeric: tabular-nums;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+  }
+}

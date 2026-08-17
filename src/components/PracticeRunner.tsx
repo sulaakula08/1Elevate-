@@ -10,6 +10,7 @@ import { readingDisplayParts } from "@/lib/reading-parts";
 import { useSettings } from "@/lib/settings";
 import { apiFetch } from "@/lib/supabase/client";
 import { generatedIds } from "@/lib/generation/provenance";
+import { questionLabel } from "@/lib/question-number";
 import { useI18n } from "@/lib/i18n";
 import type { QuizMode } from "@/lib/storage";
 import { pct } from "@/lib/stats";
@@ -441,7 +442,16 @@ export function PracticeRunner({
   const questionPanel = (
     <main className="test-question">
       <div className="test-question-status">
-        <span className="q-number num">{index + 1}</span>
+        {/*
+         * Position in this session, not the question's identity. It counts 1..N
+         * through whatever was drawn, so it lands on a different question every
+         * time — which is exactly right for a test surface and exactly wrong to
+         * quote to anyone. The stable number is in the meta line below, and the
+         * title says which is which so the two are not read as one.
+         */}
+        <span className="q-number num" title={`${t("quiz.question")} ${index + 1} ${t("quiz.of")} ${count}`}>
+          {index + 1}
+        </span>
         <button
           className={`test-mark-btn ${marked[question.id] ? "is-marked" : ""}`}
           aria-pressed={Boolean(marked[question.id])}
@@ -506,6 +516,18 @@ export function PracticeRunner({
 
       {!hasReadingPane && (
         <div className="test-question-meta">
+          {/*
+           * The question's own number, the one printed beside it in the admin
+           * list and accepted by the search box there. An admin who writes 238
+           * and a student who says "238 is wrong" now mean the same item; before
+           * this the only number on screen was the session position, which meant
+           * a different question on every run.
+           */}
+          {questionLabel(question) && (
+            <span className="test-question-id" title={question.id}>
+              {questionLabel(question)}
+            </span>
+          )}
           <span>{question.domain ?? question.topic}</span>
           {question.domain && <span>{question.topic}</span>}
           <span className="test-difficulty" title={t("quiz.difficulty")}>

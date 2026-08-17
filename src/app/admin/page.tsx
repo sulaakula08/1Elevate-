@@ -12,7 +12,7 @@ import type {
 } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { findDuplicates } from "@/lib/duplicates";
-import { numberOf } from "@/lib/question-number";
+import { numberOf, questionLabel } from "@/lib/question-number";
 import { uploadFigure } from "@/lib/figures";
 import { useI18n } from "@/lib/i18n";
 
@@ -891,8 +891,10 @@ function AdminInner() {
                           list, so it survives deleting anything above it — see
                           lib/question-number. Without it on screen, "search by
                           number" is a promise the page never keeps. */}
-                      {numberOf(question.id) !== null && (
-                        <span className="qb-number">#{numberOf(question.id)}</span>
+                      {questionLabel(question) && (
+                        <span className="qb-number" title={question.id}>
+                          {questionLabel(question)}
+                        </span>
                       )}
                       {question.exam.toUpperCase()} · {subject ? tx(subject.name) : question.subjectId}{" "}
                       · {question.topic}
