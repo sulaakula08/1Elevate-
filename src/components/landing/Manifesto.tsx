@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useReducedMotion } from "motion/react";
 import { useScrollVar } from "./scroll";
@@ -38,6 +38,7 @@ export function Manifesto() {
   const { t } = useI18n();
   const scope = useRef<HTMLElement>(null);
   const reduced = useReducedMotion();
+  const [activeAnswer, setActiveAnswer] = useState<number | null>(null);
 
   /*
    * `through`, not `cover`.
@@ -51,6 +52,18 @@ export function Manifesto() {
   useScrollVar(scope, { range: "through", enabled: !reduced });
 
   const lines = [t("lp.methodLine1"), t("lp.methodLine2"), t("lp.methodLine3")];
+
+  function inspectAnswer(event: PointerEvent<HTMLDivElement>) {
+    if (reduced) return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const pointerPosition = (event.clientX - bounds.left) / bounds.width;
+    const answerIndex = Math.floor(
+      Math.min(0.999, Math.max(0, pointerPosition)) * STRIP_LENGTH,
+    );
+
+    setActiveAnswer((current) => (current === answerIndex ? current : answerIndex));
+  }
 
   return (
     <section id="method" ref={scope} className="lp-mf" aria-labelledby="lp-mf-title">
@@ -104,15 +117,54 @@ export function Manifesto() {
           </div>
         </figcaption>
 
-        <div className="lp-mf-strip" role="img" aria-label={t("lp.methodStripLabel")}>
-          {Array.from({ length: STRIP_LENGTH }, (_, i) => (
-            <span
-              key={i}
-              className="lp-mf-cell"
-              data-miss={MISSES.has(i) ? "" : undefined}
-              style={{ ["--n" as string]: i }}
-            />
-          ))}
+        <p
+          className="lp-mf-strip-status"
+          data-active={activeAnswer !== null ? "" : undefined}
+          data-miss={activeAnswer !== null && MISSES.has(activeAnswer) ? "" : undefined}
+        >
+          {activeAnswer === null ? (
+            <span>{t("lp.methodStripHint")}</span>
+          ) : (
+            <>
+              <strong>
+                {t("lp.methodStripAnswer")} {activeAnswer + 1}
+              </strong>
+              <span aria-hidden>·</span>
+              <span>
+                {MISSES.has(activeAnswer)
+                  ? t("lp.methodStripMissedDetail")
+                  : t("lp.methodStripCorrectDetail")}
+              </span>
+            </>
+          )}
+        </p>
+
+        <div
+          className="lp-mf-strip"
+          role="img"
+          aria-label={t("lp.methodStripLabel")}
+          onPointerDown={inspectAnswer}
+          onPointerMove={inspectAnswer}
+          onPointerLeave={() => setActiveAnswer(null)}
+          onPointerCancel={() => setActiveAnswer(null)}
+        >
+          {Array.from({ length: STRIP_LENGTH }, (_, i) => {
+            const proximity =
+              activeAnswer === null ? 0 : Math.max(0, 1 - Math.abs(i - activeAnswer) / 4);
+
+            return (
+              <span
+                key={i}
+                className="lp-mf-cell"
+                data-active={activeAnswer === i ? "" : undefined}
+                data-miss={MISSES.has(i) ? "" : undefined}
+                style={{
+                  ["--n" as string]: i,
+                  ["--hover" as string]: proximity,
+                }}
+              />
+            );
+          })}
         </div>
         <div className="lp-mf-strip-scale" aria-hidden>
           <span>{t("lp.methodStripStart")}</span>
