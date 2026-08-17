@@ -1564,16 +1564,6 @@
     border-top: 1px solid;
     isolation: isolate;
   }
-  .lp-caps::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: -2px;
-    width: 3.5rem;
-    height: 3px;
-    border-radius: var(--radius-pill);
-    background: linear-gradient(to right, var(--brand), transparent);
-  }
   /* A low-contrast violet-to-blue field gives the product chapter its own
      centre of gravity while the page grid remains visible underneath. */
   .lp-caps::after {
