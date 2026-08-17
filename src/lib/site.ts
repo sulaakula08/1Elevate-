@@ -20,11 +20,31 @@ function fromEnv(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (explicit) return explicit;
 
-  // Vercel sets this without a scheme.
-  const vercel = process.env.NEXT_PUBLIC_VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel}`;
+  /*
+   * On production, never NEXT_PUBLIC_VERCEL_URL.
+   *
+   * That variable is the URL of the individual deployment —
+   * project-5dri2ogu5-team.vercel.app — and it is set on production builds too,
+   * not only previews. Reading it there made the live site advertise its build
+   * address instead of its domain: robots.txt pointed the sitemap at the
+   * deployment, and every canonical link named it as the real page. That invites
+   * Google to index a throwaway address and to treat 1elevate.co as the copy.
+   *
+   * The production domain is asked for first, and falls back to the constant
+   * below, because production always lives there.
+   */
+  const isProduction =
+    process.env.NEXT_PUBLIC_VERCEL_ENV === undefined ||
+    process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
 
-  return FALLBACK;
+  if (isProduction) {
+    const domain = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL?.trim();
+    return domain ? `https://${domain}` : FALLBACK;
+  }
+
+  // Previews describe themselves, which is what keeps them out of the index.
+  const deployment = process.env.NEXT_PUBLIC_VERCEL_URL?.trim();
+  return deployment ? `https://${deployment}` : FALLBACK;
 }
 
 /** No trailing slash, so `${SITE_URL}/path` never doubles it. */
