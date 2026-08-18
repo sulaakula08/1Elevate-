@@ -233,6 +233,13 @@ const D: Dict = {
   "mock.startTest": { en: "Start test" },
   "mock.sitAgain": { en: "Sit it again" },
   "mock.beatBy": { en: "to your target" },
+  /* The sitting brief. A mock is an event with a shape — four modules and a
+     break, back to back — and the three spec tiles this replaces described it
+     the way a settings page describes itself. */
+  "mock.sitting": { en: "The sitting, end to end" },
+  "mock.break": { en: "Break" },
+  "mock.startToFinish": { en: "start to finish" },
+  "mock.hoursShort": { en: "h" },
   "mock.adaptiveWhat": { en: "The second module of each section is chosen from how the first one went, as on the real test.",
   },
   "mock.adaptiveBody": { en: "Each section routes like the real thing: do well in the first module and the second one is harder, and a harder second module is what lets a section reach the top of its scale. The score is still an estimate — the real mapping is a calibrated table per form.",

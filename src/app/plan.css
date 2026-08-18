@@ -406,56 +406,6 @@
   }
 
   /* ================= mock setup ================= */
-  .pl-spec {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
-  }
-  .pl-spec-cell {
-    padding: 0.875rem 1rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-  }
-  .pl-spec-label {
-    font-size: var(--t-2xs);
-    color: var(--faint);
-  }
-  .pl-spec-value {
-    margin-top: 0.25rem;
-    font-size: var(--t-h3);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* A module row. The subject's hue is a 3px spine on the left rather than a
-     tint over the whole row, so four rows stay scannable as one list. */
-  .pl-module {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    padding: 0.875rem 1rem;
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--tone, var(--brand));
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-  }
-  .pl-module-name {
-    font-size: var(--t-body);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .pl-module-meta {
-    margin-left: auto;
-    flex-shrink: 0;
-    font-size: var(--t-sm);
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-
   /* The bank-is-short panel. Framed as a capability, not an apology: brand
      hairline and brand tint, never the warning colour. */
   .pl-notice {
@@ -499,11 +449,6 @@
     letter-spacing: 0.04em;
   }
 
-  @media (max-width: 30rem) {
-    .pl-spec {
-      grid-template-columns: 1fr;
-    }
-  }
 }
 
 @layer components {
@@ -954,6 +899,196 @@
 }
 
 @layer components {
+  /* ================= the sitting brief =================
+     One object at the top of /mock instead of three boxed spec tiles. The tiles
+     were not wrong, they were inert: "Questions 98 / Duration 134 min / Score
+     scale 400–1600" is a specification sheet for an exam you are about to sit
+     for two hours.
+
+     The panel carries a faint ruled ground — the same grid the marketing pages
+     use — so the brief reads as one printed sheet rather than as three
+     containers, and the specs sit on it as type rather than in boxes. */
+  .mock-brief {
+    position: relative;
+    overflow: hidden;
+    padding: 1.25rem 1.375rem 1.375rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background:
+      radial-gradient(
+        26rem 16rem at 96% -20%,
+        color-mix(in srgb, var(--brand) 10%, transparent),
+        transparent 72%
+      ),
+      var(--surface);
+  }
+  /* Ruled ground, 2.5rem squares, fading out downwards so the timeline sits on
+     clean paper. */
+  .mock-brief::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--line) 60%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--line) 60%, transparent) 1px, transparent 1px);
+    background-size: 2.5rem 2.5rem;
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent 62%);
+    mask-image: linear-gradient(to bottom, black, transparent 62%);
+  }
+  .mock-brief > * {
+    position: relative;
+  }
+
+  .mock-brief-top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+  .mock-brief-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2.25rem;
+  }
+  .mock-brief-specs dt {
+    font-size: var(--t-2xs);
+    color: var(--faint);
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+  .mock-brief-specs dd {
+    margin-top: 0.1875rem;
+    font-size: 1.875rem;
+    font-weight: 550;
+    line-height: 1;
+    letter-spacing: -0.035em;
+  }
+  /* The unit rides with the number at two-thirds its size, so "2h14min" reads
+     as one quantity instead of a number and a word. */
+  .mock-brief-specs dd em {
+    margin: 0 0.0625rem 0 0.0625rem;
+    color: var(--muted);
+    font-size: 0.6875em;
+    font-style: normal;
+    font-weight: 450;
+  }
+  .mock-brief-note {
+    flex: none;
+    max-width: 14rem;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+    line-height: 1.4;
+    text-align: right;
+  }
+
+  /* ---------------- the timeline ----------------
+     Segments sized by their minutes. A student can see that Math runs longer
+     than Reading, that the break is exactly halfway, and where the two-hour mark
+     falls — none of which a list of four rows can show. */
+  .mock-time {
+    margin-top: 1.75rem;
+  }
+  .mock-time-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.625rem;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+  .mock-time-track {
+    display: flex;
+    align-items: stretch;
+    gap: 0.375rem;
+  }
+  .mock-time-seg {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4375rem;
+    min-width: 0;
+    /* Widths come from `flex-grow: minutes`, set inline. A basis of zero is what
+       makes the growth proportional to the minutes rather than to the label. */
+    flex-basis: 0;
+  }
+  .mock-time-bar {
+    height: 0.5rem;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--tone) 62%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 78%, transparent);
+  }
+  .mock-time-label strong {
+    display: block;
+    overflow: hidden;
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mock-time-label > span {
+    display: block;
+    margin-top: 0.125rem;
+    overflow: hidden;
+    font-size: var(--t-micro);
+    color: var(--faint);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mock-time-at {
+    margin-top: 0.125rem;
+    font-size: var(--t-micro);
+    color: var(--faint);
+    opacity: 0.75;
+  }
+  /* The break is the one segment that is not work: hatched, unlabelled beyond
+     its name, and it takes the muted line rather than a subject hue. */
+  .mock-time-seg[data-kind="break"] .mock-time-bar {
+    background: repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--foreground) 16%, transparent) 0 2px,
+      transparent 2px 5px
+    );
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .mock-time-seg[data-kind="break"] .mock-time-label strong {
+    color: var(--muted);
+    font-weight: 450;
+  }
+
+  /* Below the point where five labels can sit side by side, the timeline gives up
+     on being a timeline and becomes a list, with the bar as a left spine. The
+     lengths go with it: `flex-grow` means nothing in a grid, and 34px of "Break"
+     against 119px of "Math 2" is not a proportion anyone can read on a phone
+     anyway. The minutes are still on every row in words. */
+  @media (max-width: 47.99rem) {
+    .mock-brief-top {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.875rem;
+    }
+    .mock-brief-note {
+      text-align: left;
+    }
+    .mock-time-track {
+      display: grid;
+      gap: 0.5rem;
+    }
+    .mock-time-seg {
+      display: grid;
+      grid-template-columns: 0.375rem minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .mock-time-bar {
+      height: 100%;
+      min-height: 1.75rem;
+      border-radius: 3px;
+    }
+  }
+
   /* ---------------- the numbered mock tests ----------------
      Cards, not rows. The list this replaces gave three identical lines whose
      only difference was the leading number, and identical things in a list read
@@ -998,8 +1133,7 @@
       box-shadow 180ms ease,
       transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
-  /* The tone as a spine along the top edge, the way pl-module wears it on the
-     left: enough to tell the cards apart without tinting the whole surface. */
+  /* The tone as a spine along the top edge: enough to tell the cards apart without tinting the whole surface. */
   .mock-set::before {
     content: "";
     position: absolute;

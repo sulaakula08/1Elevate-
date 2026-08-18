@@ -198,6 +198,10 @@ function MockInner() {
   const plannedTotal = blueprint.sections.reduce((sum, s) => sum + s.count, 0);
   const plan = sets[0]?.sections ?? [];
   const availableTotal = plan.reduce((sum, s) => sum + s.questions.length, 0);
+  /* Testing time, which is the number the College Board publishes and the one
+     the timer runs on. The break is drawn in the timeline but not counted here —
+     nobody sits a 144-minute SAT. */
+  const sittingMinutes = plan.reduce((sum, s) => sum + s.minutes, 0);
 
   const finish = useCallback(
     (
@@ -418,29 +422,45 @@ function MockInner() {
         <EmptyState title={t("practice.emptyTitle")}>{t("practice.empty")}</EmptyState>
       ) : (
         <>
-          {/* What the test is, before what it is made of. */}
-          <div className="pl-spec">
-            <div className="pl-spec-cell">
-              <p className="pl-spec-label">{t("plan.mockTotal")}</p>
-              <p className="pl-spec-value">
-                {availableTotal}
-                {!complete && <span className="text-faint"> / {plannedTotal}</span>}
-              </p>
+          {/*
+            The brief: what this sitting is, and its shape as an event. Three
+            boxed spec tiles used to stand here — "Questions 98", "Duration 134
+            min", "Score scale 400–1600" — which described a two-hour exam the
+            way a settings page describes itself. A mock has a shape: four
+            modules and a break, back to back, and the timeline is the honest
+            picture of it.
+          */}
+          <section className="mock-brief" aria-label={t("mock.sitting")}>
+            <div className="mock-brief-top">
+              <dl className="mock-brief-specs">
+                <div>
+                  <dt>{t("plan.mockTotal")}</dt>
+                  <dd className="num">
+                    {availableTotal}
+                    {!complete && <span className="text-faint"> / {plannedTotal}</span>}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("plan.mockDuration")}</dt>
+                  <dd className="num">
+                    {Math.floor(sittingMinutes / 60)}
+                    <em>{t("mock.hoursShort")}</em>
+                    {String(sittingMinutes % 60).padStart(2, "0")}
+                    <em>{t("common.minutes")}</em>
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("plan.mockScale")}</dt>
+                  <dd className="num">
+                    {blueprint.minScore}–{blueprint.maxScore}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mock-brief-note">{t("mock.blueprintNote")}</p>
             </div>
-            <div className="pl-spec-cell">
-              <p className="pl-spec-label">{t("plan.mockDuration")}</p>
-              <p className="pl-spec-value">
-                {plan.reduce((sum, s) => sum + s.minutes, 0)}{" "}
-                <span className="text-sm font-normal text-muted">{t("common.minutes")}</span>
-              </p>
-            </div>
-            <div className="pl-spec-cell">
-              <p className="pl-spec-label">{t("plan.mockScale")}</p>
-              <p className="pl-spec-value">
-                {blueprint.minScore}–{blueprint.maxScore}
-              </p>
-            </div>
-          </div>
+
+            <Sitting plan={plan} />
+          </section>
 
           {/* ---------------- the tests ----------------
               One row per numbered test, each its own button. This replaces a
@@ -467,29 +487,6 @@ function MockInner() {
                   disabled={filling || set.total === 0}
                   onStart={() => startSet(set)}
                 />
-              </Reveal>
-            ))}
-          </ol>
-
-          {/* What the modules are, once, rather than repeated under every test:
-              every numbered test has the same shape. */}
-          <p className="label-xs mt-8">{t("plan.mockModules")}</p>
-          <ol className="mt-3 space-y-2">
-            {plan.map((section, i) => (
-              <Reveal as="li" key={`${section.subjectId}-${i}`} delay={i * 50}>
-                <div
-                  className="pl-module"
-                  style={{ ["--tone" as string]: subjectColor(section.subjectId) }}
-                >
-                  <span className="glyph glyph-sm" aria-hidden>
-                    {i + 1}
-                  </span>
-                  <span className="pl-module-name">{section.name}</span>
-                  <span className="pl-module-meta">
-                    {pluralize(section.questions.length, NOUNS.question)} · {section.minutes}{" "}
-                    {t("common.minutes")}
-                  </span>
-                </div>
               </Reveal>
             ))}
           </ol>
@@ -709,5 +706,109 @@ function SetCard({
         )}
       </span>
     </button>
+  );
+}
+
+
+/** The break between the two sections of the real test. */
+const BREAK_MINUTES = 10;
+
+/**
+ * The sitting as a timeline: four modules and the break, drawn to length.
+ *
+ * This replaces a list of four rows that each said a subject name and a pair of
+ * numbers. The list was accurate and told you nothing you could feel — that the
+ * Math modules are the long ones, that the break falls exactly halfway, that the
+ * thing you are about to start runs past the two-hour mark. Widths come from the
+ * minutes, so the picture cannot disagree with the plan.
+ *
+ * The clock is elapsed time from the start of the sitting, not the time of day:
+ * a student reads "1:04" as "an hour in", which is the number that matters when
+ * you are deciding whether to begin.
+ */
+function Sitting({ plan }: { plan: MockSection[] }) {
+  const { t, tx } = useI18n();
+
+  type Segment = {
+    key: string;
+    kind: "module" | "break";
+    subjectId?: string;
+    label: string;
+    detail?: string;
+    minutes: number;
+    /** Elapsed minutes at which this segment starts. */
+    at: number;
+  };
+
+  const segments: Segment[] = [];
+  let elapsed = 0;
+  plan.forEach((section, index) => {
+    // The break sits where the section changes, which is where the real test
+    // puts it — derived from the plan rather than hard-coded to a position.
+    const previous = plan[index - 1];
+    if (previous && previous.subjectId !== section.subjectId) {
+      segments.push({
+        key: "break",
+        kind: "break",
+        label: t("mock.break"),
+        minutes: BREAK_MINUTES,
+        at: elapsed,
+      });
+      elapsed += BREAK_MINUTES;
+    }
+    const subject = getSubject(section.subjectId);
+    segments.push({
+      key: `${section.subjectId}-${section.module}`,
+      kind: "module",
+      subjectId: section.subjectId,
+      label: `${subject ? tx(subject.name) : section.subjectId} ${section.module}`,
+      detail: pluralize(section.questions.length, NOUNS.question),
+      minutes: section.minutes,
+      at: elapsed,
+    });
+    elapsed += section.minutes;
+  });
+
+  const total = elapsed;
+  const clock = (minutes: number) =>
+    `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+
+  return (
+    <div className="mock-time">
+      <p className="mock-time-head">
+        <span>{t("mock.sitting")}</span>
+        <span className="num">
+          {clock(total)} {t("mock.startToFinish")}
+        </span>
+      </p>
+
+      <ol className="mock-time-track">
+        {segments.map((segment) => (
+          <li
+            key={segment.key}
+            className="mock-time-seg"
+            data-kind={segment.kind}
+            style={{
+              flexGrow: segment.minutes,
+              ...(segment.subjectId
+                ? { ["--tone" as string]: subjectColor(segment.subjectId) }
+                : {}),
+            }}
+          >
+            <span className="mock-time-bar" aria-hidden />
+            <span className="mock-time-label">
+              <strong>{segment.label}</strong>
+              <span className="num">
+                {segment.minutes} {t("common.minutes")}
+                {segment.detail && <> · {segment.detail}</>}
+              </span>
+            </span>
+            <span className="mock-time-at num" aria-hidden>
+              {clock(segment.at)}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
