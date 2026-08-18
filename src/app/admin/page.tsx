@@ -20,6 +20,7 @@ import { domainsFor, skillsFor } from "@/data/taxonomy";
 import { PeopleManager } from "@/components/PeopleManager";
 import { SectionControls } from "@/components/admin/SectionControls";
 import { GenerateQuestions } from "@/components/admin/GenerateQuestions";
+import { BankCoverage } from "@/components/admin/BankCoverage";
 import { DeleteByNumber } from "@/components/admin/DeleteByNumber";
 import { FeedbackInbox } from "@/components/admin/FeedbackInbox";
 import { CommunityModeration } from "@/components/admin/CommunityModeration";
@@ -845,6 +846,10 @@ function AdminInner() {
       </div>
 
       {/* Bulk removal, above the list it removes from. */}
+      {/* Coverage first: what the bank holds is the context for everything
+          below it — writing, generating and deleting all start from a gap. */}
+      <BankCoverage bank={customQuestions} />
+
       {customQuestions.length > 0 && <DeleteByNumber questions={customQuestions} />}
 
       <section>

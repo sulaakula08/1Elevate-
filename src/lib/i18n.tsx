@@ -732,6 +732,15 @@ const D: Dict = {
   "admin.edit": { en: "Edit" },
   /* Searching the bank. The placeholder names the number first because that is
      the fastest way in when an admin already knows which question they mean. */
+  /* ---------------- bank coverage ---------------- */
+  "cov.title": { en: "Bank coverage" },
+  "cov.questions": { en: "questions in the bank" },
+  /* Named rather than hidden: the parts have to add up to the total, or the
+     breakdown is quietly wrong in the direction that flatters it. */
+  "cov.noSkill": { en: "No skill set" },
+  "cov.noDomain": { en: "No domain set" },
+  "cov.outsideSections": { en: "questions are in neither section" },
+
   "admin.searchLabel": { en: "Search the bank" },
   "admin.searchPlaceholder": { en: "Number, or any words from the question" },
   "admin.searchClear": { en: "Clear" },
