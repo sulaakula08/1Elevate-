@@ -145,13 +145,39 @@ export function Dashboard({ account }: { account: Account }) {
       {/* ---------------- level 1: what do I do now ---------------- */}
       <section className="dash-section">
         <p className="t-label">{t("home.today")}</p>
-        <div className="pl-next">
+        {/*
+         * The block follows the pointer: the brand light moves to where the
+         * cursor is, so the one action on the page feels answerable rather than
+         * printed. Two custom properties carry the position; everything else is
+         * CSS, and with reduced motion the light simply stays at the top right.
+         */}
+        <div
+          className="pl-next"
+          onPointerMove={(e) => {
+            const box = e.currentTarget.getBoundingClientRect();
+            e.currentTarget.style.setProperty(
+              "--px",
+              `${((e.clientX - box.left) / box.width) * 100}%`,
+            );
+            e.currentTarget.style.setProperty(
+              "--py",
+              `${((e.clientY - box.top) / box.height) * 100}%`,
+            );
+          }}
+          onPointerLeave={(e) => {
+            e.currentTarget.style.removeProperty("--px");
+            e.currentTarget.style.removeProperty("--py");
+          }}
+        >
           <div className="pl-next-copy">
             <h1 className="pl-next-title">{next.title}</h1>
             <p className="pl-next-meta">{next.meta}</p>
           </div>
           <Link href={next.href} className="pl-next-cta">
-            {next.cta} <span aria-hidden>›</span>
+            {next.cta}{" "}
+            <span aria-hidden className="pl-next-arrow">
+              ›
+            </span>
           </Link>
         </div>
       </section>

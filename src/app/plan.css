@@ -81,11 +81,59 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
+    /* Parked at the top right until a pointer says otherwise; the JS on the
+       block only overrides these two values. */
     background: radial-gradient(
-      90% 120% at 100% 0%,
+      90% 120% at var(--px, 100%) var(--py, 0%),
       color-mix(in srgb, var(--brand) 55%, transparent) 0%,
       transparent 62%
     );
+    transition: background 220ms ease;
+  }
+  /* A second, tighter light that only exists while the pointer is over the
+     block — the near half of the glow, which is what makes it read as a
+     reaction rather than a gradient that happens to move. */
+  .pl-next::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      22rem 22rem at var(--px, 100%) var(--py, 0%),
+      color-mix(in srgb, var(--brand) 42%, transparent) 0%,
+      transparent 70%
+    );
+    transition: opacity 260ms ease;
+  }
+  .pl-next:hover::after {
+    opacity: 1;
+  }
+  /* Hairline that lights up with the same pointer position, so the edge of the
+     block belongs to the glow instead of sitting flat under it. */
+  .pl-next {
+    border: 1px solid transparent;
+    transition:
+      transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 260ms ease,
+      border-color 260ms ease;
+  }
+  .pl-next:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+    box-shadow: 0 1.25rem 2.5rem -1rem color-mix(in srgb, var(--brand) 40%, transparent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pl-next,
+    .pl-next::before,
+    .pl-next::after,
+    .pl-next-cta,
+    .pl-next-arrow {
+      transition: none;
+    }
+    .pl-next:hover {
+      transform: none;
+    }
   }
   .pl-next > * {
     position: relative;
@@ -130,12 +178,30 @@
     font-size: var(--t-sm);
     font-weight: 600;
     transition:
-      transform 160ms cubic-bezier(0.22, 0.61, 0.36, 1),
-      opacity 160ms ease;
+      transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 180ms ease,
+      opacity 180ms ease;
+  }
+  .pl-next-cta:hover,
+  .pl-next:hover .pl-next-cta {
+    transform: translateY(-1px);
+    box-shadow: 0 0.75rem 1.5rem -0.5rem rgb(0 0 0 / 0.45);
   }
   .pl-next-cta:hover {
-    transform: translateY(-1px);
-    opacity: 0.92;
+    opacity: 0.94;
+  }
+  .pl-next-cta:active {
+    transform: translateY(0);
+  }
+  /* The chevron leads the click: it steps right on hover and carries a little
+     trailing room so the button does not resize under the cursor. */
+  .pl-next-arrow {
+    display: inline-block;
+    transition: transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pl-next-cta:hover .pl-next-arrow,
+  .pl-next:hover .pl-next-arrow {
+    transform: translateX(0.2rem);
   }
 
   /* ================= activity =================
