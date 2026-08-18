@@ -50,7 +50,7 @@ export const LANDING_COPY: CopyDict = {
   },
 
   /* ================= section 2: the learning loop ================= */
-  "lp.loopEyebrow": { en: "One question, five steps" },
+  "lp.loopEyebrow": { en: "One question, six steps" },
   "lp.loopTitle": { en: "Watch a mistake turn into a plan." },
   "lp.loopSub": {
     en: "The practice surface below is the one students use, running a real item from the Algebra bank.",
@@ -70,6 +70,13 @@ export const LANDING_COPY: CopyDict = {
   "lp.step2Title": { en: "Explain" },
   "lp.step2Text": {
     en: "Wrong — and the explanation names the step you skipped rather than the letter you missed.",
+  },
+  /* The step between the explanation and the queue. A student who has just read
+     why they were wrong and still does not see it has one move left, and until
+     now the page did not show it. */
+  "lp.stepAskTitle": { en: "Ask" },
+  "lp.stepAskText": {
+    en: "Still not sure? Ask Elevate. It answers on the question in front of you, in the words you asked in.",
   },
   "lp.step3Title": { en: "Review" },
   "lp.step3Text": {
@@ -110,6 +117,21 @@ export const LANDING_COPY: CopyDict = {
   "lp.frameModeProgress": { en: "Progress" },
   "lp.frameMode": { en: "Practice" },
   "lp.frameModeReview": { en: "Review" },
+  /* The tutor exchange. Short on both sides: the point of the step is that the
+     answer lands on the question you are looking at, not that the model can
+     write paragraphs. */
+  "lp.frameTutorName": { en: "Elevate" },
+  "lp.frameTutorRole": { en: "AI tutor" },
+  "lp.frameYou": { en: "You" },
+  "lp.frameAskText": { en: "why is it −4 and not 4?" },
+  "lp.frameTutorReply": {
+    en: "Put x = 0 first, so −3y = 12. Now divide by −3 — the sign turns over with it, and y = −4. That flip is the whole difference between your answer and the right one.",
+  },
+  "lp.frameAskHint": { en: "Ask about this question" },
+  "lp.frameFootAsk": {
+    en: "Asked and answered inside the question, so nothing has to be looked up somewhere else.",
+  },
+  "lp.frameModeTutor": { en: "Tutor" },
   "lp.frameSlip": { en: "The slip" },
   "lp.frameSlipText": { en: "Divided by a negative and kept the sign." },
   "lp.frameFoot0": { en: "Choice C selected. Nothing checked yet." },

@@ -17,7 +17,7 @@ import { useEntered, useMediaQuery, useScrollStage, useScrollVar } from "./scrol
  *   scroll — a tall track with a sticky composition inside it. Scrolling moves
  *            the sequence; the step rail on the left names where you are. Used
  *            on wide viewports when motion is allowed.
- *   manual — the same frame and the same five steps, advanced by tapping. Used
+ *   manual — the same frame and the same six steps, advanced by tapping. Used
  *            on phones, and used on any viewport when the reader has asked for
  *            reduced motion, where content that changes as the page moves under
  *            you is exactly the wrong answer.

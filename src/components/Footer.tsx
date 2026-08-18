@@ -10,12 +10,12 @@ export function Footer({ landing = false }: { landing?: boolean }) {
 
   return (
     <footer className={`app-footer border-t${landing ? " app-footer-landing" : ""}`}>
-      <div className="app-footer-inner marketing-frame mx-auto px-5 sm:px-8 py-12 text-sm">
+      <div className="app-footer-inner marketing-frame mx-auto px-5 sm:px-8 py-7 text-sm">
         <div className="app-footer-brand">
           <Link href="/" aria-label="1Elevate">
             <Logo />
           </Link>
-          <p className="text-muted mt-3.5 leading-relaxed">{t("common.footer")}</p>
+          <p className="text-muted mt-3 leading-relaxed">{t("common.footer")}</p>
         </div>
 
         <nav className="app-footer-nav" aria-label={t("lp.footerExplore")}>

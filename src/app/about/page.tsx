@@ -69,7 +69,7 @@ export default function AboutPage() {
 
       {/* ---------------- the loop, which is the whole idea ---------------- */}
       <section className="about-section">
-        <h2 className="about-h2">One mistake, five steps</h2>
+        <h2 className="about-h2">One mistake, six steps</h2>
         <p>
           Everything in 1Elevate is arranged around a single sequence. It is easiest to follow by
           watching one question go wrong.
@@ -88,6 +88,14 @@ export default function AboutPage() {
             <p>
               The explanation names the step you skipped rather than the letter you missed. Knowing
               the answer was B teaches nothing; knowing you distributed before you factored does.
+            </p>
+          </li>
+          <li>
+            <span className="about-step">You ask, if you need to</span>
+            <p>
+              An explanation is one telling of it. If it does not land, Elevate takes the question in
+              front of you and works it again in the words you asked in — on the item itself, not in
+              a chat window somewhere else with the question retyped into it.
             </p>
           </li>
           <li>

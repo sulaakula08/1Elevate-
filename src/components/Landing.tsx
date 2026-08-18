@@ -18,7 +18,7 @@ import { useLandingMotion } from "./useLandingMotion";
  *   Hero          the promise, and a question you can actually answer.
  *   Stats         the evidence strip that closes the first screen.
  *   Manifesto     the turn: a wrong answer is information.
- *   LearningLoop  the proof, and the centre of the page: one mistake, five steps.
+ *   LearningLoop  the proof, and the centre of the page: one mistake, six steps.
  *   Results       a visibly labelled future-results concept carousel.
  *   Capabilities  the three surfaces the loop actually runs on.
  *   ExamAnatomy   the sitting itself, resolving into its two sections.

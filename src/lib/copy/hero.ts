@@ -18,7 +18,7 @@ export const HERO_COPY: CopyDict = {
   "hero.navHowTryNote": { en: "One item from the bank, answered here" },
   "hero.navHowMiss": { en: "What a wrong answer knows" },
   "hero.navHowMissNote": { en: "The turn the whole page is built on" },
-  "hero.navHowLoop": { en: "One mistake, five steps" },
+  "hero.navHowLoop": { en: "One mistake, six steps" },
   "hero.navHowLoopNote": { en: "The loop, run end to end" },
   "hero.navHowExam": { en: "The exam itself" },
   "hero.navHowExamNote": { en: "Both sections, module by module" },

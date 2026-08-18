@@ -14,13 +14,13 @@ import { QuestionView } from "../QuestionView";
 import { useCountTo } from "./scroll";
 
 /**
- * The product surface the learning loop runs inside. One frame, five states.
+ * The product surface the learning loop runs inside. One frame, six states.
  *
  * The important structural decision is that the chrome never changes: the same
  * status bar, the same body box, the same footer strip, from the first step to
  * the last. Everything that moves, moves *inside* it. A section that swapped one
  * card for another at each step would be a slideshow with a scrollbar; holding
- * the frame still is what makes five separate mechanics read as one place a
+ * the frame still is what makes six separate mechanics read as one place a
  * student works.
  *
  * All four layers stay mounted and are moved with transform and opacity — no
@@ -33,14 +33,25 @@ import { useCountTo } from "./scroll";
  * screen up, is where a visitor actually answers a question.
  */
 
-/** The five states, in the order the section walks through them. */
+/**
+ * The six states, in the order the section walks through them.
+ *
+ * "Ask" sits third for a reason: it is what a student does *after* reading the
+ * explanation and still not seeing it, and before the question goes anywhere
+ * near a queue. Putting it at the end would have made the tutor a feature the
+ * page mentions; putting it here makes it the move the loop actually contains.
+ */
 export const LOOP_STEPS = [
   { title: "lp.step1Title", text: "lp.step1Text" },
   { title: "lp.step2Title", text: "lp.step2Text" },
+  { title: "lp.stepAskTitle", text: "lp.stepAskText" },
   { title: "lp.step3Title", text: "lp.step3Text" },
   { title: "lp.step4Title", text: "lp.step4Text" },
   { title: "lp.step5Title", text: "lp.step5Text" },
 ] as const;
+
+/** The stage the tutor exchange plays on. */
+const ASK_STAGE = 2;
 
 export const LOOP_STAGE_COUNT = LOOP_STEPS.length;
 
@@ -50,6 +61,52 @@ const PICK_DELAY = 620;
 const RESOLVE_DELAY = 980;
 
 const pct = (correct: number, total: number) => Math.round((correct / total) * 100);
+
+/**
+ * Reveals a string a character at a time while `on` is true.
+ *
+ * Deliberately a character count in state rather than a string: the text is
+ * fixed and only the cursor moves, so there is nothing to build on each tick.
+ * `reduced` skips to the end instead of animating — the reader still gets the
+ * exchange, just already written.
+ *
+ * Resetting to zero when `on` goes false is what makes the step replayable: the
+ * question is asked again each time the section is scrolled back through, which
+ * is the behaviour you want from a demonstration and the wrong one from a log.
+ */
+function useTyped(text: string, on: boolean, speed: number, reduced: boolean) {
+  const [count, setCount] = useState(0);
+
+  /* The rewind happens during render, not in an effect. Resetting the count
+     from inside the effect works, but it is a second render triggered by the
+     first, and React would rather the state that depends on a prop be adjusted
+     while the prop is being read — see "adjusting state when a prop changes".
+     A reader with reduced motion lands on the finished text the same way. */
+  const [was, setWas] = useState(on);
+  if (was !== on) {
+    setWas(on);
+    setCount(on && reduced ? text.length : 0);
+  }
+
+  useEffect(() => {
+    if (!on || reduced) return;
+    let shown = 0;
+    const id = window.setInterval(() => {
+      shown += 1;
+      setCount(shown);
+      if (shown >= text.length) window.clearInterval(id);
+    }, speed);
+    return () => window.clearInterval(id);
+  }, [on, text, speed, reduced]);
+
+  return { shown: text.slice(0, count), done: count >= text.length };
+}
+
+/** Typing speeds, in ms per character. A person types; a model streams. */
+const TYPE_ASK = 42;
+const TYPE_REPLY = 12;
+/** How long Elevate appears to think before it starts answering. */
+const THINK_DELAY = 700;
 
 export function LoopFrame({
   stage,
@@ -100,25 +157,54 @@ export function LoopFrame({
   }, [active, picked, reduced]);
 
   useEffect(() => {
-    if (stage < 3 || resolved) return;
+    if (stage < 4 || resolved) return;
     const id = window.setTimeout(() => setResolved(true), reduced ? 0 : RESOLVE_DELAY);
     return () => window.clearTimeout(id);
   }, [stage, resolved, reduced]);
+
+  /* ---- the tutor exchange ---- */
+  const askText = t("lp.frameAskText");
+  const replyText = t("lp.frameTutorReply");
+  const asking = stage === ASK_STAGE && active;
+  const ask = useTyped(askText, asking, TYPE_ASK, reduced);
+
+  // The reply waits for the question to finish being typed, then for a beat of
+  // thinking. Without the beat the two run together and it reads as one machine
+  // writing both halves, which is the opposite of the point.
+  const thinking = asking && ask.done;
+  const [answering, setAnswering] = useState(false);
+  const [wasThinking, setWasThinking] = useState(thinking);
+  if (wasThinking !== thinking) {
+    setWasThinking(thinking);
+    if (!thinking) setAnswering(false);
+  }
+  useEffect(() => {
+    if (!thinking) return;
+    const id = window.setTimeout(() => setAnswering(true), reduced ? 0 : THINK_DELAY);
+    return () => window.clearTimeout(id);
+  }, [thinking, reduced]);
+  const reply = useTyped(replyText, answering, TYPE_REPLY, reduced);
 
   const answerShown = picked || stage > 0;
   const nextResolved = resolved;
 
   /* ---- what the chrome says at this stage ---- */
   const mode =
-    stage >= 4 ? t("lp.frameModeProgress") : stage >= 3 ? t("lp.frameModeReview") : t("lp.frameMode");
-  const level = stage >= 3 ? LOOP_NEXT_QUESTION.difficulty : LOOP_MISS_QUESTION.difficulty;
+    stage >= 5
+      ? t("lp.frameModeProgress")
+      : stage >= 4
+        ? t("lp.frameModeReview")
+        : stage === ASK_STAGE
+          ? t("lp.frameModeTutor")
+          : t("lp.frameMode");
+  const level = stage >= 4 ? LOOP_NEXT_QUESTION.difficulty : LOOP_MISS_QUESTION.difficulty;
 
   /* ---- the worked example, and the numbers it animates ---- */
   const example = LOOP_PROGRESS_EXAMPLE;
   const before = pct(example.before.correct, example.before.total);
   const after = pct(example.after.correct, example.after.total);
   const neighbour = pct(example.neighbour.correct, example.neighbour.total);
-  const onProgress = stage >= 4;
+  const onProgress = stage >= 5;
 
   const accuracy = useCountTo(after, onProgress, {
     from: before,
@@ -130,11 +216,12 @@ export function LoopFrame({
   const flagRow = onProgress && after > neighbour ? 1 : 0;
 
   const queue =
-    stage >= 4 ? example.queueAfter : stage >= 2 ? example.queuePeak : example.queueBefore;
+    stage >= 5 ? example.queueAfter : stage >= 3 ? example.queuePeak : example.queueBefore;
 
   const foot = [
     { label: t("lp.frameSelected"), text: t("lp.frameFoot0") },
     { label: t("lp.frameSlip"), text: t("lp.frameSlipText") },
+    { label: t("lp.frameTutorName"), text: t("lp.frameFootAsk") },
     /* Not the queue rule again — the sheet on screen is already stating it, and
        the same sentence twice in one frame reads as a template. */
     { label: t("lp.frameQueued"), text: t("lp.frameFoot2") },
@@ -149,7 +236,7 @@ export function LoopFrame({
      * A labelled group rather than an image, and every layer that is not on
      * screen is hidden from the accessibility tree.
      *
-     * All five states are in the DOM at once, so without the per-layer
+     * All six states are in the DOM at once, so without the per-layer
      * `aria-hidden` a screen reader would read two questions, a queue entry and
      * a progress list as one continuous block of text at every step. With it,
      * what is announced is what is drawn.
@@ -177,7 +264,7 @@ export function LoopFrame({
           simply empty here: "Math · Progress" on the left is enough context for
           a dashboard, the way the real Progress page carries no badge either.
         */}
-        {stage < 4 && (
+        {stage < 5 && (
           <span className="lp-fr-meta">
             <span>{LOOP_MISS_QUESTION.domain}</span>
             <span aria-hidden>·</span>
@@ -195,7 +282,7 @@ export function LoopFrame({
                one place rather than as two cards. */}
         <div
           className="lp-fr-layer lp-fr-q"
-          data-out={stage >= 3 ? "" : undefined}
+          data-out={stage >= 4 ? "" : undefined}
           aria-hidden={stage >= 2}
         >
           {/* Skill only. The bar above already carries the domain and the
@@ -219,8 +306,8 @@ export function LoopFrame({
         {/* 2 — the sibling the queue serves next. */}
         <div
           className="lp-fr-layer lp-fr-q lp-fr-q-next"
-          data-in={stage >= 3 ? "" : undefined}
-          aria-hidden={stage !== 3}
+          data-in={stage >= 4 ? "" : undefined}
+          aria-hidden={stage !== 4}
         >
           <p className="lp-fr-skill">
             <span>{LOOP_NEXT_QUESTION.skill}</span>
@@ -230,9 +317,9 @@ export function LoopFrame({
           </p>
           <QuestionView
             question={LOOP_NEXT_QUESTION}
-            selected={stage >= 3 && nextResolved ? LOOP_NEXT_QUESTION.answer : null}
+            selected={stage >= 4 && nextResolved ? LOOP_NEXT_QUESTION.answer : null}
             onSelect={() => {}}
-            revealed={stage >= 3 && nextResolved}
+            revealed={stage >= 4 && nextResolved}
             showExplanation={false}
             disabled
             keyboard={false}
@@ -244,8 +331,8 @@ export function LoopFrame({
                the literal claim being made: the miss is now a queue entry. */}
         <div
           className="lp-fr-layer lp-fr-review"
-          data-on={stage === 2 ? "" : undefined}
-          aria-hidden={stage !== 2}
+          data-on={stage === 3 ? "" : undefined}
+          aria-hidden={stage !== 3}
         >
           <div className="lp-fr-review-head">
             <p className="t-label">{t("review.title")}</p>
@@ -262,13 +349,59 @@ export function LoopFrame({
           <p className="lp-fr-review-rule">{t("lp.frameQueueRule")}</p>
         </div>
 
-        {/* 4 — the progress surface. The only layer that covers the frame
+        {/* 4 — the tutor. Slides up over the explained question, because that is
+               where the conversation is about: the sheet is anchored to the item
+               on screen and says so by covering it rather than replacing it. */}
+        <div
+          className="lp-fr-ask"
+          data-on={stage === ASK_STAGE ? "" : undefined}
+          aria-hidden={stage !== ASK_STAGE}
+        >
+          <div className="lp-fr-ask-head">
+            <span className="lp-fr-ask-avatar" aria-hidden>
+              ✦
+            </span>
+            <p>
+              <strong>{t("lp.frameTutorName")}</strong>
+              <span>{t("lp.frameTutorRole")}</span>
+            </p>
+          </div>
+
+          <div className="lp-fr-ask-thread">
+            {/* The student's message, typed. The caret rides the end of the text
+                until the question is finished. */}
+            <p className="lp-fr-ask-you" data-typing={!ask.done ? "" : undefined}>
+              {ask.shown}
+            </p>
+
+            {/* Thinking, then the answer. Three dots for the wait, so the pause
+                is legible as the model working rather than as a stall. */}
+            {asking && ask.done && !answering && (
+              <p className="lp-fr-ask-wait" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </p>
+            )}
+            {answering && (
+              <p className="lp-fr-ask-reply" data-typing={!reply.done ? "" : undefined}>
+                {reply.shown}
+              </p>
+            )}
+          </div>
+
+          <p className="lp-fr-ask-foot">
+            <span className="lp-fr-ask-field">{t("lp.frameAskHint")}</span>
+          </p>
+        </div>
+
+        {/* 5 — the progress surface. The only layer that covers the frame
                completely: by the last step the question is history and what is
                left is what the product now knows. */}
         <div
           className="lp-fr-layer lp-fr-progress"
-          data-on={stage >= 4 ? "" : undefined}
-          aria-hidden={stage < 4}
+          data-on={stage >= 5 ? "" : undefined}
+          aria-hidden={stage < 5}
         >
           <p className="t-label">{t("lp.frameFocusTitle")}</p>
           <p className="lp-fr-hint">{t("lp.frameFocusHint")}</p>
