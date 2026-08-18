@@ -436,7 +436,7 @@ function MockInner() {
                 <div>
                   <dt>{t("plan.mockTotal")}</dt>
                   <dd className="num">
-                    {availableTotal}
+                    <CountUp value={availableTotal} />
                     {!complete && <span className="text-faint"> / {plannedTotal}</span>}
                   </dd>
                 </div>
@@ -674,18 +674,30 @@ function SetCard({
         </span>
       )}
 
-      {/* The deal's own difficulty mix: three segments, widths from the count. */}
-      <span className="mock-set-mix">
-        <span className="mock-set-mix-bar" aria-hidden>
-          {mix.map((count, level) => (
-            <span key={level} data-level={level + 1} style={{ flexGrow: count }} />
+      {/*
+        The deal itself, one cell per question, in the order the test serves
+        them. A three-segment percentage bar stood here and read as a stripe of
+        gradient — indistinguishable from decoration, and it threw away the one
+        thing worth knowing: where in the sitting the hard questions fall. Shade
+        is difficulty; a ringed cell is one this student has already met in
+        practice. Numbered tests are disjoint, so no two maps are alike.
+      */}
+      <span className="mock-set-map">
+        <span className="mock-set-cells" aria-hidden>
+          {questions.map((question) => (
+            <span
+              key={question.id}
+              data-level={question.difficulty}
+              data-seen={answered.has(question.id) ? "" : undefined}
+            />
           ))}
         </span>
-        <span className="mock-set-mix-legend">
+        <span className="mock-set-legend">
           {mix.map((count, level) => (
             <span key={level}>
               <em data-level={level + 1} aria-hidden />
-              {t(`diff.${level + 1}`)} <span className="num">{Math.round((count / mixTotal) * 100)}%</span>
+              {t(`diff.${level + 1}`)}{" "}
+              <span className="num">{Math.round((count / mixTotal) * 100)}%</span>
             </span>
           ))}
         </span>
@@ -788,8 +800,11 @@ function Sitting({ plan }: { plan: MockSection[] }) {
             key={segment.key}
             className="mock-time-seg"
             data-kind={segment.kind}
+            /* The minutes go in as a custom property rather than straight into
+               flex-grow, so the hover state can scale them: a segment you point
+               at takes a little more of the track and the others give way. */
             style={{
-              flexGrow: segment.minutes,
+              ["--min" as string]: segment.minutes,
               ...(segment.subjectId
                 ? { ["--tone" as string]: subjectColor(segment.subjectId) }
                 : {}),

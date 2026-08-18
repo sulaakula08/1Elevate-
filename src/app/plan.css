@@ -1005,20 +1005,61 @@
     align-items: stretch;
     gap: 0.375rem;
   }
+  /* Sweeping the track pulls the segment under the pointer forward and lets the
+     others fall back. It is the cheapest way to make a static picture answer
+     you, and because the growth is a scale on the same `--min` the proportions
+     stay honest while it happens. */
+  .mock-time-track:hover .mock-time-seg {
+    opacity: 0.5;
+  }
+  .mock-time-track .mock-time-seg:hover {
+    flex-grow: calc(var(--min) * 1.35);
+    opacity: 1;
+  }
+  .mock-time-seg:hover .mock-time-bar {
+    height: 0.75rem;
+    background: color-mix(in srgb, var(--tone) 88%, transparent);
+  }
   .mock-time-seg {
     display: flex;
     flex-direction: column;
     gap: 0.4375rem;
     min-width: 0;
-    /* Widths come from `flex-grow: minutes`, set inline. A basis of zero is what
-       makes the growth proportional to the minutes rather than to the label. */
+    /* Widths come from the minutes, carried in `--min` and set inline. A basis
+       of zero is what makes the growth proportional to the minutes rather than
+       to the length of the label. */
     flex-basis: 0;
+    flex-grow: var(--min, 1);
+    transition:
+      flex-grow 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      opacity 240ms ease;
   }
   .mock-time-bar {
     height: 0.5rem;
     border-radius: 3px;
     background: color-mix(in srgb, var(--tone) 62%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 78%, transparent);
+    transition:
+      height 240ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      background-color 240ms ease;
+  }
+  /* Each bar wipes in from the left on first paint, in track order, so the
+     sitting draws itself once rather than appearing finished. */
+  @media (prefers-reduced-motion: no-preference) {
+    .mock-time-bar {
+      animation: mock-time-draw 520ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+      transform-origin: left;
+    }
+    .mock-time-seg:nth-child(1) .mock-time-bar { animation-delay: 60ms; }
+    .mock-time-seg:nth-child(2) .mock-time-bar { animation-delay: 150ms; }
+    .mock-time-seg:nth-child(3) .mock-time-bar { animation-delay: 240ms; }
+    .mock-time-seg:nth-child(4) .mock-time-bar { animation-delay: 330ms; }
+    .mock-time-seg:nth-child(5) .mock-time-bar { animation-delay: 420ms; }
+  }
+  @keyframes mock-time-draw {
+    from {
+      transform: scaleX(0);
+    }
   }
   .mock-time-label strong {
     display: block;
@@ -1063,6 +1104,16 @@
      lengths go with it: `flex-grow` means nothing in a grid, and 34px of "Break"
      against 119px of "Math 2" is not a proportion anyone can read on a phone
      anyway. The minutes are still on every row in words. */
+  @media (prefers-reduced-motion: reduce) {
+    .mock-time-seg,
+    .mock-time-bar {
+      transition: none;
+    }
+    .mock-time-track .mock-time-seg:hover {
+      flex-grow: var(--min, 1);
+    }
+  }
+
   @media (max-width: 47.99rem) {
     .mock-brief-top {
       flex-direction: column;
@@ -1266,51 +1317,100 @@
     color: var(--muted);
   }
 
-  /* ---------------- the difficulty mix ----------------
-     Three segments sized by the count at each level. Numbered tests are
-     disjoint, so this is genuinely different from card to card. */
-  .mock-set-mix {
+  /* ---------------- the question map ----------------
+     One cell per question, in the order the test serves them: shade is
+     difficulty, a ringed cell is one the student has already met. This replaces
+     a three-segment percentage bar that read as a stripe of gradient — and it
+     answers a better question than "what is the mix", which is "where does this
+     test get hard".
+
+     The grid is fourteen across, so a 98-question test is exactly seven rows and
+     a shortened one simply ends early. */
+  .mock-set-map {
     display: grid;
-    gap: 0.4375rem;
+    gap: 0.5rem;
     margin-top: auto;
   }
-  .mock-set-mix-bar {
-    display: flex;
+  .mock-set-cells {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(14, minmax(0, 1fr));
     gap: 2px;
-    height: 0.375rem;
+    overflow: hidden;
+    border-radius: 3px;
   }
-  .mock-set-mix-bar > span {
-    border-radius: 2px;
-    background: color-mix(in srgb, var(--tone) 26%, var(--line));
+  .mock-set-cells > span {
+    aspect-ratio: 1;
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--tone) 22%, var(--line));
+    transition: background-color 200ms ease;
   }
-  .mock-set-mix-bar > span[data-level="2"] {
-    background: color-mix(in srgb, var(--tone) 55%, var(--line));
+  .mock-set-cells > span[data-level="2"] {
+    background: color-mix(in srgb, var(--tone) 52%, var(--line));
   }
-  .mock-set-mix-bar > span[data-level="3"] {
+  .mock-set-cells > span[data-level="3"] {
     background: var(--tone);
   }
-  .mock-set-mix-legend {
+  /* Already met in practice. A ring rather than another shade: difficulty is
+     what the fill is for, and a cell has to be able to say both things. */
+  .mock-set-cells > span[data-seen] {
+    box-shadow: inset 0 0 0 1px var(--surface);
+    opacity: 0.55;
+  }
+  /* Pointing at the card runs a light across the map, left to right, once. One
+     element and one transform — no per-cell delay for ninety-eight cells. */
+  .mock-set-cells::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      100deg,
+      transparent 38%,
+      color-mix(in srgb, var(--tone) 40%, transparent) 50%,
+      transparent 62%
+    );
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .mock-set:hover:not(:disabled) .mock-set-cells::after {
+      animation: mock-map-sweep 900ms cubic-bezier(0.33, 0.1, 0.25, 1);
+    }
+  }
+  @keyframes mock-map-sweep {
+    from {
+      opacity: 0.9;
+      transform: translateX(-100%);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+
+  .mock-set-legend {
     display: flex;
     flex-wrap: wrap;
     gap: 0.125rem 0.625rem;
     font-size: var(--t-micro);
     color: var(--faint);
   }
-  .mock-set-mix-legend > span {
+  .mock-set-legend > span {
     display: inline-flex;
     align-items: center;
     gap: 0.3125rem;
   }
-  .mock-set-mix-legend em {
+  .mock-set-legend em {
     width: 0.4375rem;
     height: 0.4375rem;
     border-radius: 1px;
-    background: color-mix(in srgb, var(--tone) 26%, var(--line));
+    background: color-mix(in srgb, var(--tone) 22%, var(--line));
   }
-  .mock-set-mix-legend em[data-level="2"] {
-    background: color-mix(in srgb, var(--tone) 55%, var(--line));
+  .mock-set-legend em[data-level="2"] {
+    background: color-mix(in srgb, var(--tone) 52%, var(--line));
   }
-  .mock-set-mix-legend em[data-level="3"] {
+  .mock-set-legend em[data-level="3"] {
     background: var(--tone);
   }
 
