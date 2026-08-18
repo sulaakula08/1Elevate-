@@ -218,6 +218,21 @@ const D: Dict = {
   "mock.shortenedTest": { en: "Shortened test" },
   "mock.yourBest": { en: "your best" },
   "mock.adaptive": { en: "Adaptive" },
+  /* Per-test status. The three rows on /mock were identical apart from a
+     number, which is the complaint they earned: what actually differs between
+     Test 1 and Test 3 is the student's own history with each and the mix of
+     difficulties the deal gave it. These name that. */
+  "mock.neverSat": { en: "Not sat yet" },
+  "mock.bestScore": { en: "Best score" },
+  "mock.lastSat": { en: "Last sat" },
+  "mock.sittings": { en: "sittings" },
+  "mock.oneSitting": { en: "one sitting" },
+  "mock.mix": { en: "Difficulty mix" },
+  "mock.allNew": { en: "Every question new to you" },
+  "mock.someSeen": { en: "seen in practice already" },
+  "mock.startTest": { en: "Start test" },
+  "mock.sitAgain": { en: "Sit it again" },
+  "mock.beatBy": { en: "to your target" },
   "mock.adaptiveWhat": { en: "The second module of each section is chosen from how the first one went, as on the real test.",
   },
   "mock.adaptiveBody": { en: "Each section routes like the real thing: do well in the first module and the second one is harder, and a harder second module is what lets a section reach the top of its scale. The score is still an estimate — the real mapping is a calibrated table per form.",

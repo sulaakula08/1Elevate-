@@ -30,6 +30,18 @@ export default function MockPage() {
   );
 }
 
+/**
+ * A dealt test with display names on its modules. `MockSet` carries the deal;
+ * the name needs the translator, so it is applied in the component.
+ */
+type NamedSet = Omit<MockSet, "sections" | "alternates"> & {
+  sections: MockSection[];
+  alternates: Map<string, MockSection>;
+};
+
+/** What the student has already done with one numbered test. */
+type SetHistory = { best: number; sittings: number; last: number };
+
 type Report = {
   result: Omit<MockResult, "id">;
   sections: MockSection[];
@@ -126,11 +138,6 @@ function MockInner() {
    * device and every day. All this does is put the display name on each module,
    * which needs the translator and therefore cannot live in a pure module.
    */
-  type NamedSet = Omit<MockSet, "sections" | "alternates"> & {
-    sections: MockSection[];
-    alternates: Map<string, MockSection>;
-  };
-
   const sets = useMemo<NamedSet[]>(() => {
     const name = (subjectId: string, module: number) => {
       const subject = getSubject(subjectId);
@@ -151,15 +158,35 @@ function MockInner() {
     }));
   }, [bank, blueprint, t, tx]);
 
-  /** Best score per numbered test, so a row can show what it is worth beating. */
-  const bestBySet = useMemo(() => {
-    const best = new Map<number, number>();
+  /**
+   * What the student has already done with each numbered test.
+   *
+   * The three rows on this page used to differ only by their number, which is
+   * what made them feel like filler. A test's history is the thing that actually
+   * distinguishes it: whether it has been sat, what it is worth beating, and
+   * when. One pass over the mocks builds all of it.
+   */
+  const historyBySet = useMemo(() => {
+    const history = new Map<number, { best: number; sittings: number; last: number }>();
     for (const mock of data.mocks) {
       if (mock.setIndex === undefined) continue;
-      best.set(mock.setIndex, Math.max(best.get(mock.setIndex) ?? 0, mock.score));
+      const entry = history.get(mock.setIndex);
+      if (entry) {
+        entry.best = Math.max(entry.best, mock.score);
+        entry.sittings += 1;
+        entry.last = Math.max(entry.last, mock.at);
+      } else {
+        history.set(mock.setIndex, { best: mock.score, sittings: 1, last: mock.at });
+      }
     }
-    return best;
+    return history;
   }, [data.mocks]);
+
+  /** Every question the student has answered anywhere, for the "new to you" count. */
+  const answered = useMemo(
+    () => new Set(data.attempts.map((attempt) => attempt.questionId)),
+    [data.attempts],
+  );
 
   /** Everything one click has to remember about the test being started. */
   const startSet = useCallback((set: NamedSet) => {
@@ -429,49 +456,19 @@ function MockInner() {
           </p>
 
           <ol className="mock-sets mt-3">
-            {sets.map((set, i) => {
-              const best = bestBySet.get(set.index);
-              return (
-                <Reveal as="li" key={set.index} delay={Math.min(i, 6) * 45}>
-                  <button
-                    className="mock-set"
-                    disabled={filling || set.total === 0}
-                    onClick={() => startSet(set)}
-                  >
-                    <span className="mock-set-number num" aria-hidden>
-                      {set.complete ? set.index : "—"}
-                    </span>
-
-                    <span className="mock-set-body">
-                      <span className="mock-set-name">
-                        {set.complete
-                          ? `${t("mock.testNumber")} ${set.index}`
-                          : t("mock.shortenedTest")}
-                        {set.adaptive && (
-                          <span className="mock-set-tag" title={t("mock.adaptiveWhat")}>
-                            {t("mock.adaptive")}
-                          </span>
-                        )}
-                      </span>
-                      <span className="mock-set-meta">
-                        {pluralize(set.total, NOUNS.question)} · {set.minutes}{" "}
-                        {t("common.minutes")}
-                        {best !== undefined && (
-                          <>
-                            {" · "}
-                            {t("mock.yourBest")} <span className="num">{best}</span>
-                          </>
-                        )}
-                      </span>
-                    </span>
-
-                    <span className="mock-set-go" aria-hidden>
-                      ›
-                    </span>
-                  </button>
-                </Reveal>
-              );
-            })}
+            {sets.map((set, i) => (
+              <Reveal as="li" key={set.index} delay={Math.min(i, 6) * 45}>
+                <SetCard
+                  set={set}
+                  history={historyBySet.get(set.index)}
+                  answered={answered}
+                  target={account!.targetScore}
+                  maximum={blueprint.maxScore}
+                  disabled={filling || set.total === 0}
+                  onStart={() => startSet(set)}
+                />
+              </Reveal>
+            ))}
           </ol>
 
           {/* What the modules are, once, rather than repeated under every test:
@@ -573,5 +570,144 @@ function MockInner() {
         )}
       </section>
     </div>
+  );
+}
+
+
+/**
+ * One numbered test, as a card that says something about itself.
+ *
+ * Three rows reading "Test 1 · 98 questions · 134 min" carry one bit of
+ * information between them — the number — and a page of them is why this screen
+ * felt like filler. Two things here genuinely differ per test and are worth the
+ * room:
+ *
+ *   the history — sat or not, the best score, how far that is from the target
+ *   and when it was last sat, which is the only reason to pick one test over
+ *   another once you have started sitting them;
+ *
+ *   the deal — how many of the test's questions are new to the student, and the
+ *   easy/medium/hard mix the deal happened to give it. Numbered tests are
+ *   disjoint, so this really is different per test rather than decoration.
+ *
+ * The tone rotates with the index so a row of three is not one flat colour. That
+ * part is decoration, and it is the only part that is.
+ */
+function SetCard({
+  set,
+  history,
+  answered,
+  target,
+  maximum,
+  disabled,
+  onStart,
+}: {
+  set: NamedSet;
+  history: SetHistory | undefined;
+  answered: Set<string>;
+  target: number;
+  maximum: number;
+  disabled: boolean;
+  onStart: () => void;
+}) {
+  const { t } = useI18n();
+
+  const questions = set.sections.flatMap((section) => section.questions);
+  const seen = questions.filter((question) => answered.has(question.id)).length;
+  const mix = [1, 2, 3].map(
+    (level) => questions.filter((question) => question.difficulty === level).length,
+  );
+  const mixTotal = mix.reduce((sum, count) => sum + count, 0) || 1;
+
+  return (
+    <button
+      className="mock-set"
+      data-state={history ? "sat" : "fresh"}
+      disabled={disabled}
+      onClick={onStart}
+      style={{ ["--tone" as string]: `var(--mock-tone-${(set.index - 1) % 3})` }}
+    >
+      <span className="mock-set-head">
+        <span className="mock-set-number num" aria-hidden>
+          {set.complete ? set.index : "—"}
+        </span>
+        <span className="mock-set-body">
+          <span className="mock-set-name">
+            {set.complete ? `${t("mock.testNumber")} ${set.index}` : t("mock.shortenedTest")}
+          </span>
+          <span className="mock-set-meta">
+            {pluralize(set.total, NOUNS.question)} · {set.minutes} {t("common.minutes")}
+          </span>
+        </span>
+        {set.adaptive && (
+          <span className="mock-set-tag" title={t("mock.adaptiveWhat")}>
+            {t("mock.adaptive")}
+          </span>
+        )}
+      </span>
+
+      {/* The score line, or the reason there isn't one yet. */}
+      {history ? (
+        <span className="mock-set-score">
+          <span className="mock-set-score-label">{t("mock.bestScore")}</span>
+          <span className="mock-set-score-value num">{history.best}</span>
+          <span className="mock-set-score-scale num">
+            {Math.max(0, target - history.best) > 0
+              ? `+${target - history.best} ${t("mock.beatBy")}`
+              : `${history.best}/${maximum}`}
+          </span>
+          <span className="mock-set-bar" aria-hidden>
+            <span style={{ width: `${Math.min(100, (history.best / maximum) * 100)}%` }} />
+            <em style={{ left: `${Math.min(100, (target / maximum) * 100)}%` }} />
+          </span>
+        </span>
+      ) : (
+        <span className="mock-set-score" data-empty="">
+          <span className="mock-set-score-label">{t("mock.neverSat")}</span>
+          <span className="mock-set-fresh">
+            {seen === 0 ? (
+              t("mock.allNew")
+            ) : (
+              <>
+                <span className="num">{seen}</span>/<span className="num">{set.total}</span>{" "}
+                {t("mock.someSeen")}
+              </>
+            )}
+          </span>
+        </span>
+      )}
+
+      {/* The deal's own difficulty mix: three segments, widths from the count. */}
+      <span className="mock-set-mix">
+        <span className="mock-set-mix-bar" aria-hidden>
+          {mix.map((count, level) => (
+            <span key={level} data-level={level + 1} style={{ flexGrow: count }} />
+          ))}
+        </span>
+        <span className="mock-set-mix-legend">
+          {mix.map((count, level) => (
+            <span key={level}>
+              <em data-level={level + 1} aria-hidden />
+              {t(`diff.${level + 1}`)} <span className="num">{Math.round((count / mixTotal) * 100)}%</span>
+            </span>
+          ))}
+        </span>
+      </span>
+
+      <span className="mock-set-foot">
+        <span className="mock-set-cta">
+          {history ? t("mock.sitAgain") : t("mock.startTest")}
+          <span aria-hidden>→</span>
+        </span>
+        {history && (
+          <span className="mock-set-when">
+            {t("mock.lastSat")} {new Date(history.last).toLocaleDateString()} ·{" "}
+            {history.sittings === 1
+              ? t("mock.oneSitting")
+              : `${history.sittings} ${t("mock.sittings")}`}
+          </span>
+        )}
+      </span>
+    </button>
   );
 }
