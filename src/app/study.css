@@ -3155,6 +3155,222 @@ body[data-exam] .test-foot {
   .rv-clear:hover {
     color: var(--foreground);
   }
+
+  /* ---------------- how the queue is read ----------------
+     Two segmented controls. Both change what the next sitting serves, not only
+     what the page looks like, which is why they sit above the queue rather than
+     inside the filter panel. */
+  .rv-view {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  .rv-seg {
+    display: inline-flex;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+  }
+  .rv-seg-btn {
+    padding: 0.3125rem 0.75rem;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 550;
+    cursor: pointer;
+    transition:
+      background-color 200ms ease,
+      color 200ms ease;
+  }
+  .rv-seg-btn:hover {
+    color: var(--foreground);
+  }
+  .rv-seg-btn[aria-pressed="true"] {
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+
+  /* ---------------- the queue, folded into its skills ----------------
+     Seventy-three rows of prompt was the whole complaint. Shut, a group is one
+     row; the marks on it say how many are due and how hard they are, which is
+     the part of the list that was worth scanning. */
+  .rv-groups {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .rv-group {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    transition: border-color 200ms ease;
+  }
+  .rv-group:hover,
+  .rv-group[data-open] {
+    border-color: var(--line-strong);
+  }
+  .rv-group-head {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .rv-group-chev {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: var(--radius-sm);
+    color: var(--faint);
+    transition:
+      transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      color 200ms ease;
+  }
+  .rv-group[data-open] .rv-group-chev {
+    transform: rotate(90deg);
+    color: var(--brand);
+  }
+  .rv-group-name {
+    min-width: 0;
+    flex: 1;
+  }
+  .rv-group-name strong {
+    display: block;
+    overflow: hidden;
+    font-size: 0.9375rem;
+    font-weight: 550;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rv-group-name > span {
+    display: block;
+    margin-top: 0.125rem;
+    overflow: hidden;
+    color: var(--faint);
+    font-size: var(--t-micro);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* One mark per question. Height is the difficulty, and a filled mark is one
+     the next sitting will serve — the queue's shape, at a glance. */
+  .rv-group-marks {
+    display: flex;
+    align-items: flex-end;
+    flex: none;
+    gap: 2px;
+    height: 1rem;
+  }
+  .rv-group-marks em {
+    width: 3px;
+    height: 0.4375rem;
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  }
+  .rv-group-marks em[data-level="2"] {
+    height: 0.6875rem;
+  }
+  .rv-group-marks em[data-level="3"] {
+    height: 1rem;
+  }
+  .rv-group-marks em[data-due] {
+    background: var(--brand);
+  }
+  .rv-group-count {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    font-weight: 550;
+  }
+  .rv-group-due {
+    padding: 0.0625rem 0.375rem;
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.625rem;
+    font-weight: 700;
+  }
+
+  /* The disclosure. `grid-template-rows: 0fr → 1fr` is the one way to animate to
+     a height nobody can know in advance, and it needs the inner wrapper with
+     `min-height: 0` to clip while it runs. */
+  .rv-group-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .rv-group[data-open] .rv-group-panel {
+    grid-template-rows: 1fr;
+  }
+  .rv-group-panel > div {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .rv-group-panel ul {
+    padding: 0 1rem 0.25rem 2.875rem;
+  }
+  .rv-group-panel li + li {
+    border-top: 1px solid var(--line);
+  }
+
+  /* ---------------- one queued question ---------------- */
+  .rv-list {
+    margin-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+  .rv-list > li {
+    border-bottom: 1px solid var(--line);
+  }
+  .rv-item {
+    padding: 0.875rem 0;
+    transition: opacity 200ms ease;
+  }
+  .rv-item[data-compact] {
+    padding: 0.75rem 0;
+  }
+  /* Marked rather than coloured in: the fifteen the button will serve are the
+     top of whatever order is on screen, and saying so beats making the student
+     count. */
+  .rv-session-tag {
+    padding: 0.0625rem 0.4375rem;
+    border-radius: var(--radius-pill);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .rv-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rv-group-panel,
+    .rv-group-chev,
+    .rv-seg-btn {
+      transition: none;
+    }
+  }
 }
 
 /* Unlayered: keyframes belong outside the component layer, and these three are

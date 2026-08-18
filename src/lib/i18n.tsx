@@ -652,6 +652,20 @@ const D: Dict = {
   "review.allSkills": { en: "All skills" },
   "review.timesWrong": { en: "wrong" },
   "review.timesRight": { en: "right" },
+  /* The queue reads as skills now, not as one long list of questions. A student
+     with 73 due met 73 rows of prompt; what they were actually looking for was
+     "which four things do I keep getting wrong", which is eight rows. */
+  "review.bySkill": { en: "By skill" },
+  "review.asList": { en: "As a list" },
+  "review.sortBy": { en: "Hardest first" },
+  "review.sortMissed": { en: "Most missed" },
+  "review.sortRecent": { en: "Most recent" },
+  "review.sortHard": { en: "Hardest" },
+  "review.inSession": { en: "In this session" },
+  "review.showMore": { en: "Show more" },
+  "review.showAll": { en: "Show all" },
+  "review.expandAll": { en: "Open all" },
+  "review.collapseAll": { en: "Close all" },
 
   "progress.title": { en: "Your progress" },
   "progress.totalAnswered": { en: "Questions answered" },

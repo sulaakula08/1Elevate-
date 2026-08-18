@@ -18,6 +18,13 @@ const SESSION = 15;
 
 const LEVELS: Difficulty[] = [1, 2, 3];
 
+/** How many rows the flat list shows before asking. */
+const PAGE = 12;
+
+/** The orders a queue is worth reading in. */
+type SortKey = "missed" | "recent" | "hard";
+const SORTS: SortKey[] = ["missed", "recent", "hard"];
+
 export default function ReviewPage() {
   return (
     <RequireAccount>
@@ -42,6 +49,21 @@ function ReviewInner() {
   const [level, setLevel] = useState<Difficulty | null>(null);
   /** Shut by default: the queue is the page, the filters are a tool. */
   const [filtersOpen, setFiltersOpen] = useState(false);
+  /**
+   * How the queue is read.
+   *
+   * Grouped by skill is the default and the reason this page was rebuilt: a
+   * student with seventy-three questions due was handed seventy-three rows of
+   * prompt, when what they came to find out is which four or five things keep
+   * catching them. Grouped, that is eight rows they can act on; the questions
+   * are still there, one disclosure away.
+   */
+  const [grouped, setGrouped] = useState(true);
+  const [sort, setSort] = useState<SortKey>("missed");
+  /** Which skill groups are open. Empty is the resting state. */
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  /** The flat list pages rather than running off the bottom of the screen. */
+  const [page, setPage] = useState(PAGE);
 
   // Recomputed after the session, so mastered questions drop out of the list.
   const queue = useMemo(() => reviewQueue(data, bank), [data, bank]);
@@ -108,9 +130,53 @@ function ReviewInner() {
     [queue, section, domain, skill, level],
   );
 
+  /**
+   * The queue in the order the student asked for.
+   *
+   * `reviewQueue` already returns its own order — hardest first — and that is
+   * what "missed" keeps. The other two are re-reads of the same list, not
+   * different queues: the session always takes from the top of whatever is on
+   * screen, so the order is a real control rather than a display preference.
+   */
+  const ordered = useMemo(() => {
+    const list = [...shown];
+    if (sort === "recent") {
+      list.sort((a, b) => (records.get(b.id)?.last ?? 0) - (records.get(a.id)?.last ?? 0));
+    } else if (sort === "hard") {
+      list.sort((a, b) => b.difficulty - a.difficulty);
+    }
+    return list;
+  }, [shown, sort, records]);
+
+  /** The queue folded into its skills, biggest first. */
+  const groups = useMemo(() => {
+    const map = new Map<string, Question[]>();
+    for (const question of ordered) {
+      const key = question.skill ?? question.topic;
+      const list = map.get(key);
+      if (list) list.push(question);
+      else map.set(key, [question]);
+    }
+    return [...map.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  }, [ordered]);
+
+  /** The exact questions the button below will serve, so the list can say so. */
+  const session = useMemo(
+    () => new Set(ordered.slice(0, SESSION).map((question) => question.id)),
+    [ordered],
+  );
+
   const subjects = subjectsFor(SAT.exam);
   const filtersOn = section !== null || domain !== null || skill !== null || level !== null;
   const activeCount = [domain, skill, level].filter((value) => value !== null).length;
+
+  const toggleGroup = (key: string) =>
+    setOpen((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   function clear() {
     setSection(null);
@@ -321,32 +387,238 @@ function ReviewInner() {
         )}
       </div>
 
+      {/* ---------------- how the queue is read ----------------
+          Two controls, both of which change what the session serves rather than
+          only how it looks: the order decides which fifteen go first, and the
+          grouping decides whether you are looking at questions or at skills. */}
+      <div className="rv-view">
+        <div className="rv-seg" role="group" aria-label={t("review.sortBy")}>
+          {SORTS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className="rv-seg-btn"
+              aria-pressed={sort === key}
+              onClick={() => {
+                setSort(key);
+                setPage(PAGE);
+              }}
+            >
+              {t(`review.sort${key[0].toUpperCase()}${key.slice(1)}`)}
+            </button>
+          ))}
+        </div>
+
+        <div className="rv-seg" role="group" aria-label={t("review.bySkill")}>
+          <button
+            type="button"
+            className="rv-seg-btn"
+            aria-pressed={grouped}
+            onClick={() => setGrouped(true)}
+          >
+            {t("review.bySkill")}
+          </button>
+          <button
+            type="button"
+            className="rv-seg-btn"
+            aria-pressed={!grouped}
+            onClick={() => {
+              setGrouped(false);
+              setPage(PAGE);
+            }}
+          >
+            {t("review.asList")}
+          </button>
+        </div>
+
+        {grouped && groups.length > 1 && (
+          <button
+            type="button"
+            className="rv-clear ml-auto"
+            onClick={() =>
+              setOpen(open.size === groups.length ? new Set() : new Set(groups.map(([k]) => k)))
+            }
+          >
+            {open.size === groups.length ? t("review.collapseAll") : t("review.expandAll")}
+          </button>
+        )}
+      </div>
+
       {shown.length === 0 ? (
         <EmptyState>{t("study.noMatch")}</EmptyState>
-      ) : (
-        <ul className="mt-8 border-t">
-          {shown.map((question, i) => (
-            <Reveal as="li" key={question.id} delay={Math.min(i, 8) * 40}>
-              <Item question={question} record={records.get(question.id)} />
+      ) : grouped ? (
+        <ul className="rv-groups">
+          {groups.map(([name, questions], i) => (
+            <Reveal as="li" key={name} delay={Math.min(i, 8) * 45}>
+              <SkillGroup
+                name={name}
+                questions={questions}
+                records={records}
+                session={session}
+                open={open.has(name)}
+                onToggle={() => toggleGroup(name)}
+              />
             </Reveal>
           ))}
         </ul>
+      ) : (
+        <>
+          <ul className="rv-list">
+            {ordered.slice(0, page).map((question, i) => (
+              <Reveal as="li" key={question.id} delay={Math.min(i, 8) * 40}>
+                <Item
+                  question={question}
+                  record={records.get(question.id)}
+                  inSession={session.has(question.id)}
+                />
+              </Reveal>
+            ))}
+          </ul>
+
+          {/* The list stops rather than running off the bottom of the screen.
+              Both ways on are here: one more page, or the lot. */}
+          {page < ordered.length && (
+            <div className="rv-more">
+              <button className="btn btn-sm" onClick={() => setPage((n) => n + PAGE)}>
+                {t("review.showMore")} · {Math.min(PAGE, ordered.length - page)}
+              </button>
+              <button className="rv-clear" onClick={() => setPage(ordered.length)}>
+                {t("review.showAll")} · {ordered.length}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
 
+/**
+ * One skill, and the questions it is holding.
+ *
+ * Shut, it is a single row: the skill, how many are due under it, and a strip
+ * of one mark per question shaded by difficulty — enough to tell "four easy
+ * ones" from "one that keeps killing me" without opening anything. Open, it is
+ * the list this page used to be, but only for the skill you asked about.
+ *
+ * The panel animates on `grid-template-rows`, which is the one way to get a
+ * height transition out of content whose height nobody knows in advance.
+ */
+function SkillGroup({
+  name,
+  questions,
+  records,
+  session,
+  open,
+  onToggle,
+}: {
+  name: string;
+  questions: Question[];
+  records: Map<string, Record_>;
+  session: Set<string>;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const { t, tx } = useI18n();
+  const subject = getSubject(questions[0].subjectId);
+  const missed = questions.reduce((sum, q) => sum + (records.get(q.id)?.wrong ?? 0), 0);
+  const due = session.size > 0 ? questions.filter((q) => session.has(q.id)).length : 0;
+
+  return (
+    <div className="rv-group" data-open={open ? "" : undefined}>
+      <button type="button" className="rv-group-head" aria-expanded={open} onClick={onToggle}>
+        <span className="rv-group-chev" aria-hidden>
+          <svg viewBox="0 0 12 12" width="12" height="12">
+            <path
+              d="M4.5 2.5 8 6l-3.5 3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+
+        <span className="rv-group-name">
+          <strong>{name}</strong>
+          <span>
+            {questions[0].domain ?? (subject ? tx(subject.name) : "")}
+            {missed > 0 && (
+              <>
+                {" · "}
+                <span className="num">{missed}</span> {t("review.timesWrong")}
+              </>
+            )}
+          </span>
+        </span>
+
+        {/* One mark per question, shaded by difficulty; the filled ones are the
+            questions the next sitting will actually serve. */}
+        <span className="rv-group-marks" aria-hidden>
+          {questions.slice(0, 12).map((question) => (
+            <em
+              key={question.id}
+              data-level={question.difficulty}
+              data-due={session.has(question.id) ? "" : undefined}
+            />
+          ))}
+        </span>
+
+        <span className="rv-group-count num">
+          {questions.length}
+          {due > 0 && <span className="rv-group-due">{due}</span>}
+        </span>
+      </button>
+
+      <div className="rv-group-panel">
+        <div>
+          <ul>
+            {questions.map((question) => (
+              <li key={question.id}>
+                <Item
+                  question={question}
+                  record={records.get(question.id)}
+                  inSession={session.has(question.id)}
+                  compact
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** One queued question: where it comes from, how badly, and what it says. */
-function Item({ question, record }: { question: Question; record?: Record_ }) {
+function Item({
+  question,
+  record,
+  inSession = false,
+  compact = false,
+}: {
+  question: Question;
+  record?: Record_;
+  /** Marked when this is one of the questions the next sitting will serve. */
+  inSession?: boolean;
+  /** Inside a skill group, where the skill name is already on the row above. */
+  compact?: boolean;
+}) {
   const { t, tx } = useI18n();
   const subject = getSubject(question.subjectId);
 
   return (
-    <div className="py-4 border-b">
+    <div className="rv-item" data-session={inSession ? "" : undefined} data-compact={compact ? "" : undefined}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="text-sm font-medium">{question.skill ?? question.topic}</span>
-        {question.domain && <span className="text-micro text-faint">{question.domain}</span>}
-        {subject && <span className="text-micro text-faint">{tx(subject.name)}</span>}
+        {!compact && (
+          <span className="text-sm font-medium">{question.skill ?? question.topic}</span>
+        )}
+        {!compact && question.domain && (
+          <span className="text-micro text-faint">{question.domain}</span>
+        )}
+        {!compact && subject && <span className="text-micro text-faint">{tx(subject.name)}</span>}
+        {inSession && <span className="rv-session-tag">{t("review.inSession")}</span>}
 
         <span
           className="badge ml-auto shrink-0"
