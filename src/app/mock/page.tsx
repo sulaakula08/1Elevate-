@@ -544,22 +544,30 @@ function MockInner() {
         </>
       )}
 
-      <section className="mt-16 pt-10 border-t">
+      {/*
+        Past sittings. This carried four rules for two rows of content — a
+        section border, a list border, a border under every item — plus ten rem
+        of air above it, so a student with one result met a page of ruled empty
+        space. One rule above the section, hairlines only between rows, and the
+        score set as the number it is.
+      */}
+      <section className="mt-10 pt-8 border-t">
         <p className="label-xs">{t("mock.history")}</p>
         {data.mocks.length === 0 ? (
           <EmptyState compact title={t("mock.noHistoryTitle")}>{t("mock.noHistory")}</EmptyState>
         ) : (
-          <ul className="mt-4 border-t">
+          <ul className="mock-past mt-3">
             {[...data.mocks].reverse().map((mock) => (
-              <li key={mock.id} className="flex items-baseline gap-4 py-4 border-b text-sm">
-                <span className="num text-2xs text-faint uppercase w-8">{mock.exam}</span>
-                <span className="text-muted">{new Date(mock.at).toLocaleDateString()}</span>
-                <span className="num ml-auto text-body">
-                  {mock.score}
-                  <span className="text-faint text-sm">/{maxScore(mock.exam)}</span>
+              <li key={mock.id}>
+                <span className="mock-past-date">
+                  {new Date(mock.at).toLocaleDateString()}
                 </span>
-                <span className="num text-sm text-faint w-12 text-right">
+                <span className="mock-past-count num">
                   {mock.correct}/{mock.total}
+                </span>
+                <span className="mock-past-score num">
+                  {mock.score}
+                  <span>/{maxScore(mock.exam)}</span>
                 </span>
               </li>
             ))}
@@ -610,7 +618,6 @@ function SetCard({
   const { t } = useI18n();
 
   const questions = set.sections.flatMap((section) => section.questions);
-  const seen = questions.filter((question) => answered.has(question.id)).length;
   const mix = [1, 2, 3].map(
     (level) => questions.filter((question) => question.difficulty === level).length,
   );
@@ -636,11 +643,6 @@ function SetCard({
             {pluralize(set.total, NOUNS.question)} · {set.minutes} {t("common.minutes")}
           </span>
         </span>
-        {set.adaptive && (
-          <span className="mock-set-tag" title={t("mock.adaptiveWhat")}>
-            {t("mock.adaptive")}
-          </span>
-        )}
       </span>
 
       {/* The score line, or the reason there isn't one yet. */}
@@ -661,16 +663,6 @@ function SetCard({
       ) : (
         <span className="mock-set-score" data-empty="">
           <span className="mock-set-score-label">{t("mock.neverSat")}</span>
-          <span className="mock-set-fresh">
-            {seen === 0 ? (
-              t("mock.allNew")
-            ) : (
-              <>
-                <span className="num">{seen}</span>/<span className="num">{set.total}</span>{" "}
-                {t("mock.someSeen")}
-              </>
-            )}
-          </span>
         </span>
       )}
 

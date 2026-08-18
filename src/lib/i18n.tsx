@@ -222,14 +222,12 @@ const D: Dict = {
      number, which is the complaint they earned: what actually differs between
      Test 1 and Test 3 is the student's own history with each and the mix of
      difficulties the deal gave it. These name that. */
-  "mock.neverSat": { en: "Not sat yet" },
+  "mock.neverSat": { en: "Not completed yet" },
   "mock.bestScore": { en: "Best score" },
   "mock.lastSat": { en: "Last sat" },
   "mock.sittings": { en: "sittings" },
   "mock.oneSitting": { en: "one sitting" },
   "mock.mix": { en: "Difficulty mix" },
-  "mock.allNew": { en: "Every question new to you" },
-  "mock.someSeen": { en: "seen in practice already" },
   "mock.startTest": { en: "Start test" },
   "mock.sitAgain": { en: "Sit it again" },
   "mock.beatBy": { en: "to your target" },
