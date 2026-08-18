@@ -99,44 +99,58 @@
     inset: 0;
     pointer-events: none;
     opacity: 0;
-    background: radial-gradient(
-      22rem 22rem at var(--px, 100%) var(--py, 0%),
-      color-mix(in srgb, var(--brand) 42%, transparent) 0%,
-      transparent 70%
+    /* A dot field over a nearer brand glow. Neither is ever drawn away from the
+       cursor: the mask is a circle that travels with --px/--py, so the slab
+       appears to have a texture that only exists where it is touched. */
+    background-image:
+      radial-gradient(currentColor 1px, transparent 1.6px),
+      radial-gradient(
+        20rem 20rem at var(--px, 100%) var(--py, 0%),
+        color-mix(in srgb, var(--brand) 45%, transparent) 0%,
+        transparent 70%
+      );
+    background-size:
+      1.25rem 1.25rem,
+      auto;
+    -webkit-mask-image: radial-gradient(
+      10rem 10rem at var(--px, 100%) var(--py, 0%),
+      #000 0%,
+      transparent 75%
+    );
+    mask-image: radial-gradient(
+      10rem 10rem at var(--px, 100%) var(--py, 0%),
+      #000 0%,
+      transparent 75%
     );
     transition: opacity 260ms ease;
   }
   .pl-next:hover::after {
-    opacity: 1;
+    opacity: 0.9;
   }
   /* Hairline that lights up with the same pointer position, so the edge of the
      block belongs to the glow instead of sitting flat under it. */
   .pl-next {
     border: 1px solid transparent;
+    /* Deep enough that a few degrees are felt and shallow enough that the type
+       never looks like it is falling over. The block clips its own glow, and an
+       element with overflow:hidden flattens its 3D context — so the tilt is the
+       slab's alone and no child is lifted in z. */
+    transform: perspective(60rem) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
     transition:
-      transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
       box-shadow 260ms ease,
       border-color 260ms ease;
   }
   .pl-next:hover {
-    transform: translateY(-2px);
     border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-    box-shadow: 0 1.25rem 2.5rem -1rem color-mix(in srgb, var(--brand) 40%, transparent);
+    box-shadow: 0 1.5rem 3rem -1.25rem color-mix(in srgb, var(--brand) 45%, transparent);
   }
-  @media (prefers-reduced-motion: reduce) {
-    .pl-next,
-    .pl-next::before,
-    .pl-next::after,
-    .pl-next-cta,
-    .pl-next-arrow {
-      transition: none;
-    }
-    .pl-next:hover {
-      transform: none;
-    }
-  }
+
   .pl-next > * {
     position: relative;
+    /* Above both light layers: ::after paints after the children in tree order,
+       so without this the dot field would sit on top of the headline. */
+    z-index: 1;
   }
   .pl-next-copy {
     flex: 1 1 20rem;
@@ -182,16 +196,82 @@
       box-shadow 180ms ease,
       opacity 180ms ease;
   }
-  .pl-next-cta:hover,
+  /* Magnetic: the button leans the last few pixels toward the hand that is
+     reaching for it, and stops leaning once the pointer is far from it. */
+  .pl-next-cta {
+    transform: translate(var(--mx, 0), var(--my, 0));
+  }
   .pl-next:hover .pl-next-cta {
-    transform: translateY(-1px);
-    box-shadow: 0 0.75rem 1.5rem -0.5rem rgb(0 0 0 / 0.45);
+    box-shadow: 0 0.9rem 1.75rem -0.5rem rgb(0 0 0 / 0.5);
   }
   .pl-next-cta:hover {
-    opacity: 0.94;
+    opacity: 0.96;
   }
   .pl-next-cta:active {
-    transform: translateY(0);
+    transform: translate(var(--mx, 0), var(--my, 0)) scale(0.98);
+  }
+  /* The label slides left as the chevron slides right — the button opens
+     towards the page it leads to. */
+  .pl-next-cta-label {
+    display: inline-block;
+    transition: transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pl-next:hover .pl-next-cta-label {
+    transform: translateX(-0.15rem);
+  }
+
+  /* ---- the pile, drawn ----
+     Three cards standing in for the review queue. At rest they are a tight
+     stack with only their edges showing; on hover they fan, and the front one
+     carries the count. Purely decorative, hidden from assistive tech. */
+  .pl-next-stack {
+    position: relative;
+    flex: 0 0 auto;
+    width: 4.5rem;
+    height: 3.25rem;
+    margin-left: auto;
+  }
+  .pl-next-card {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--next-fg) 22%, transparent);
+    background: color-mix(in srgb, var(--next-fg) 8%, transparent);
+    backdrop-filter: blur(2px);
+    transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pl-next-card:nth-child(1) {
+    transform: translate(-0.45rem, -0.3rem) rotate(-5deg);
+  }
+  .pl-next-card:nth-child(2) {
+    transform: translate(-0.2rem, -0.15rem) rotate(-2deg);
+  }
+  .pl-next-card:nth-child(3) {
+    background: color-mix(in srgb, var(--next-fg) 14%, transparent);
+    border-color: color-mix(in srgb, var(--brand) 60%, transparent);
+  }
+  .pl-next:hover .pl-next-card:nth-child(1) {
+    transform: translate(-1.35rem, -0.85rem) rotate(-12deg);
+  }
+  .pl-next:hover .pl-next-card:nth-child(2) {
+    transform: translate(-0.7rem, -0.45rem) rotate(-6deg);
+  }
+  .pl-next:hover .pl-next-card:nth-child(3) {
+    transform: translateY(0.15rem);
+  }
+  .pl-next-count {
+    font-size: var(--t-sm);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 30rem) {
+    /* Below this the fan collides with the button; the count is in the copy
+       and in the metrics anyway. */
+    .pl-next-stack {
+      display: none;
+    }
   }
   /* The chevron leads the click: it steps right on hover and carries a little
      trailing room so the button does not resize under the cursor. */
@@ -202,6 +282,38 @@
   .pl-next-cta:hover .pl-next-arrow,
   .pl-next:hover .pl-next-arrow {
     transform: translateX(0.2rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pl-next,
+    .pl-next::before,
+    .pl-next::after,
+    .pl-next-cta,
+    .pl-next-arrow {
+      transition: none;
+    }
+    .pl-next,
+    .pl-next:hover {
+      transform: none;
+    }
+    /* The fan is the motion; the resting stack is just how the pile looks, so
+       only the hover state is cancelled. */
+    .pl-next:hover .pl-next-card:nth-child(1) {
+      transform: translate(-0.45rem, -0.3rem) rotate(-5deg);
+    }
+    .pl-next:hover .pl-next-card:nth-child(2) {
+      transform: translate(-0.2rem, -0.15rem) rotate(-2deg);
+    }
+    .pl-next:hover .pl-next-card:nth-child(3) {
+      transform: none;
+    }
+    .pl-next-card {
+      transition: none;
+    }
+    .pl-next-cta,
+    .pl-next-cta:active {
+      transform: none;
+    }
   }
 
   /* ================= activity =================

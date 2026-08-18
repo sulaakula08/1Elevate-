@@ -97,6 +97,9 @@ export function Dashboard({ account }: { account: Account }) {
           meta: t("home.nextReviewMeta"),
           cta: t("home.nextReviewCta"),
           href: "/review",
+          // Only the review branch has a real, countable pile behind it. The
+          // other three lead somewhere without a queue, so they get no stack.
+          count: queue.length,
         }
       : totals.total > 0
         ? {
@@ -146,35 +149,71 @@ export function Dashboard({ account }: { account: Account }) {
       <section className="dash-section">
         <p className="t-label">{t("home.today")}</p>
         {/*
-         * The block follows the pointer: the brand light moves to where the
-         * cursor is, so the one action on the page feels answerable rather than
-         * printed. Two custom properties carry the position; everything else is
-         * CSS, and with reduced motion the light simply stays at the top right.
+         * The block is the only thing on the page that answers "what now", so
+         * it behaves like an object rather than a printed panel.
+         *
+         * One pointer handler feeds five custom properties and CSS does the
+         * rest: --px/--py place the light and the dot field, --rx/--ry tilt the
+         * slab a couple of degrees toward the cursor, and --mx/--my let the
+         * button drift a few pixels to meet the hand reaching for it. Nothing
+         * animates per frame in JS; the properties are written on move and the
+         * transitions smooth them out.
          */}
         <div
-          className="pl-next"
+          className={`pl-next${next.count ? " is-stacked" : ""}`}
           onPointerMove={(e) => {
             const box = e.currentTarget.getBoundingClientRect();
-            e.currentTarget.style.setProperty(
-              "--px",
-              `${((e.clientX - box.left) / box.width) * 100}%`,
-            );
-            e.currentTarget.style.setProperty(
-              "--py",
-              `${((e.clientY - box.top) / box.height) * 100}%`,
-            );
+            const x = (e.clientX - box.left) / box.width;
+            const y = (e.clientY - box.top) / box.height;
+            const style = e.currentTarget.style;
+            style.setProperty("--px", `${x * 100}%`);
+            style.setProperty("--py", `${y * 100}%`);
+            // Tilt away from the cursor's side: the corner nearest the pointer
+            // comes toward the reader, which is the direction a real card would
+            // move if it were being pressed.
+            style.setProperty("--ry", `${(x - 0.5) * 5}deg`);
+            style.setProperty("--rx", `${(0.5 - y) * 4}deg`);
+            // The button is magnetic only within its own neighbourhood, so a
+            // cursor on the far side of the block does not tug it around.
+            const cta = e.currentTarget.querySelector(".pl-next-cta");
+            if (cta) {
+              const c = cta.getBoundingClientRect();
+              const dx = e.clientX - (c.left + c.width / 2);
+              const dy = e.clientY - (c.top + c.height / 2);
+              const near = Math.max(0, 1 - Math.hypot(dx, dy) / 220);
+              style.setProperty("--mx", `${dx * 0.12 * near}px`);
+              style.setProperty("--my", `${dy * 0.12 * near}px`);
+            }
           }}
           onPointerLeave={(e) => {
-            e.currentTarget.style.removeProperty("--px");
-            e.currentTarget.style.removeProperty("--py");
+            for (const name of ["--px", "--py", "--rx", "--ry", "--mx", "--my"]) {
+              e.currentTarget.style.removeProperty(name);
+            }
           }}
         >
           <div className="pl-next-copy">
             <h1 className="pl-next-title">{next.title}</h1>
             <p className="pl-next-meta">{next.meta}</p>
           </div>
+
+          {/*
+           * The pile itself, drawn rather than described: three cards for a
+           * queue, fanned out on hover with the real count on the front one.
+           * Decorative — the number is already in the copy and in the metrics
+           * below — so it is hidden from assistive tech.
+           */}
+          {next.count ? (
+            <div className="pl-next-stack" aria-hidden>
+              <span className="pl-next-card" />
+              <span className="pl-next-card" />
+              <span className="pl-next-card">
+                <span className="pl-next-count">{next.count}</span>
+              </span>
+            </div>
+          ) : null}
+
           <Link href={next.href} className="pl-next-cta">
-            {next.cta}{" "}
+            <span className="pl-next-cta-label">{next.cta}</span>
             <span aria-hidden className="pl-next-arrow">
               ›
             </span>
