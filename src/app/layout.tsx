@@ -85,18 +85,27 @@ try {
  * that markup in favour of a loading screen, which is a decision made before
  * anything is drawn rather than one render later.
  *
- * Supabase keeps its session under a key of the form sb-PROJECT-auth-token,
- * so the presence of such a key is the question being asked. It is not proof the token is still
- * valid — an expired one still shows the loader briefly, then the landing —
- * but it is exactly right for the common case and wrong only for a session
- * that has already ended.
+ * Supabase names its session sb-PROJECT-auth-token, so the presence of such a
+ * name is the question being asked. It is not proof the token is still valid —
+ * an expired one still shows the loader briefly, then the landing — but it is
+ * exactly right for the common case and wrong only for a session that has
+ * already ended.
+ *
+ * Cookies first, because that is where the session lives now. localStorage is
+ * still checked for the one load after this change ships, where a returning
+ * student's session has not been moved across yet. A chunked cookie is named
+ * with a .0 suffix, which is why the match is not anchored at the end.
  */
 try {
-  for (var i = 0; i < localStorage.length; i++) {
-    var key = localStorage.key(i);
-    if (key && key.indexOf('sb-') === 0 && key.indexOf('-auth-token') > 0) {
-      document.documentElement.dataset.session = 'restoring';
-      break;
+  if (/(^|;\\s*)sb-[^=;]*-auth-token/.test(document.cookie)) {
+    document.documentElement.dataset.session = 'restoring';
+  } else {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (key && key.indexOf('sb-') === 0 && key.indexOf('-auth-token') > 0) {
+        document.documentElement.dataset.session = 'restoring';
+        break;
+      }
     }
   }
 } catch (e) {}

@@ -36,7 +36,7 @@ import {
   signOutEverywhere,
   signUpWithPassword,
 } from "./auth";
-import { apiFetch, supabase, supabaseReady } from "./supabase/client";
+import { adoptLegacySession, apiFetch, supabase, supabaseReady } from "./supabase/client";
 import { merge as mergeHistory, push as pushHistory } from "./sync";
 
 export type AuthResult = AuthOutcome;
@@ -165,23 +165,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [ready]);
 
   /**
-   * Loads the profile behind the current Supabase session. Returns null when
-   * nobody is signed in, so the caller can clear state either way.
+   * Loads the profile behind the current Supabase session.
+   *
+   * The outcome distinguishes "not signed in" from "could not ask", and that
+   * distinction is the whole point of the type. Both used to come back as null,
+   * so a profile request that failed for any reason — the database asleep on a
+   * free plan, a dropped connection, a deploy mid-request — signed the student
+   * out of a session that was still perfectly valid. They saw the login screen
+   * and reasonably concluded the app forgets them.
    */
-  const loadProfile = useCallback(async (): Promise<Account | null> => {
-    const response = await apiFetch("/api/profile");
-    if (!response.ok) return null;
+  const loadProfile = useCallback(async (): Promise<
+    { ok: true; account: Account } | { ok: false; signedOut: boolean }
+  > => {
+    let response: Response;
+    try {
+      response = await apiFetch("/api/profile");
+    } catch {
+      return { ok: false, signedOut: false };
+    }
+    if (!response.ok) {
+      // 401 is the server saying this token is nobody. Anything else — 5xx,
+      // 503 when Supabase is unconfigured — is the server failing to answer.
+      return { ok: false, signedOut: response.status === 401 };
+    }
     const body = (await response.json()) as ProfileResponse;
     const p = body.profile;
     return {
-      id: p.id,
-      name: p.name?.trim() || (p.email ?? "").split("@")[0] || "Student",
-      email: p.email ?? "",
-      grade: p.grade ?? "",
-      role: p.role,
-      createdAt: Date.now(),
-      targetScore: p.targetScore,
-      avatarUrl: p.avatarUrl ?? "",
+      ok: true,
+      account: {
+        id: p.id,
+        name: p.name?.trim() || (p.email ?? "").split("@")[0] || "Student",
+        email: p.email ?? "",
+        grade: p.grade ?? "",
+        role: p.role,
+        createdAt: Date.now(),
+        targetScore: p.targetScore,
+        avatarUrl: p.avatarUrl ?? "",
+      },
     };
   }, []);
 
@@ -213,11 +233,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    async function adopt(hasSession: boolean) {
+    async function adopt(user: { id: string; email?: string; metaName?: string } | null) {
       setBankReady(false);
       setAuthBusy(true);
-      const profile = hasSession ? await loadProfile() : null;
+      const loaded = user ? await loadProfile() : ({ ok: false, signedOut: true } as const);
       if (!live) return;
+
+      let profile: Account | null = null;
+      if (loaded.ok) {
+        profile = loaded.account;
+      } else if (user && !loaded.signedOut) {
+        /*
+         * The session is good but the profile could not be fetched. Rather than
+         * throw the student back to the login screen, carry on from what the
+         * session itself already says. A reload, or the next auth event, picks
+         * up the real row.
+         *
+         * Role falls back to student: the admin surfaces are the one thing that
+         * must not be guessed generously, and every one of them is enforced by
+         * the server anyway, so the worst case here is an admin who has to
+         * reload before the admin link appears.
+         */
+        profile = {
+          id: user.id,
+          name: user.metaName?.trim() || (user.email ?? "").split("@")[0] || "Student",
+          email: user.email ?? "",
+          grade: "",
+          role: "student",
+          createdAt: Date.now(),
+          targetScore: 1400,
+          avatarUrl: "",
+        };
+      }
 
       setAccount(profile);
       if (!profile) {
@@ -261,14 +308,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    client.auth.getSession().then(({ data: s }) => void adopt(Boolean(s.session)));
+    /** What adopt() needs from a session, so the two callers agree on it. */
+    const identify = (session: { user: { id: string; email?: string; user_metadata?: Record<string, unknown> } } | null) =>
+      session
+        ? {
+            id: session.user.id,
+            email: session.user.email,
+            metaName:
+              typeof session.user.user_metadata?.name === "string"
+                ? (session.user.user_metadata.name as string)
+                : undefined,
+          }
+        : null;
+
+    // A session left in localStorage by the pre-cookie build is moved into the
+    // cookie first, so the check below finds it instead of concluding that a
+    // signed-in student is a stranger.
+    void adoptLegacySession()
+      .then(() => client.auth.getSession())
+      .then(({ data: s }) => adopt(identify(s.session)));
 
     // Covers sign-in, sign-out, token refresh and the recovery link landing —
     // including sign-out performed in another tab.
     const { data: sub } = client.auth.onAuthStateChange((event, session) => {
       if (!live) return;
       if (event === "TOKEN_REFRESHED") return;
-      void adopt(Boolean(session));
+      void adopt(identify(session));
     });
 
     return () => {
