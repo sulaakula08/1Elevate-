@@ -7,6 +7,7 @@ import { useCommunity } from "./community-state";
 import { useSettings } from "./settings";
 import { useUnreleasedHrefs } from "./unreleased";
 import { loadSeenNotifications, saveSeenNotifications } from "./storage";
+import { apiFetch } from "./supabase/client";
 import { reviewQueue, streak } from "./stats";
 
 /**
@@ -24,7 +25,7 @@ import { reviewQueue, streak } from "./stats";
  * moment they became true, so they can go unread once and then settle.
  */
 
-export type NotificationKind = "community" | "task" | "account";
+export type NotificationKind = "community" | "task" | "account" | "people";
 
 export type AppNotification = {
   id: string;
@@ -38,6 +39,57 @@ export type AppNotification = {
 
 const DAY = 86_400_000;
 
+type Signup = { id: string; name: string; email: string; at: number };
+
+/**
+ * People who have joined, for an admin.
+ *
+ * The only item in this list that cannot be computed from what the browser
+ * already holds — a signup happens on someone else's device — so it is the one
+ * that needs a request. Fetched once when an admin loads the app and again
+ * whenever they come back to the tab, which is when a person actually looks at
+ * the bell. Nothing is polled: an admin who leaves the tab open all day should
+ * not generate a request a minute for news that keeps until they return.
+ *
+ * Anyone who is not an admin never makes the request at all, so the route's 403
+ * is a backstop rather than something a student meets in normal use.
+ */
+function useRecentSignups(enabled: boolean): Signup[] {
+  const [signups, setSignups] = useState<Signup[]>([]);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!enabled) {
+      setSignups([]);
+      return;
+    }
+    let live = true;
+
+    const load = async () => {
+      try {
+        const response = await apiFetch("/api/admin/signups");
+        if (!live || !response.ok) return;
+        const body = (await response.json()) as { signups: Signup[] };
+        setSignups(body.signups);
+      } catch {
+        // Offline, or the route is not deployed yet: the rest of the list still
+        // works, and this is not worth an error message in a bell.
+      }
+    };
+
+    void load();
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      live = false;
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [enabled]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  return signups;
+}
+
 export function useNotifications() {
   const { t } = useI18n();
   const { account, data, bank } = useApp();
@@ -46,6 +98,9 @@ export function useNotifications() {
   const communityHidden = useUnreleasedHrefs().has("/community");
 
   const [seenAt, setSeenAt] = useState(0);
+
+  const isAdmin = account?.role === "admin" || account?.role === "owner";
+  const signups = useRecentSignups(Boolean(isAdmin) && settings.notifications);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -132,8 +187,26 @@ export function useNotifications() {
       });
     }
 
+    /* ---------------- new people, for admins ----------------
+       One item per person rather than "4 new students this week": a count
+       cannot be opened, and the name is the part an admin acts on — it is what
+       they look up when a question arrives from someone they do not recognise.
+       Their own signup is skipped, which otherwise greets every new admin with
+       a notification about themselves. */
+    for (const person of signups) {
+      if (person.id === account.id) continue;
+      out.push({
+        id: `j-${person.id}`,
+        kind: "people",
+        title: `${person.name} ${t("notif.joined")}`,
+        body: person.email,
+        at: person.at,
+        href: "/admin",
+      });
+    }
+
     return out.sort((a, b) => b.at - a.at).slice(0, 30);
-  }, [account, bank, communityHidden, data, posts, settings.notifications, t]);
+  }, [account, bank, communityHidden, data, posts, settings.notifications, signups, t]);
 
   const unread = useMemo(() => items.filter((item) => item.at > seenAt).length, [items, seenAt]);
 

@@ -148,6 +148,9 @@ const D: Dict = {
   "notif.kind.community": { en: "Community" },
   "notif.kind.task": { en: "To do" },
   "notif.kind.account": { en: "You" },
+  /* Admins only — students never see this kind. */
+  "notif.kind.people": { en: "New" },
+  "notif.joined": { en: "joined 1Elevate" },
   "notif.replied": { en: "replied to your post" },
   "notif.reactions": { en: "reactions on your post" },
   "notif.inQueue": { en: "questions in your review queue" },

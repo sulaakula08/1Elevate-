@@ -107,7 +107,9 @@ export function NotificationsBell({ className = "" }: { className?: string }) {
                               ? "var(--s-violet)"
                               : item.kind === "task"
                                 ? "var(--s-amber)"
-                                : "var(--s-teal)",
+                                : item.kind === "people"
+                                  ? "var(--success)"
+                                  : "var(--s-teal)",
                         }}
                       >
                         {t(`notif.kind.${item.kind}`)}
