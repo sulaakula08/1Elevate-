@@ -25,6 +25,7 @@ export function Footer({ landing = false }: { landing?: boolean }) {
             { href: "/#method", key: "lp.footerMethod" },
             { href: "/#sample-question", key: "lp.footerPreview" },
             { href: "/#sat-anatomy", key: "lp.footerExam" },
+            { href: "/#faq", key: "lp.footerFaq" },
           ].map((link) => (
             <Link key={link.href} href={link.href} className="hero-footer-link">
               {t(link.key)}

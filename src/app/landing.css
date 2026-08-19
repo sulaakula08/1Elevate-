@@ -92,7 +92,7 @@
     background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat;
   }
 
-  :is(#method, #outcomes, #product, #sat-anatomy, #start) {
+  :is(#method, #outcomes, #product, #sat-anatomy, #faq, #start) {
     scroll-margin-top: 4.5rem;
   }
 
@@ -2665,7 +2665,389 @@
   }
 
   /* ===========================================================================
-     6 — closing
+     6 — frequently asked questions
+
+     The objections, answered on the way to the CTA. Composition-wise this is the
+     page's own asymmetry one more time: a sticky editorial column and a column of
+     cards beside it, on the same measure as every other section.
+
+     Everything that moves here is a transition on a state attribute — `[data-in]`
+     for the entrance, `[data-open]` for the open card. Nothing is scroll-linked,
+     because nothing about an answer depends on where the page is; `--p` would be a
+     number with no meaning in this section.
+     =========================================================================== */
+
+  .lp-faq {
+    position: relative;
+    padding-block: 6.5rem 6rem;
+    isolation: isolate;
+  }
+
+  /* Ambient wash, lit from the left — the capability field leans right at 96% and
+     the exam field right at 88%, so this one takes the other side and the light
+     keeps alternating down the scroll.
+
+     One bottom hairline, no top one. The exam section's bleed already draws an
+     edge where this chapter begins, and a second line on top of it reads as a
+     seam; the rule below is what closes the chapter before the CTA, so the page
+     ends up with the same [rule] chapter [rule] rhythm it had before. */
+  .lp-faq-field {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    margin-inline: calc(50% - 50vw);
+    pointer-events: none;
+    border-bottom: 1px solid;
+    background:
+      radial-gradient(
+        42rem 32rem at 6% 14%,
+        color-mix(in srgb, var(--brand-2) 7%, transparent),
+        transparent 72%
+      ),
+      radial-gradient(
+        40rem 30rem at 96% 84%,
+        color-mix(in srgb, var(--brand) 7%, transparent),
+        transparent 74%
+      );
+  }
+
+  .lp-faq-grid {
+    display: grid;
+    gap: 2.75rem;
+  }
+
+  /* ---- the editorial column ---- */
+
+  .lp-faq-eyebrow {
+    position: relative;
+    padding-left: 3.25rem;
+    color: var(--brand);
+  }
+  /* The same 2.5rem rule that opens the Method section, drawn on arrival rather
+     than on scroll. One gesture the page already owns, so this chapter reads as
+     the next one and not as a component from somewhere else. */
+  .lp-faq-eyebrow::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 2.5rem;
+    height: 1px;
+    background: var(--brand);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 620ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-faq[data-in] .lp-faq-eyebrow::before {
+    transform: scaleX(1);
+  }
+
+  .lp-faq-title {
+    margin-top: 0.875rem;
+    font-size: clamp(1.875rem, 3.6vw, 2.5rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+  .lp-faq-sub {
+    margin-top: 0.875rem;
+    max-width: 32ch;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  /* Free, and no card. The one answer that should not be behind a click, which is
+     also why it is `--muted` and not the `--faint` the page uses for fine print:
+     this is a fact somebody is looking for, not small print they can skip. */
+  .lp-faq-note {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    max-width: 30ch;
+    border-top: 1px solid;
+    font-size: var(--t-sm);
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .lp-faq-note-link {
+    color: var(--brand);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .lp-faq-note-link span {
+    display: inline-block;
+    margin-left: 0.25em;
+    transition: transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-faq-note-link:hover span {
+    transform: translateX(3px);
+  }
+
+  /* ---- the cards ---- */
+
+  .lp-faq-list {
+    display: grid;
+    gap: 0.625rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /*
+   * One card per question.
+   *
+   * The edge is an inset box-shadow rather than a border, for the reason at the
+   * top of this file — a `border-color` written in this layer is overruled by the
+   * unlayered `*` rule and comes out grey whatever it asks for. It also means the
+   * edge can be re-tinted and thickened on open without one pixel of the card
+   * moving, which a border cannot do.
+   *
+   * Three custom properties carry the horizontal rhythm: the answer is indented
+   * to the question's own text column, and that alignment is derived from the
+   * same numbers the header grid is built from rather than measured off a
+   * screenshot.
+   */
+  .lp-faq-item {
+    --faq-pad: 1.25rem;
+    --faq-num: 1.625rem;
+    --faq-gap: 0.875rem;
+    position: relative;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+    isolation: isolate;
+    /*
+     * `translate` carries the staggered entrance and `transform` carries the
+     * hover lift, deliberately as two properties. They transition independently,
+     * so the per-item delay the entrance needs cannot leak into the hover — which
+     * is exactly what happens when one `transform` does both jobs, and a card
+     * that starts lifting half a second after the pointer arrives feels broken.
+     */
+    opacity: 0;
+    translate: 0 10px;
+    transition:
+      opacity 560ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      translate 560ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 300ms ease;
+    transition-delay: calc(var(--n) * 55ms), calc(var(--n) * 55ms), 0ms, 0ms;
+  }
+  .lp-faq[data-in] .lp-faq-item {
+    opacity: 1;
+    translate: none;
+  }
+  /* Corner glow, anchored the way the closing panel's focus block is. It is the
+     depth cue that reads "this one is open" from the corner of the eye, and it
+     costs one composited opacity. Inset by a pixel so it lights the card rather
+     than washing out its own edge. */
+  .lp-faq-item::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      26rem 13rem at 100% 0%,
+      color-mix(in srgb, var(--brand) 13%, transparent),
+      transparent 68%
+    );
+    opacity: 0;
+    transition: opacity 420ms ease;
+  }
+  .lp-faq-item[data-open]::before {
+    opacity: 1;
+  }
+  /* The same glow needs more of itself on a near-black card: 13% of a lifted
+     brand hue over #121215 is a wash nobody sees, where over paper it is already
+     at the edge of too much. Two values, one gesture. */
+  :root[data-theme="dark"] .lp-faq-item::before {
+    background: radial-gradient(
+      26rem 13rem at 100% 0%,
+      color-mix(in srgb, var(--brand) 26%, transparent),
+      transparent 70%
+    );
+  }
+  .lp-faq-item[data-open] {
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--brand) 32%, var(--line)),
+      0 1px 2px color-mix(in srgb, var(--brand) 8%, transparent),
+      0 18px 44px color-mix(in srgb, var(--brand) 13%, transparent);
+  }
+  /* Closed only. Lifting an open card would move the paragraph being read, and
+     the pointer is usually still over the question when the answer arrives. This
+     sits after the `[data-in]` rule on purpose: the two carry equal specificity,
+     so source order is what lets a hover win over the settled entrance. */
+  .lp-faq-item:not([data-open]):hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 0 0 1px var(--line-strong),
+      var(--lift);
+  }
+
+  .lp-faq-q {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+  }
+
+  .lp-faq-trigger {
+    display: grid;
+    grid-template-columns: var(--faq-num) minmax(0, 1fr) 1.75rem;
+    align-items: center;
+    gap: var(--faq-gap);
+    width: 100%;
+    padding: 1.0625rem var(--faq-pad);
+    border-radius: var(--radius-lg);
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .lp-faq-n {
+    font-size: var(--t-micro);
+    font-weight: 500;
+    color: var(--faint);
+    transition: color 260ms ease;
+  }
+  .lp-faq-item:hover .lp-faq-n {
+    color: var(--muted);
+  }
+  .lp-faq-item[data-open] .lp-faq-n {
+    color: var(--brand);
+  }
+
+  /* Size and weight are fixed across both states. A question that gains weight
+     when it opens re-wraps, and a header that changes height is the jump this
+     whole mechanism exists to avoid — the tile, the edge and the number carry the
+     state instead. */
+  .lp-faq-q-text {
+    font-size: var(--t-body);
+    font-weight: 500;
+    line-height: 1.45;
+    letter-spacing: -0.015em;
+    color: var(--foreground);
+    text-wrap: pretty;
+  }
+
+  .lp-faq-sign {
+    position: relative;
+    display: grid;
+    place-items: center;
+    justify-self: end;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--line);
+    transition:
+      background 260ms ease,
+      box-shadow 260ms ease,
+      transform 480ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-faq-item:not([data-open]):hover .lp-faq-sign {
+    background: var(--brand-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 26%, var(--line));
+  }
+  .lp-faq-item[data-open] .lp-faq-sign {
+    background: var(--brand);
+    box-shadow:
+      inset 0 0 0 1px var(--brand),
+      0 2px 10px color-mix(in srgb, var(--brand) 34%, transparent);
+    transform: rotate(180deg);
+  }
+  .lp-faq-sign-bar {
+    position: absolute;
+    width: 0.625rem;
+    height: 1.5px;
+    border-radius: 1px;
+    background: var(--muted);
+    transition:
+      transform 480ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      background 260ms ease;
+  }
+  /* The upright arm, and the whole trick. Closed the mark is a plus; open, the
+     tile has turned a half circle and this arm has rotated flat into the
+     crossbar. Nothing appears and nothing disappears, so there is no frame where
+     the indicator is neither sign. */
+  .lp-faq-sign-bar:last-child {
+    transform: rotate(90deg);
+  }
+  .lp-faq-item:not([data-open]):hover .lp-faq-sign-bar {
+    background: var(--brand);
+  }
+  .lp-faq-item[data-open] .lp-faq-sign-bar {
+    background: var(--brand-contrast);
+    transform: none;
+  }
+
+  /*
+   * The answer, opened on `grid-template-rows: 0fr → 1fr` — the same mechanism
+   * the loop's step paragraphs use, and the only honest one: the row animates to
+   * the height the content actually has, so nothing is measured in JavaScript,
+   * nothing clips at the end and the card below cannot jump part-way through.
+   *
+   * `0fr` only collapses a real element, not a bare text node, which is why there
+   * is an inner wrapper and why it carries `min-height: 0`.
+   */
+  .lp-faq-a {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 460ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-faq-item[data-open] .lp-faq-a {
+    grid-template-rows: 1fr;
+  }
+  .lp-faq-a-inner {
+    position: relative;
+    min-height: 0;
+    opacity: 0;
+    /* The body rises the last few pixels rather than being revealed by the mask
+       alone. The row is already growing; text that only unmasks reads as a clip,
+       text that also moves reads as an answer opening. */
+    translate: 0 -5px;
+    transition:
+      opacity 240ms ease,
+      translate 380ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .lp-faq-item[data-open] .lp-faq-a-inner {
+    opacity: 1;
+    translate: none;
+    /* Behind the row, so the text arrives into space that already exists. */
+    transition-delay: 90ms;
+  }
+  /* The rule that turns an open card into a two-part surface: brand where the
+     answer starts, hairline across the measure, gone before the right edge. */
+  .lp-faq-a-inner::before {
+    content: "";
+    position: absolute;
+    left: var(--faq-pad);
+    right: var(--faq-pad);
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      color-mix(in srgb, var(--brand) 38%, transparent),
+      var(--line) 38%,
+      transparent
+    );
+  }
+  /* Indented to the question's own text column at every width. The gutter costs
+     the paragraph a couple of characters a line on a phone, which is cheaper than
+     an answer that does not line up with the question it belongs to. */
+  .lp-faq-a-text {
+    margin: 0;
+    padding: 1rem var(--faq-pad) 1.3125rem
+      calc(var(--faq-pad) + var(--faq-num) + var(--faq-gap));
+    max-width: 66ch;
+    font-size: var(--t-sm);
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  /* ===========================================================================
+     7 — closing
      =========================================================================== */
 
   .lp-close {
@@ -3047,6 +3429,25 @@
     }
   }
 
+  @media (min-width: 64rem) {
+    .lp-faq-grid {
+      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+      align-items: start;
+      gap: 4rem;
+    }
+    /* The heading holds while the questions travel past it, which is the whole
+       reason this is a two-column section rather than a centred stack.
+
+       Sticky works here because `.marketing-main` clips overflow-x rather than
+       hiding it — see the note at the top of this file. `align-items: start` is
+       what gives the column somewhere to stick inside; stretched to the row's
+       height it would have no travel at all. */
+    .lp-faq-head {
+      position: sticky;
+      top: 5.5rem;
+    }
+  }
+
   @media (max-width: 63.99rem) {
     .lp-res-wall {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3370,6 +3771,41 @@
       opacity: 0.88;
     }
 
+    .lp-faq {
+      padding-block: 4rem 3.5rem;
+    }
+    .lp-faq-grid {
+      gap: 2rem;
+    }
+    .lp-faq-title {
+      font-size: clamp(1.625rem, 7.4vw, 2rem);
+    }
+    .lp-faq-sub,
+    .lp-faq-note {
+      max-width: none;
+    }
+    .lp-faq-note {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+    }
+    .lp-faq-item {
+      --faq-pad: 1rem;
+      --faq-gap: 0.75rem;
+    }
+    .lp-faq-trigger {
+      padding-block: 0.9375rem;
+    }
+    /* A step down, not a step up: at this width the question is the widest line
+       in the card and 16px pushes half of them onto a third row. */
+    .lp-faq-q-text {
+      font-size: var(--t-sm);
+      line-height: 1.5;
+    }
+    .lp-faq-a-text {
+      padding-top: 0.875rem;
+      padding-bottom: 1.125rem;
+    }
+
     .lp-close {
       padding-block: 4.5rem 4rem;
     }
@@ -3488,6 +3924,18 @@
     opacity: 1;
     transform: none;
   }
+  /* The FAQ cards and their answers, which would otherwise sit at opacity 0 with
+     a 0.001ms transition and nothing to bring them in. The accordion itself needs
+     nothing here: `grid-template-rows` simply snaps between its two values, so
+     the panel still opens and closes on click — instantly, which is the point. */
+  .lp-faq-item,
+  .lp-faq-a-inner {
+    opacity: 1;
+    translate: none;
+  }
+  .lp-faq-eyebrow::before {
+    transform: scaleX(1);
+  }
   .lp-close-arc {
     clip-path: none;
   }
@@ -3506,6 +3954,37 @@
   }
   .lp-loop-step {
     opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   no script
+
+   An accordion is a JavaScript control, so without JavaScript it has to stop
+   being one rather than becoming nine questions with no answers. This opens every
+   panel and drops the indicator, which can no longer do anything — the section
+   degrades into the plain question-and-answer list it always was underneath.
+
+   Unlayered, so it beats the `grid-template-rows: 0fr` in the layer above without
+   needing `!important`. It pairs with `live` in Faq.tsx, which is what keeps
+   `inert` out of the server HTML this rule is written for; the query only matches
+   when scripting is off, so a normal visitor never renders a byte of it.
+   --------------------------------------------------------------------------- */
+
+@media (scripting: none) {
+  .lp-faq-a {
+    grid-template-rows: 1fr;
+  }
+  .lp-faq-a-inner {
+    opacity: 1;
+    translate: none;
+  }
+  .lp-faq-sign {
+    display: none;
+  }
+  .lp-faq-trigger {
+    grid-template-columns: var(--faq-num) minmax(0, 1fr);
+    cursor: default;
   }
 }
 
@@ -3537,6 +4016,13 @@
 }
 .lp-res-arrow::after {
   border-color: var(--line-strong);
+}
+/* Not a border colour, but here for the same reason: `*:focus-visible` in
+   globals.css is unlayered, so its `border-radius: var(--radius-sm)` beats
+   anything written in the layer above. The trigger fills a 14px-radius card and
+   the ring has to follow that corner rather than tightening to 8px inside it. */
+.lp-faq-trigger:focus-visible {
+  border-radius: var(--radius-lg);
 }
 
 /* ---------------- about ----------------
