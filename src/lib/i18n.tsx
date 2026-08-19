@@ -647,6 +647,15 @@ const D: Dict = {
   "review.empty": { en: "Every question you got wrong has been answered right twice since. Keep practising and anything new will queue up here.",
   },
   "review.emptyTitle": { en: "Nothing to review. Nice work." },
+  /* Shown only on the transition — see components/QueueCleared.tsx. */
+  "review.clearedTitle": { en: "Queue cleared." },
+  "review.clearedCount": { en: "questions put to rest" },
+  "review.clearedBody": {
+    en: "Every question you had got wrong, you have now got right twice. Nothing is waiting on you — go and find some new ones.",
+  },
+  "review.clearedPractice": { en: "Practise something new" },
+  "review.clearedProgress": { en: "See your progress" },
+  "review.clearedDismiss": { en: "Dismiss" },
   "review.start": { en: "Start review" },
   "review.due": { en: "in the queue" },
   "review.skillsDue": { en: "skills involved" },

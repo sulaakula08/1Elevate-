@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { SAT, getSubject, subjectsFor } from "@/data/exams";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
@@ -11,6 +11,7 @@ import { EmptyState, PageTitle, RequireAccount } from "@/components/ui";
 import { RichText } from "@/lib/math/markdown";
 import { Select } from "@/components/Select";
 import { Reveal } from "@/components/motion";
+import { QueueCleared } from "@/components/QueueCleared";
 import { SectionGate } from "@/components/SectionGate";
 
 /** How many questions one sitting draws. The queue is a list; a session is short. */
@@ -42,6 +43,30 @@ function ReviewInner() {
   const { t, tx } = useI18n();
   const { data, bank } = useApp();
   const [running, setRunning] = useState(false);
+  /**
+   * How big the queue was when this sitting started, once it has emptied.
+   *
+   * Null means "show the ordinary empty state". It is set only on the way out
+   * of a session that finished the queue off, which is the difference between
+   * clearing it and never having had one — a new account has an empty queue
+   * too, and congratulating them for that would make the celebration mean
+   * nothing the day they earn it.
+   */
+  const [cleared, setCleared] = useState<number | null>(null);
+  /** The queue length as the session began, captured before it starts shrinking. */
+  const startedWith = useRef(0);
+  /**
+   * The questions this sitting is serving, frozen at the moment it started.
+   *
+   * It used to be `shown.slice(0, SESSION)`, recomputed on every render — and
+   * the queue shrinks as the sitting goes on, because answering a question
+   * right for the second time is exactly what removes it. So the list the
+   * student was working through re-indexed underneath them mid-session, and
+   * clearing the last one dropped the whole runner, results screen and all,
+   * before they could see how they had done. A session is a fixed set of
+   * questions; the queue behind it can do what it likes.
+   */
+  const [sitting, setSitting] = useState<Question[]>([]);
 
   const [section, setSection] = useState<string | null>(null);
   const [domain, setDomain] = useState<string | null>(null);
@@ -185,13 +210,19 @@ function ReviewInner() {
     setLevel(null);
   }
 
-  if (running && shown.length > 0) {
+  if (running && sitting.length > 0) {
     return (
       <PracticeRunner
-        questions={shown.slice(0, SESSION)}
+        questions={sitting}
         mode="review"
         title={t("review.title")}
-        onExit={() => setRunning(false)}
+        onExit={() => {
+          setRunning(false);
+          // The queue recomputes from `data` as answers are recorded, so by the
+          // time this runs it already reflects the sitting. Nothing left and
+          // something there when we started means it was just finished off.
+          if (queue.length === 0 && startedWith.current > 0) setCleared(startedWith.current);
+        }}
       />
     );
   }
@@ -200,13 +231,17 @@ function ReviewInner() {
     return (
       <div className="container-app">
         <PageTitle sub={t("review.desc")}>{t("review.title")}</PageTitle>
-        <EmptyState
-          tone="positive"
-          title={t("review.emptyTitle")}
-          action={{ href: "/practice", label: t("nav.practice") }}
-        >
-          {t("review.empty")}
-        </EmptyState>
+        {cleared !== null ? (
+          <QueueCleared count={cleared} onDismiss={() => setCleared(null)} />
+        ) : (
+          <EmptyState
+            tone="positive"
+            title={t("review.emptyTitle")}
+            action={{ href: "/practice", label: t("nav.practice") }}
+          >
+            {t("review.empty")}
+          </EmptyState>
+        )}
       </div>
     );
   }
@@ -238,7 +273,11 @@ function ReviewInner() {
         )}
         <button
           className="btn btn-primary ml-auto shrink-0"
-          onClick={() => setRunning(true)}
+          onClick={() => {
+            startedWith.current = queue.length;
+            setSitting(ordered.slice(0, SESSION));
+            setRunning(true);
+          }}
           disabled={shown.length === 0}
         >
           {t("review.start")} · {Math.min(shown.length, SESSION)}

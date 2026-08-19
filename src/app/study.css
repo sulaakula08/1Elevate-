@@ -3651,3 +3651,266 @@ body[data-exam] .test-foot {
     letter-spacing: 0.02em;
   }
 }
+
+/* ============================================================
+   Review queue cleared
+   ============================================================
+
+   The one celebration in the product, so it is worth spending motion on. Every
+   piece is CSS: two expanding rings, a tick drawn along its own path, twelve
+   sparks thrown from the centre, then the words arriving after the mark has
+   landed. No JavaScript drives any of it — the component only flips one
+   attribute a frame after mount, and everything below hangs off that.
+
+   Timing runs to about 1.1s in total. Long enough to register as a response to
+   finishing, short enough that nobody sitting through it a second time is
+   waiting on the page.
+
+   Reduced motion is handled by the global rule in globals.css, which collapses
+   every duration to nothing: the tick, the count and the words are all still
+   there, they simply arrive already finished. Nothing here is animation-only,
+   which is what makes that safe. */
+@layer components {
+  .qc {
+    text-align: center;
+    padding: 3.5rem 1rem 3rem;
+  }
+
+  /* ---- the mark ---- */
+
+  .qc-mark {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+  }
+
+  /* Two rings leaving the centre, the second half a beat behind. They start at
+     the size of the tick rather than at zero, so they read as coming off it. */
+  /* A box-shadow ring rather than a border, and not by preference: globals.css
+     sets `* { border-color: var(--line) }` outside any layer, and an unlayered
+     declaration beats a layered one whatever the specificity — the ring came
+     out the same grey as every divider on the page. box-shadow is untouched by
+     that rule, and its spread scales with the element, which is what the
+     animation wants anyway. */
+  .qc-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px var(--success);
+    opacity: 0;
+  }
+
+  .qc[data-playing] .qc-ring {
+    animation: qc-ring 1s cubic-bezier(0.2, 0.7, 0.3, 1) 0.18s both;
+  }
+
+  .qc[data-playing] .qc-ring-2 {
+    animation-delay: 0.36s;
+  }
+
+  @keyframes qc-ring {
+    from {
+      transform: scale(0.8);
+      opacity: 0.55;
+    }
+    to {
+      transform: scale(2.1);
+      opacity: 0;
+    }
+  }
+
+  /* The tick itself: drawn, then settled. pathLength=1 on both shapes means the
+     dash values below are fractions of each path rather than pixel lengths, so
+     the circle and the check finish together despite being different lengths. */
+  .qc-tick {
+    position: relative;
+    z-index: 1;
+  }
+
+  .qc-tick circle,
+  .qc-tick path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  .qc[data-playing] .qc-tick {
+    animation: qc-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+
+  .qc[data-playing] .qc-tick circle {
+    animation: qc-draw 0.55s ease-out 0.08s forwards;
+  }
+
+  .qc[data-playing] .qc-tick path {
+    animation: qc-draw 0.4s ease-out 0.42s forwards;
+  }
+
+  @keyframes qc-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes qc-pop {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* ---- sparks ----
+     Twelve children, each rotated to its own angle by --a and given a small
+     stagger by --d. The rotation is on the child and the travel is on its own
+     ::after, so one keyframe pair covers every direction: rotate, then move
+     outward along the rotated axis. */
+  .qc-sparks {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .qc-sparks > span {
+    position: absolute;
+    inset: 0;
+    transform: rotate(var(--a));
+  }
+
+  .qc-sparks > span::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 9px;
+    margin: -4.5px 0 0 -1px;
+    border-radius: 1px;
+    background: var(--success);
+    opacity: 0;
+    transform-origin: center;
+  }
+
+  .qc[data-playing] .qc-sparks > span::after {
+    animation: qc-spark 0.62s cubic-bezier(0.15, 0.75, 0.3, 1) calc(0.34s + var(--d)) both;
+  }
+
+  @keyframes qc-spark {
+    from {
+      transform: translateY(-4px) scaleY(0.4);
+      opacity: 0;
+    }
+    35% {
+      opacity: 0.9;
+    }
+    to {
+      transform: translateY(-40px) scaleY(1);
+      opacity: 0;
+    }
+  }
+
+  /* ---- the words ----
+     Each line rises after the one above it, starting once the tick is drawn.
+     The delays are what make this a sequence rather than a fade. */
+  .qc-title,
+  .qc-count,
+  .qc-body,
+  .qc-actions {
+    opacity: 0;
+  }
+
+  .qc[data-playing] .qc-title,
+  .qc[data-playing] .qc-count,
+  .qc[data-playing] .qc-body,
+  .qc[data-playing] .qc-actions {
+    animation: qc-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+
+  .qc[data-playing] .qc-title {
+    animation-delay: 0.5s;
+  }
+  .qc[data-playing] .qc-count {
+    animation-delay: 0.62s;
+  }
+  .qc[data-playing] .qc-body {
+    animation-delay: 0.74s;
+  }
+  .qc[data-playing] .qc-actions {
+    animation-delay: 0.86s;
+  }
+
+  @keyframes qc-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .qc-title {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    margin-top: 1.75rem;
+  }
+
+  .qc-count {
+    margin-top: 0.75rem;
+    font-size: 2.75rem;
+    line-height: 1.1;
+    font-weight: 500;
+    color: var(--success);
+  }
+
+  .qc-count-label {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: var(--t-micro);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+  }
+
+  .qc-body {
+    margin: 0.9rem auto 0;
+    max-width: 26rem;
+    font-size: var(--t-sm);
+    line-height: 1.65;
+    color: var(--muted);
+  }
+
+  .qc-actions {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+/* The staged delays are the one part of this that reduced motion does not
+   already handle. The global rules collapse animation-duration but deliberately
+   leave delay alone — harmless for a fade, wrong here, where a 0.86s delay on a
+   zero-length animation means a blank space and then a pop, four times over.
+   Zeroing the delays turns the sequence into a single arrival, which is what
+   "no motion" should look like. Unlayered, like the rules it is completing, so
+   it wins over the layered delays above. */
+@media (prefers-reduced-motion: reduce) {
+  .qc *,
+  .qc *::after {
+    animation-delay: 0s !important;
+  }
+}
+
+:root[data-motion="reduce"] .qc *,
+:root[data-motion="reduce"] .qc *::after {
+  animation-delay: 0s !important;
+}
