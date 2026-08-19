@@ -42,9 +42,15 @@ export function Footer({ landing = false }: { landing?: boolean }) {
           </Link>
         </nav>
 
+        {/* The policy belongs in the meta line rather than in a nav column: it
+            is not somewhere to explore, it is the small print, and it has to be
+            reachable from every page whether or not anyone is signed in. */}
         <div className="app-footer-meta">
           <span>1Elevate</span>
           <span>{t("lp.footerBlueprint")}</span>
+          <Link href="/privacy" className="hero-footer-link">
+            {t("lp.footerPrivacy")}
+          </Link>
         </div>
       </div>
     </footer>

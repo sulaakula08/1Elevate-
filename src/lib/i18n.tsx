@@ -196,6 +196,10 @@ const D: Dict = {
   "settings.exportBody": { en: "Every question you have answered, your mock results and these preferences, as a JSON file.",
   },
   "settings.exportAction": { en: "Download JSON" },
+  "settings.privacy": { en: "Privacy and cookies" },
+  "settings.privacyBody": {
+    en: "What is stored, the one cookie we set, and who else sees anything.",
+  },
 
   "settings.account": { en: "Account" },
   "settings.resetPrefs": { en: "Reset preferences" },

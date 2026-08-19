@@ -244,6 +244,7 @@ export const LANDING_COPY: CopyDict = {
   "lp.footerPreview": { en: "Practice preview" },
   "lp.footerExam": { en: "SAT format" },
   "lp.footerBlueprint": { en: "Built around the official SAT blueprint." },
+  "lp.footerPrivacy": { en: "Privacy and cookies" },
   "nav.toggleTheme": { en: "Toggle color theme" },
 
   /* ---- restated from the base dictionary ---- */

@@ -134,6 +134,22 @@ function SettingsInner() {
           action={t("settings.exportAction")}
           onAction={exportData}
         />
+        {/* Next to the export button on purpose: someone asking what is held
+            about them is one row away from taking a copy of it. */}
+        <Link
+          href="/privacy"
+          className="w-full flex items-start gap-4 py-4 border-b hover:bg-surface-2 transition-colors px-1"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium">{t("settings.privacy")}</span>
+            <span className="block text-sm text-muted mt-0.5 leading-relaxed">
+              {t("settings.privacyBody")}
+            </span>
+          </span>
+          <span className="text-muted shrink-0" aria-hidden>
+            →
+          </span>
+        </Link>
       </Group>
 
       {/* ---------------- account ---------------- */}
