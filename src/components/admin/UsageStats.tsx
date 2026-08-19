@@ -274,6 +274,11 @@ function Figure({
  * busiest day but not whether that meant nine answers or nine hundred, which is
  * the difference between a quiet week and a broken one. The peak sits on the
  * highest bar rather than on an axis, so the number is where the eye already is.
+ *
+ * Which day a bar is was the part the chart never said. The bars are unlabelled
+ * — fourteen dates will not fit across half a column — so "the spike is four
+ * from the end" had to be counted back by hand, and counted again for the second
+ * chart. Hovering any column now names its date outright.
  */
 function Series({
   label,
@@ -292,6 +297,7 @@ function Series({
   const peak = Math.max(1, ...days.map((d) => d.count));
   const total = days.reduce((sum, d) => sum + d.count, 0);
   const peakIndex = days.findIndex((d) => d.count === peak && d.count > 0);
+  const [hover, setHover] = useState<number | null>(null);
 
   return (
     <div>
@@ -300,18 +306,48 @@ function Series({
         <span className="num text-micro text-faint ml-auto">{total}</span>
       </div>
 
-      {/* The peak, on its own line above the bars. Reserved even when every day
-          is empty, so two charts side by side keep their baselines aligned. */}
-      <p className="num text-2xs text-faint mt-3 h-4">
-        {peakIndex === -1 ? "" : `${peakLabel} ${peak}`}
+      {/*
+       * One line above the bars, showing the hovered day and falling back to the
+       * peak. Sharing the line rather than adding a floating tooltip keeps the
+       * two charts the same height whatever the pointer is doing — a tooltip
+       * that overlays the bars would cover the neighbours you are comparing
+       * against, which is the whole reason for hovering in the first place.
+       * Reserved even when empty, so charts side by side keep their baselines.
+       */}
+      <p className="num text-2xs mt-3 h-4">
+        {hover !== null ? (
+          <span style={{ color: "var(--text)" }}>
+            {longDate(days[hover].day)}
+            <span className="text-faint"> · {days[hover].count}</span>
+          </span>
+        ) : (
+          <span className="text-faint">{peakIndex === -1 ? "" : `${peakLabel} ${peak}`}</span>
+        )}
       </p>
 
-      <div className="flex items-end gap-1 h-20">
+      <div className="flex items-end gap-1 h-20" onMouseLeave={() => setHover(null)}>
         {days.map((day, i) => (
-          <div key={day.day} className="flex-1 flex flex-col justify-end h-full">
-            <div
-              className="rounded-[2px] transition-[height] duration-500"
-              title={`${day.day}: ${day.count}`}
+          /*
+           * The column is the hover target, not the bar. A quiet day is a 3%
+           * sliver two pixels tall, which is the hardest thing on the chart to
+           * point at and often the one an admin most wants to check.
+           *
+           * Focusable, and it reports its own date and count: a keyboard reaches
+           * the same information, and the native title stays as a fallback for
+           * anyone whose pointer arrives without a hover event at all.
+           */
+          <button
+            key={day.day}
+            type="button"
+            className="flex-1 flex flex-col justify-end h-full cursor-default"
+            title={`${longDate(day.day)}: ${day.count}`}
+            aria-label={`${longDate(day.day)}: ${day.count}`}
+            onMouseEnter={() => setHover(i)}
+            onFocus={() => setHover(i)}
+            onBlur={() => setHover(null)}
+          >
+            <span
+              className="block rounded-[2px] transition-[height] duration-500"
               style={{
                 height: `${Math.max(day.count ? 8 : 3, (day.count / peak) * 100)}%`,
                 background: day.count
@@ -319,21 +355,28 @@ function Series({
                     ? tone
                     : `color-mix(in srgb, ${tone} 62%, transparent)`
                   : "var(--line)",
+                // The hovered bar goes solid. Losing the peak's own emphasis for
+                // as long as the pointer is elsewhere is the right trade: the
+                // peak is named in the line above, the hovered day is not.
+                opacity: hover === null || hover === i ? 1 : 0.55,
               }}
             />
-          </div>
+          </button>
         ))}
       </div>
 
       {/* One number per bar. Zeroes render as a dash: "0" fourteen times is a
           wall of noise, and the gap is the point. */}
       <div className="flex gap-1 mt-1.5">
-        {days.map((day) => (
+        {days.map((day, i) => (
           <span
             key={day.day}
-            className="num flex-1 text-center text-2xs text-faint tabular-nums"
+            className="num flex-1 text-center text-2xs tabular-nums"
+            style={{ color: hover === i ? "var(--text)" : undefined }}
           >
-            {day.count > 0 ? day.count : "·"}
+            <span className={hover === i ? "" : "text-faint"}>
+              {day.count > 0 ? day.count : "·"}
+            </span>
           </span>
         ))}
       </div>
@@ -341,6 +384,24 @@ function Series({
       {note && <p className="text-micro text-faint mt-2">{note}</p>}
     </div>
   );
+}
+
+/**
+ * "2026-08-19" as "19 Aug 2026".
+ *
+ * Built from the parts rather than passed to `new Date(key)`, which reads a
+ * bare date string as UTC: east of Greenwich that renders as the day before,
+ * so every bar on the chart would be labelled with the wrong date. The keys
+ * are made from local time in the stats route, and this reads them back the
+ * same way.
+ */
+function longDate(key: string): string {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 /**
