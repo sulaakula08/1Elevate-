@@ -529,7 +529,7 @@ const D: Dict = {
   "home.startMock": { en: "Take a mock test" },
   "home.nextUp": { en: "Next up" },
   "home.nextReview": { en: "Clear your review queue" },
-  "home.nextReviewMeta": { en: "The questions you got wrong, hardest first. Two correct answers in a row and one leaves the queue for good.",
+  "home.nextReviewMeta": { en: "The questions you got wrong, hardest first. Get a question right twice in a row to remove it from your review queue.",
   },
   "home.nextReviewCta": { en: "Start review" },
   "home.nextPractice": { en: "Start a practice session" },
