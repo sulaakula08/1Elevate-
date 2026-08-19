@@ -37,7 +37,7 @@ export function Capabilities() {
 
   return (
     <section id="product" className="lp-caps" aria-labelledby="lp-caps-title">
-      <header className="lp-caps-head">
+      <header className="lp-caps-head" data-motion="section-head">
         <p className="t-label">{t("lp.capsEyebrow")}</p>
         <h2 id="lp-caps-title" className="lp-caps-title">
           {t("lp.capsTitle")}

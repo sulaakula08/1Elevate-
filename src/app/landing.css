@@ -1891,7 +1891,6 @@
   .lp-caps {
     position: relative;
     padding-block: 6rem 4rem;
-    border-top: 1px solid;
     isolation: isolate;
   }
   /* A low-contrast violet-to-blue field gives the product chapter its own
@@ -1899,7 +1898,7 @@
   .lp-caps::after {
     content: "";
     position: absolute;
-    inset: 0;
+    inset: -3rem 0;
     z-index: -1;
     margin-inline: calc(50% - 50vw);
     pointer-events: none;
@@ -1914,6 +1913,8 @@
         color-mix(in srgb, var(--s-blue) 5%, transparent),
         transparent 74%
       );
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
   }
   .lp-caps-title {
     margin-top: 0.875rem;
@@ -2271,7 +2272,7 @@
      dark canvas and grid while still giving the exam chapter a focal field. */
   .lp-exam-bleed {
     position: absolute;
-    inset: 0;
+    inset: -3rem 0;
     z-index: -1;
     margin-inline: calc(50% - 50vw);
     background:
@@ -2285,7 +2286,8 @@
         color-mix(in srgb, var(--s-blue) 6%, transparent),
         transparent 74%
       );
-    border-block: 1px solid;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
   }
   .lp-exam-title {
     margin-top: 0.875rem;

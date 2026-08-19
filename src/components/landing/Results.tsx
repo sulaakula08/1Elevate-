@@ -18,7 +18,7 @@ export function Results() {
       aria-labelledby="lp-future-title"
       data-synthetic="true"
     >
-      <div className="lp-future-head">
+      <div className="lp-future-head" data-motion="section-head">
         <div className="lp-future-copy">
           <p className="t-label">{t("lp.resultsEyebrow")}</p>
           <h2 id="lp-future-title" className="lp-future-title">

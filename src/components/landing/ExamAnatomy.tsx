@@ -137,7 +137,7 @@ export function ExamAnatomy() {
     <section id="sat-anatomy" className="lp-exam" aria-labelledby="lp-exam-title">
       <span className="lp-exam-bleed" aria-hidden />
 
-      <header className="lp-exam-head">
+      <header className="lp-exam-head" data-motion="section-head">
         <p className="t-label">{t("lp.examEyebrow")}</p>
         <h2 id="lp-exam-title" className="lp-exam-title">
           {t("lp.examTitle")}

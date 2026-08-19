@@ -18,17 +18,12 @@ export const MOTION = {
   /** Delay before the intro starts, so hydration has settled. */
   introDelay: 0.15,
 
-  /** The h1, revealed character by character. */
+  /** The two-line h1 rises as one block. */
   headline: {
     duration: 0.85,
-    stagger: 0.022,
     y: "0.6em",
-    rotateX: -55,
-    ease: "back.out(1.7)",
+    ease: "power3.out",
   },
-
-  /** The gradient second line, which rises as one block. See Hero.tsx. */
-  headlineB: { duration: 0.8, y: 24, ease: "power3.out", overlap: -0.5 },
 
   /** Sub-headline, buttons and the fine print, each overlapping the last. */
   lede: { duration: 0.7, y: 18, ease: "power3.out", overlap: -0.55 },

@@ -69,6 +69,10 @@
     backdrop-filter: blur(calc(20px * var(--nav-p))) saturate(calc(1 + 0.4 * var(--nav-p)));
     transition: height 140ms ease;
   }
+  .landing-topbar .btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 
   /* The tagline is the first thing to go: it is orientation for a visitor who
      has just landed, and by 120px they have started reading instead. */
@@ -483,6 +487,13 @@
   }
 
   @media (max-width: 25rem) {
+    .landing-topbar-inner {
+      padding-inline: 0.75rem;
+    }
+    .landing-topbar .btn-sm {
+      padding-inline: 0.5rem;
+      font-size: var(--t-2xs);
+    }
     .hero-actions {
       display: grid;
       grid-template-columns: 1fr;
@@ -506,12 +517,18 @@
   /* The landing footer is translucent over the same shell-level grid; it adds
      a closing colour field without starting another grid at its own top edge. */
   .app-footer-landing {
-    background-color: color-mix(in srgb, var(--surface-2) 58%, transparent);
+    background-color: transparent;
     background-image:
       radial-gradient(
         38rem 20rem at 18% 0%,
         color-mix(in srgb, var(--brand) 8%, transparent),
         transparent 72%
+      ),
+      linear-gradient(
+        to bottom,
+        transparent,
+        color-mix(in srgb, var(--surface-2) 42%, transparent) 38%,
+        color-mix(in srgb, var(--surface-2) 58%, transparent)
       );
     background-repeat: no-repeat;
   }
@@ -529,8 +546,9 @@
   .app-footer-landing::before {
     background: linear-gradient(
       to bottom,
-      color-mix(in srgb, var(--surface-2) 42%, transparent),
-      transparent 55%
+      transparent,
+      color-mix(in srgb, var(--surface-2) 28%, transparent) 70%,
+      transparent
     );
   }
   /* `align-items: start` matters more than it looks: the columns are 100px,
