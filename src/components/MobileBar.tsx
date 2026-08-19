@@ -21,6 +21,7 @@ import {
   NavProgress,
   NavReview,
   NavSettings,
+  NavUniversities,
 } from "./NavIcons";
 
 /**
@@ -123,6 +124,7 @@ export function MobileTabs() {
           <div className="md:hidden fixed inset-x-0 bottom-16 z-40 fade-up px-3 pb-2" role="dialog">
             <div className="panel p-2" style={{ boxShadow: "var(--overlay)" }}>
               {[
+                { href: "/universities", key: "nav.universities", Icon: NavUniversities },
                 { href: "/progress", key: "nav.progress", Icon: NavProgress },
                 { href: "/feedback", key: "nav.feedback", Icon: NavFeedback },
                 { href: "/settings", key: "nav.settings", Icon: NavSettings },

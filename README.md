@@ -43,6 +43,7 @@ generate action each say so plainly, and nothing else is affected.
 | Elevate, the AI assistant | practice screen | Explains the current question, typing its answer in as it streams. Knows the question, the correct answer and what you picked. Renders markdown and formulas. Deliberately absent during mock tests. |
 | Progress analytics | `/progress` | Accuracy per subject, per topic and per difficulty level, weak-topic detection, day streak, 14-day activity, mock score trend. |
 | Review queue | `/review` | Every question you got wrong, hardest first. Two correct answers in a row retires it. |
+| Universities | `/universities` | Source-backed starter directory with live search, country and test-policy filters, published SAT ranges and score context labels. |
 | Tutorial | `/tutorial` + first-run tour | A five-step spotlight tour of the dashboard (restartable from the sidebar or the mobile More sheet) plus a page explaining each feature, the exam format, and a live demo question. |
 | Navigation | sidebar + bottom bar | Signed in on desktop: a 240px sidebar with grouped links (Practice, Progress, Learn, Manage) and an account row. Mobile: compact header plus an app-style bottom tab bar with a sheet for the rest. Signed out: a marketing top bar over a centred column. |
 | Accounts | `/account` | Local profile, stats, editable target score. See the security note below. |
@@ -124,16 +125,14 @@ exact characters. Unparseable maths falls back to its own source text: never a
 blank, never a raw delimiter. The tutor's system prompt states exactly this
 syntax, so what the model writes is what the renderer accepts.
 
-## Exam dates
+## SAT countdown
 
-`src/config/exam.ts` is the only place a test date is written down. Entries carry
-an explicit UTC offset, so the countdown is a subtraction between two absolute
-instants and is correct in whatever zone the student's browser is in; the IANA
-zone beside it is used only to print the calendar date the way the test centre
-states it. `EXAM_DATES` ships **empty** — this repository has never carried an
-official College Board date, and inventing one would put a wrong deadline in front
-of a student. The widget renders its "not announced yet" state until real dates
-land there, and starts working the moment they do.
+Each student chooses their own SAT date in Settings and can hide the dashboard
+countdown without deleting it. The preferences live in the existing
+`elevate.settings` localStorage record; no database migration or authentication
+change is required. A date-input value is resolved to 8:00 AM in the browser's
+current time zone, so the stored calendar date never shifts when it is parsed as
+UTC. The clock starts after hydration and updates inside its own component.
 
 ## Brand
 

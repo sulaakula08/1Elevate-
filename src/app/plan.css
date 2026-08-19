@@ -353,56 +353,113 @@
     margin-top: 0.75rem;
   }
 
-  /* ================= exam countdown =================
-     Brand-filled, because it is the one thing on the dashboard that is about
-     the world outside the app. Deliberately calm: no pulse, no ticking second. */
-  .pl-countdown {
-    display: flex;
-    flex-direction: column;
-    gap: 0.875rem;
-    padding: 1.25rem;
-    border-radius: var(--radius);
+  /* ================= exam countdown ================= */
+  .sat-countdown {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(9rem, 0.7fr) minmax(0, 1.8fr) auto;
+    align-items: center;
+    gap: clamp(1.25rem, 4vw, 3rem);
+    overflow: hidden;
+    padding: clamp(1.25rem, 3.4vw, 2.25rem);
+    border-radius: var(--radius-lg);
     color: var(--brand-contrast);
-    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+    background:
+      radial-gradient(34rem 18rem at 80% 0%, color-mix(in srgb, #fff 16%, transparent), transparent 70%),
+      linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+    box-shadow: var(--lift-brand);
   }
-  .pl-countdown-label {
+  .sat-countdown::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, color-mix(in srgb, #fff 22%, transparent) 1px, transparent 1px);
+    background-size: 1.5rem 1.5rem;
+    opacity: 0.28;
+    -webkit-mask-image: linear-gradient(to left, black, transparent 58%);
+    mask-image: linear-gradient(to left, black, transparent 58%);
+  }
+  .sat-countdown > * { position: relative; z-index: 1; }
+  .sat-countdown-label {
     font-size: var(--t-2xs);
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    font-weight: 650;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    opacity: 0.82;
-  }
-  .pl-countdown-row {
-    display: flex;
-    align-items: baseline;
-    gap: 1.125rem;
-  }
-  .pl-countdown-part {
-    display: flex;
-    align-items: baseline;
-    gap: 0.25rem;
-  }
-  .pl-countdown-n {
-    font-size: var(--t-h1);
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-  .pl-countdown-u {
-    font-size: var(--t-micro);
     opacity: 0.78;
   }
-  .pl-countdown-date {
-    font-size: var(--t-micro);
-    opacity: 0.85;
+  .sat-countdown-days {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin-top: 0.45rem;
   }
-  /* Nothing configured: the same block, without the brand fill, so the layout
-     does not shift the day a date lands. */
-  .pl-countdown-empty {
-    background: var(--surface);
-    border: 1px dashed var(--line-strong);
-    color: var(--muted);
+  .sat-countdown-days .num {
+    font-size: clamp(3.25rem, 7vw, 5.5rem);
+    font-weight: 620;
+    line-height: 0.92;
+    letter-spacing: -0.065em;
+  }
+  .sat-countdown-days > span:last-child {
+    font-size: var(--t-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+  .sat-countdown-time { display: flex; align-items: flex-start; }
+  .sat-countdown-unit { position: relative; display: grid; justify-items: center; min-width: 4.25rem; }
+  .sat-countdown-number {
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    font-weight: 560;
+    line-height: 1;
+    letter-spacing: -0.045em;
+  }
+  .sat-countdown-unit-label {
+    margin-top: 0.4rem;
+    font-size: var(--t-2xs);
+    text-transform: uppercase;
+    opacity: 0.65;
+  }
+  .sat-countdown-colon {
+    position: absolute;
+    left: -0.15rem;
+    top: 0.05em;
+    font-size: clamp(1.5rem, 3.5vw, 2.6rem);
+    opacity: 0.55;
+  }
+  .sat-countdown-meta { margin-top: 1.25rem; }
+  .sat-countdown-meta h2 { font-size: var(--t-body); font-weight: 620; }
+  .sat-countdown-meta p { margin-top: 0.25rem; font-size: var(--t-micro); opacity: 0.7; }
+  .sat-countdown-edit {
+    align-self: start;
+    color: inherit;
+    font-size: var(--t-sm);
+    opacity: 0.78;
+    white-space: nowrap;
+  }
+  .sat-countdown-edit:hover { opacity: 1; }
+  .sat-countdown-empty {
+    grid-template-columns: minmax(0, 1fr) auto;
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--brand) 4%, var(--surface));
+    border: 1px dashed color-mix(in srgb, var(--brand) 35%, var(--line-strong));
+    box-shadow: none;
+  }
+  .sat-countdown-empty::after { display: none; }
+  .sat-countdown-empty h2 { margin-top: 0.5rem; font-size: clamp(1.35rem, 3vw, 2rem); font-weight: 600; }
+  .sat-countdown-empty p:last-child { margin-top: 0.45rem; color: var(--muted); }
+  .sat-countdown-empty .sat-countdown-label { color: var(--brand); opacity: 1; }
+
+  @media (max-width: 63.99rem) {
+    .sat-countdown { grid-template-columns: minmax(8rem, 0.65fr) minmax(0, 1.35fr); }
+    .sat-countdown-edit { position: absolute; right: 1.25rem; top: 1.25rem; }
+  }
+  @media (max-width: 35rem) {
+    .sat-countdown { grid-template-columns: 1fr; gap: 1.5rem; }
+    .sat-countdown-edit { position: static; }
+    .sat-countdown-unit { min-width: 0; width: 4rem; }
+    .sat-countdown-empty { grid-template-columns: 1fr; }
+    .sat-countdown-empty .btn { width: 100%; }
   }
 
   /* ================= mock setup ================= */

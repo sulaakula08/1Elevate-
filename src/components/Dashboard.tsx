@@ -13,11 +13,13 @@ import { ExamCountdown } from "./dashboard/ExamCountdown";
 import { StudyActivity } from "./dashboard/StudyActivity";
 import { CommunityPreview } from "./community/CommunityPreview";
 import { useUnreleasedHrefs } from "@/lib/unreleased";
+import { useSettings } from "@/lib/settings";
 
 /** Slightly darker second stop, so each card is a gradient of its own hue. */
 export function Dashboard({ account }: { account: Account }) {
   const { t, tx } = useI18n();
   const { data, bank } = useApp();
+  const { settings, ready: settingsReady } = useSettings();
   const communityHidden = useUnreleasedHrefs().has("/community");
 
   const exam = SAT.exam;
@@ -221,6 +223,12 @@ export function Dashboard({ account }: { account: Account }) {
         </div>
       </section>
 
+      {settingsReady && settings.showSatCountdown && (
+        <section className="dash-section">
+          <ExamCountdown examDate={settings.satExamDate} />
+        </section>
+      )}
+
       {/* ---------------- subjects: the other way in ---------------- */}
       <section className="dash-section">
         <div className="dash-head">
@@ -362,7 +370,6 @@ export function Dashboard({ account }: { account: Account }) {
             </dl>
 
             <div className="dash-score-foot">
-              <ExamCountdown inline />
               <Link href="/mock" className="btn btn-primary btn-sm">
                 {t("home.startMock")}
               </Link>

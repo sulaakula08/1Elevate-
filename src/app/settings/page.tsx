@@ -84,6 +84,22 @@ function SettingsInner() {
         />
       </Group>
 
+      {/* ---------------- SAT exam ---------------- */}
+      <Group id="sat-exam" title={t("settings.satExam")}>
+        <DateRow
+          title={t("settings.satDate")}
+          body={t("settings.satDateBody")}
+          value={settings.satExamDate}
+          onChange={(value) => set("satExamDate", value)}
+        />
+        <Row
+          title={t("settings.showSatCountdown")}
+          body={t("settings.showSatCountdownBody")}
+          on={settings.showSatCountdown}
+          onChange={(on) => set("showSatCountdown", on)}
+        />
+      </Group>
+
       {/* ---------------- practice ----------------
           Two preferences that belong to how a person works rather than to how
           the app looks: both were previously buried in the test surface, where
@@ -196,9 +212,9 @@ function SettingsInner() {
   );
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+function Group({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-10 first:mt-6">
+    <section id={id} className="mt-10 first:mt-6 scroll-mt-8">
       <p className="label-xs">{title}</p>
       <div className="mt-3 border-t">{children}</div>
     </section>
@@ -285,6 +301,33 @@ function ChoiceRow<T extends number | string>({
         })}
       </div>
     </div>
+  );
+}
+
+function DateRow({
+  title,
+  body,
+  value,
+  onChange,
+}: {
+  title: string;
+  body: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="w-full flex flex-col sm:flex-row sm:items-center gap-3 py-4 border-b px-1">
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="block text-sm text-muted mt-0.5 leading-relaxed">{body}</span>
+      </span>
+      <input
+        type="date"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="field num w-full sm:w-auto"
+      />
+    </label>
   );
 }
 

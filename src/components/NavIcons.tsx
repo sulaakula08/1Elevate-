@@ -48,6 +48,15 @@ export function NavProgress({ size = 20 }: { size?: number }) {
   );
 }
 
+export function NavUniversities({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <path d="M3.5 9.5 12 4l8.5 5.5L12 15 3.5 9.5Z" {...S} />
+      <path d="M6.5 11.5V17c2.9 2 8.1 2 11 0v-5.5M20.5 9.5V16" {...S} />
+    </svg>
+  );
+}
+
 export function NavCommunity({ size = 20 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>

@@ -14,12 +14,18 @@ export const PLAN_COPY: CopyDict = {
   "plan.startHere": { en: "Start with one session — ten questions, and this screen fills with your own data." },
 
   /* ---------------- exam countdown ---------------- */
-  "plan.countdownLabel": { en: "Until the next SAT" },
+  "plan.countdownLabel": { en: "Your SAT" },
   "plan.countdownDays": { en: "d" },
   "plan.countdownHours": { en: "h" },
   "plan.countdownMinutes": { en: "m" },
-  "plan.countdownNone": { en: "No date announced yet" },
-  "plan.countdownNoneHint": { en: "It shows up here as soon as College Board publishes the schedule." },
+  "plan.countdownSeconds": { en: "s" },
+  "plan.countdownNone": { en: "Set your SAT date" },
+  "plan.countdownNoneHint": { en: "Choose the date you are working toward in Settings." },
+  "plan.countdownPassed": { en: "Your SAT date has passed" },
+  "plan.countdownPassedHint": { en: "Choose a new test date to start another countdown." },
+  "plan.countdownSet": { en: "Set your SAT date" },
+  "plan.countdownUpdate": { en: "Update date" },
+  "plan.countdownDisclaimer": { en: "Local time · update this if your test centre changes" },
 
   /* ---------------- mock test setup ---------------- */
   "plan.mockTitle": { en: "SAT mock test" },

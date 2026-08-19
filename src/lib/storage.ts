@@ -375,6 +375,10 @@ export type Settings = {
    * value in the same field rather than a second flag that can contradict it.
    */
   dailyGoal: number;
+  /** Calendar date chosen by the student, stored as YYYY-MM-DD. */
+  satExamDate: string;
+  /** The home-page countdown can be hidden without clearing the chosen date. */
+  showSatCountdown: boolean;
 };
 
 /** The goals offered, in the order they are shown. 0 is "no goal". */
@@ -387,10 +391,21 @@ export const DEFAULT_SETTINGS: Settings = {
   showHints: true,
   autoExplain: false,
   dailyGoal: 0,
+  satExamDate: "",
+  showSatCountdown: true,
 };
 
 export function loadSettings(): Settings {
-  return { ...DEFAULT_SETTINGS, ...read<Partial<Settings>>(K.settings, {}) };
+  const stored = read<Partial<Settings>>(K.settings, {});
+  return {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    satExamDate: typeof stored.satExamDate === "string" ? stored.satExamDate : DEFAULT_SETTINGS.satExamDate,
+    showSatCountdown:
+      typeof stored.showSatCountdown === "boolean"
+        ? stored.showSatCountdown
+        : DEFAULT_SETTINGS.showSatCountdown,
+  };
 }
 
 export function saveSettings(settings: Settings) {

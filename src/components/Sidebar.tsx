@@ -18,6 +18,7 @@ import {
   NavPractice,
   NavProgress,
   NavReview,
+  NavUniversities,
 } from "./NavIcons";
 
 type Item = { href: string; key: string; Icon: (p: { size?: number }) => React.ReactElement };
@@ -38,6 +39,7 @@ const STUDY: Item[] = [
   { href: "/practice", key: "nav.practice", Icon: NavPractice },
   { href: "/mock", key: "nav.mock", Icon: NavMock },
   { href: "/review", key: "nav.review", Icon: NavReview },
+  { href: "/universities", key: "nav.universities", Icon: NavUniversities },
 ];
 
 const TRACK: Item[] = [
