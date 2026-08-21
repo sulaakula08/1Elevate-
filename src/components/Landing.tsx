@@ -5,6 +5,7 @@ import type { Question } from "@/data/types";
 import { Capabilities } from "./landing/Capabilities";
 import { Closing } from "./landing/Closing";
 import { ExamAnatomy } from "./landing/ExamAnatomy";
+import { Faq } from "./landing/Faq";
 import { Hero } from "./landing/Hero";
 import { LearningLoop } from "./landing/LearningLoop";
 import { Manifesto } from "./landing/Manifesto";
@@ -22,7 +23,15 @@ import { useLandingMotion } from "./useLandingMotion";
  *   Results       a visibly labelled future-results concept carousel.
  *   Capabilities  the three surfaces the loop actually runs on.
  *   ExamAnatomy   the sitting itself, resolving into its two sections.
+ *   Faq           the objections, cleared out of the way of the last screen.
  *   Closing       the loop in five words, and one action.
+ *
+ * The FAQ sits second-to-last because it is the only section that answers rather
+ * than argues. Before the loop it would be a list of features nobody has a reason
+ * to care about yet; after the CTA it is a page nobody reads. Here it takes the
+ * last few reasons not to sign up — does it cover my section, what does it cost,
+ * will it work on my phone — off the table while the closing panel is still one
+ * scroll away.
  *
  * Three sections that used to sit between the hero and the closing are gone. A
  * feature grid, a three-step "how it works" and a pair of subject cards were
@@ -51,6 +60,7 @@ export function Landing({ bank }: { bank: Question[] }) {
       <Results />
       <Capabilities />
       <ExamAnatomy />
+      <Faq />
       <Closing />
     </div>
   );

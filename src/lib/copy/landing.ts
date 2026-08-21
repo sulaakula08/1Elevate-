@@ -220,6 +220,72 @@ export const LANDING_COPY: CopyDict = {
   "lp.subjectsDomains": { en: "Domains" },
   "lp.subjectOpen": { en: "Start here" },
 
+  /* ================= section 6: frequently asked questions =================
+
+     Nine answers, written to the same rule as the rest of this file: every
+     number here is one the product implements, and every hedge is a real one.
+     54/44 questions and 32/35 minutes come from `SAT.sections`; fifteen is the
+     review session size in review/page.tsx; "twice in a row" is the rule in
+     lib/stats.ts; 400–1600 is `SAT.minScore`–`SAT.maxScore`.
+
+     No answer promises a study plan, a guaranteed score or a native app, because
+     there is no such thing in here. The mobile answer says the mock is better on
+     a laptop and the realism answer says generated items are labelled — an FAQ is
+     the one section a sceptical reader opens, and a claim they can disprove in
+     one session costs more than the claim was worth. */
+  "lp.faqEyebrow": { en: "Before you start" },
+  "lp.faqTitle": { en: "Frequently asked questions" },
+  "lp.faqSub": {
+    en: "What the product does, how it decides what you practise next, and what it costs.",
+  },
+  "lp.faqNote": { en: "1Elevate is free, and there is no card at signup." },
+  "lp.faqNoteLink": { en: "The longer story" },
+
+  "lp.faqQ1": { en: "What is 1Elevate?" },
+  "lp.faqA1": {
+    en: "A free SAT preparation platform built on one idea: a wrong answer tells you which skill to practise next. It holds a question bank written to the official blueprint, full-length mock tests with real module timing, and an explanation on every choice — not only the correct one.",
+  },
+
+  "lp.faqQ2": { en: "How is it different from other SAT prep platforms?" },
+  "lp.faqA2": {
+    en: "Most of them hand you questions and a score. 1Elevate does something with the answers. Every miss is tagged with the College Board domain and skill behind it, joins your review queue, and comes back until you answer it right twice in a row.",
+  },
+
+  "lp.faqQ3": { en: "Does it cover both Math and Reading & Writing?" },
+  "lp.faqA3": {
+    en: "Both, on the published format: 54 Reading and Writing questions across two 32-minute modules, and 44 Math questions across two 35-minute modules. Each section's four official domains are covered, and every item carries the domain, skill and difficulty it was written against.",
+  },
+
+  "lp.faqQ4": { en: "Are the practice questions like the real Digital SAT?" },
+  "lp.faqA4": {
+    en: "They are written against the same blueprint — the same domains, the same question types, the same difficulty bands — and Math items come with the graphing calculator and the reference sheet, as the digital test does. Where the bank is short of a full sitting, questions are generated to that blueprint and labelled as AI-written wherever they appear.",
+  },
+
+  "lp.faqQ5": { en: "How does 1Elevate decide what I practise next?" },
+  "lp.faqA5": {
+    en: "By what you have already got wrong, not by a questionnaire. Your accuracy is ranked skill by skill, weakest first, and a review session serves fifteen questions from the top of that list. You can also drive it yourself: filter the bank by section, domain, skill, difficulty, or just the items you have missed before.",
+  },
+
+  "lp.faqQ6": { en: "Can I track my progress?" },
+  "lp.faqA6": {
+    en: "Accuracy per section and per skill, how much of the bank you have answered, a day streak, an activity heatmap, and your score trend across every mock you have taken. All of it is built from your own attempts, so a new account starts empty and fills after one session.",
+  },
+
+  "lp.faqQ7": { en: "Is there a full-length SAT practice test?" },
+  "lp.faqA7": {
+    en: "Yes — the whole sitting, not an excerpt. Four modules back to back, a ten-minute break in the middle, module clocks that submit for you when the time runs out, and a 400–1600 score report at the end.",
+  },
+
+  "lp.faqQ8": { en: "Can I use 1Elevate on my phone?" },
+  "lp.faqA8": {
+    en: "Yes, in the browser — there is nothing to install. Practice, review, explanations and progress are all built for a small screen. For the full-length mock a laptop or tablet is better: the calculator, the reference sheet and the highlighter want the room the real test gives them.",
+  },
+
+  "lp.faqQ9": { en: "Who is 1Elevate for?" },
+  "lp.faqA9": {
+    en: "Anyone sitting the SAT, first attempt or retake. It is most useful once you are already putting the hours in and cannot tell which of them are paying off — that is the question the whole product is built to answer.",
+  },
+
   /* ================= closing ================= */
   "lp.closeEyebrow": { en: "Your next session" },
   "lp.closeTitle": { en: "Find the next SAT question worth your time." },
@@ -243,6 +309,7 @@ export const LANDING_COPY: CopyDict = {
   "lp.footerMethod": { en: "How it works" },
   "lp.footerPreview": { en: "Practice preview" },
   "lp.footerExam": { en: "SAT format" },
+  "lp.footerFaq": { en: "Common questions" },
   "lp.footerBlueprint": { en: "Built around the official SAT blueprint." },
   "lp.footerPrivacy": { en: "Privacy and cookies" },
   "nav.toggleTheme": { en: "Toggle color theme" },

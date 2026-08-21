@@ -5,7 +5,7 @@ import type { CopyDict } from "./index";
 export const HERO_COPY: CopyDict = {
   "hero.kicker": { en: "Precision SAT preparation" },
   "hero.title": { en: "See where you lose SAT points." },
-  "hero.titleB": { en: "Know what to practise next." },
+  "hero.titleB": { en: "Know what to practice next." },
 
   /* Sits beside the wordmark in the signed-out bar, where there is no product
      navigation to carry the left half of the row. */
