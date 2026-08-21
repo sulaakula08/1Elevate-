@@ -395,17 +395,49 @@ export const DEFAULT_SETTINGS: Settings = {
   showSatCountdown: true,
 };
 
-export function loadSettings(): Settings {
-  const stored = read<Partial<Settings>>(K.settings, {});
+/** Convert untrusted localStorage JSON into a complete, valid settings object. */
+export function normalizeSettings(value: unknown): Settings {
+  const stored =
+    value !== null && typeof value === "object" && !Array.isArray(value)
+      ? (value as Partial<Settings>)
+      : {};
+  const dailyGoal =
+    typeof stored.dailyGoal === "number" &&
+    DAILY_GOALS.includes(stored.dailyGoal as (typeof DAILY_GOALS)[number])
+      ? stored.dailyGoal
+      : DEFAULT_SETTINGS.dailyGoal;
+
   return {
-    ...DEFAULT_SETTINGS,
-    ...stored,
-    satExamDate: typeof stored.satExamDate === "string" ? stored.satExamDate : DEFAULT_SETTINGS.satExamDate,
+    notifications:
+      typeof stored.notifications === "boolean"
+        ? stored.notifications
+        : DEFAULT_SETTINGS.notifications,
+    reduceMotion:
+      typeof stored.reduceMotion === "boolean"
+        ? stored.reduceMotion
+        : DEFAULT_SETTINGS.reduceMotion,
+    hideTimer:
+      typeof stored.hideTimer === "boolean" ? stored.hideTimer : DEFAULT_SETTINGS.hideTimer,
+    showHints:
+      typeof stored.showHints === "boolean" ? stored.showHints : DEFAULT_SETTINGS.showHints,
+    autoExplain:
+      typeof stored.autoExplain === "boolean"
+        ? stored.autoExplain
+        : DEFAULT_SETTINGS.autoExplain,
+    dailyGoal,
+    satExamDate:
+      typeof stored.satExamDate === "string"
+        ? stored.satExamDate
+        : DEFAULT_SETTINGS.satExamDate,
     showSatCountdown:
       typeof stored.showSatCountdown === "boolean"
         ? stored.showSatCountdown
         : DEFAULT_SETTINGS.showSatCountdown,
   };
+}
+
+export function loadSettings(): Settings {
+  return normalizeSettings(read<unknown>(K.settings, {}));
 }
 
 export function saveSettings(settings: Settings) {

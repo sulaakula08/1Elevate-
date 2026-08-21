@@ -14,6 +14,12 @@ function normalized(value: string): string {
   return value.trim().toLocaleLowerCase();
 }
 
+function parseSatScore(value: string): number | null {
+  if (!/^\d{3,4}$/.test(value)) return null;
+  const score = Number(value);
+  return score >= 400 && score <= 1600 && score % 10 === 0 ? score : null;
+}
+
 function scoreContext(university: University, score: number | null): ScoreContext | null {
   if (score === null || university.satLow === undefined || university.satHigh === undefined) {
     return null;
@@ -43,15 +49,7 @@ function UniversityBrowserInner() {
     () => [...new Set(UNIVERSITIES.map((university) => university.country))].sort(),
     [],
   );
-  const parsedScore = Number(scoreInput);
-  const score =
-    scoreInput !== "" &&
-    Number.isInteger(parsedScore) &&
-    parsedScore >= 400 &&
-    parsedScore <= 1600 &&
-    parsedScore % 10 === 0
-      ? parsedScore
-      : null;
+  const score = parseSatScore(scoreInput);
   const scoreInvalid = scoreInput !== "" && score === null;
 
   const results = useMemo(() => {
@@ -73,7 +71,12 @@ function UniversityBrowserInner() {
     });
   }, [country, policy, query, rangeFilter, score]);
 
-  const filtersOn = query !== "" || country !== "all" || policy !== "all" || scoreInput !== "" || rangeFilter !== "all";
+  const filtersOn =
+    normalized(query) !== "" ||
+    country !== "all" ||
+    policy !== "all" ||
+    scoreInput !== "" ||
+    rangeFilter !== "all";
 
   const clear = () => {
     setQuery("");
@@ -135,15 +138,7 @@ function UniversityBrowserInner() {
             onChange={(event) => {
               const value = event.target.value;
               setScoreInput(value);
-              const next = Number(value);
-              if (
-                rangeFilter === "fits" &&
-                (value === "" ||
-                  !Number.isInteger(next) ||
-                  next < 400 ||
-                  next > 1600 ||
-                  next % 10 !== 0)
-              ) {
+              if (rangeFilter === "fits" && parseSatScore(value) === null) {
                 setRangeFilter("all");
               }
             }}

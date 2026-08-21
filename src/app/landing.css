@@ -3968,9 +3968,9 @@
    degrades into the plain question-and-answer list it always was underneath.
 
    Unlayered, so it beats the `grid-template-rows: 0fr` in the layer above without
-   needing `!important`. It pairs with `live` in Faq.tsx, which is what keeps
-   `inert` out of the server HTML this rule is written for; the query only matches
-   when scripting is off, so a normal visitor never renders a byte of it.
+   needing `!important`. Faq.tsx applies `inert` only after hydration, keeping it
+   out of the server HTML this rule is written for; the query only matches when
+   scripting is off, so a normal visitor never renders a byte of it.
    --------------------------------------------------------------------------- */
 
 @media (scripting: none) {
