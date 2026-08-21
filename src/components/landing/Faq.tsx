@@ -65,21 +65,26 @@ export function Faq() {
   /* The question buttons in document order, for the arrow-key walk below. */
   const triggers = useRef<(HTMLButtonElement | null)[]>([]);
 
+  /* Panels stay outside React's managed attributes until hydration so the
+     server HTML remains readable without JavaScript. After mount, the effect
+     below synchronizes the native `inert` DOM property with accordion state. */
+  const panels = useRef<(HTMLDivElement | null)[]>([]);
+
   /*
-   * Whether the accordion can actually be operated yet — false on the server and
-   * for the first client frame, true from the first effect on.
-   *
-   * It gates `inert` and nothing else. A collapsed panel has to be inert or the
+   * A collapsed panel has to be inert or the
    * section offers all nine answers to a screen reader at once; but rendering
    * `inert` in the server HTML means a visitor with JavaScript off gets nine
    * questions and no way to reach a single answer, which is worse than either.
-   * So the markup ships without it and hydration adds it, and the `scripting:
-   * none` rule in landing.css opens every panel for the reader who will never
-   * hydrate. Neither path costs the other anything: `inert` has no visual
-   * effect, so this flag can never cause a flash or a shift.
+   * The markup therefore ships without it and hydration applies the native DOM
+   * property directly. This is synchronization with an external browser API,
+   * so it belongs in an effect and needs no extra render-only state.
    */
-  const [live, setLive] = useState(false);
-  useEffect(() => setLive(true), []);
+  useEffect(() => {
+    FAQ_ITEMS.forEach((item, index) => {
+      const panel = panels.current[index];
+      if (panel) panel.inert = openId !== item.id;
+    });
+  }, [openId]);
 
   /*
    * Keyboard, as the ARIA accordion pattern specifies it.
@@ -200,15 +205,17 @@ export function Faq() {
                   `inert` is what stops that from lying to a screen reader. A
                   panel hidden only by `overflow` is still in the accessibility
                   tree and still reachable by tab, so the section would offer all
-                  nine answers whatever was open. See `live` above for why it is
-                  only applied once the thing can be clicked.
+                  nine answers whatever was open. It is applied after hydration
+                  so the no-JavaScript fallback remains readable.
                 */}
                 <div
+                  ref={(node) => {
+                    panels.current[i] = node;
+                  }}
                   id={`lp-faq-${item.id}-a`}
                   role="region"
                   aria-labelledby={`lp-faq-${item.id}-q`}
                   className="lp-faq-a"
-                  inert={live && !open}
                 >
                   <div className="lp-faq-a-inner">
                     <p className="lp-faq-a-text">{t(item.a)}</p>
