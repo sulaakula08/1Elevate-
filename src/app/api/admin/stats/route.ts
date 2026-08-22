@@ -72,7 +72,10 @@ export async function GET(request: Request) {
   ): Promise<number> => {
     const base = buildBase(table);
     const { count, error } = await (apply ? apply(base) : base);
-    if (error) return 0;
+    if (error) {
+      console.error(`[admin/stats] count(${table}) failed:`, error.message);
+      return 0;
+    }
     return count ?? 0;
   };
 
@@ -80,8 +83,17 @@ export async function GET(request: Request) {
   // survived the null check above.
   const db = client;
 
+  /*
+   * `id` rather than `*`: every counted table grants `authenticated` full
+   * table-level SELECT except `custom_questions`, which since Phase B grants
+   * only a fixed taxonomy column list — `*` there fails closed (count comes
+   * back null, logged above, and countOf reports 0 rather than fabricate a
+   * number). `id` is in that column list and exists on every table here, so
+   * one exact-count column works for all of them without needing a
+   * per-table override.
+   */
   function buildBase(table: string) {
-    return db.from(table).select("*", { count: "exact", head: true });
+    return db.from(table).select("id", { count: "exact", head: true });
   }
 
   const [
