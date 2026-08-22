@@ -1,0 +1,2384 @@
+/* Progress analytics. Tokens live in globals.css; nothing here invents a colour
+   that is not derived from one.
+
+   The page is denser than the rest of the app on purpose — it is the one screen
+   whose job is to hold a lot of related numbers at once — so it earns its
+   sophistication from hierarchy and hairlines rather than from more boxes. The
+   rules below follow the house language: one surface, hairline rules, the number
+   loudest, the furniture quietest. */
+
+@layer components {
+  /* ================= shared scaffolding ================= */
+
+  .pg {
+    /*
+     * The mastery ramp: one green-to-red gradient in five steps.
+     *
+     * Accuracy is correctness, and correctness is the one place this product
+     * already spends colour (green for right, red for wrong) — so the ramp is
+     * an extension of an existing rule rather than a new palette. Every stop is
+     * an existing subject token, which means both themes are already tuned:
+     * light mode gets five dark, saturated hues, dark mode five light ones.
+     *
+     * Five stops, five hues, deliberately — teal, green, amber, orange, rose.
+     * The first attempt mixed two tokens for the in-between steps and produced
+     * an olive and a brick that were indistinguishable from their neighbours at
+     * tile size, which turned a five-band scale into a three-band one.
+     *
+     * Every band is labelled in words wherever it is drawn. Colour is never the
+     * only channel: it is the channel that lets you see the shape of thirty-two
+     * skills at once, and the words are what let you read any one of them.
+     */
+    --pg-mastered: var(--s-teal);
+    --pg-strong: var(--s-green);
+    --pg-developing: var(--s-amber);
+    --pg-needs: var(--s-orange);
+    --pg-critical: var(--s-rose);
+    --pg-unknown: var(--line-strong);
+
+    /* The two sections, as they are coloured everywhere else in the product. */
+    --pg-rw: var(--s-violet);
+    --pg-math: var(--s-blue);
+
+    /* Chart furniture. Grid lines have to be visible without competing with the
+       data: a fifth of the ink colour reads as a rule on both themes. */
+    --pg-grid: color-mix(in srgb, var(--foreground) 9%, transparent);
+    --pg-axis: var(--faint);
+  }
+
+  /* ================= three tiers =================
+     The first pass gave every section the same furniture — an 11px uppercase
+     eyebrow, a grey sentence, a hairline — and eleven of those in a row read as
+     a report rather than as a product. Importance is now carried by three
+     things that actually differ: whether a section sits on a contained surface,
+     how large its heading is, and how much air surrounds it.
+
+     Tier 1 (signature)  a stage: contained surface, display heading, most space
+     Tier 2 (supporting) open ground, sub-heading, ordinary space
+     Tier 3 (detail)     a compact strip or a disclosure, label only
+
+     Hairlines survive only where they separate *data* — rows in a comparison,
+     cells in a figure row. They no longer separate sections from each other;
+     that is what the spacing is for. */
+
+  .pg-chapter {
+    padding-block: 2.25rem;
+  }
+  .pg-chapter:first-child {
+    padding-top: 0;
+  }
+  @media (min-width: 64rem) {
+    .pg-chapter {
+      padding-block: 3rem;
+    }
+  }
+  /* A chapter opening: the one place a rule is still earned, because it marks a
+     change of subject rather than a change of widget. Even here it is a short
+     rule over the title rather than a full-width divider. */
+  .pg-act {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding-top: 2.5rem;
+    margin-bottom: -0.5rem;
+  }
+  .pg-act::before {
+    content: "";
+    width: 1.75rem;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--line-strong);
+    transform: translateY(-0.3em);
+  }
+  .pg-act-name {
+    font-size: var(--t-micro);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /*
+   * A stage — the Tier 1 surface.
+   *
+   * One inner shadow hairline instead of a border, a very slightly lifted
+   * surface, and a light source in the top-left corner at 5% of the brand hue.
+   * That is the whole decoration: enough that the eye reads "this is a
+   * composed instrument", far short of a gradient card.
+   */
+  .pg-stage {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    background:
+      radial-gradient(
+        120% 130% at 6% 0%,
+        color-mix(in srgb, var(--brand) 6%, transparent) 0%,
+        transparent 60%
+      ),
+      var(--surface);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent),
+      0 1px 2px color-mix(in srgb, var(--foreground) 3%, transparent),
+      0 18px 40px -28px color-mix(in srgb, var(--foreground) 22%, transparent);
+  }
+  @media (min-width: 40rem) {
+    .pg-stage {
+      padding: 1.875rem;
+    }
+  }
+  @media (min-width: 64rem) {
+    .pg-stage {
+      padding: 2.25rem 2.5rem;
+    }
+  }
+  /* An inner division inside a stage: air and a hairline that stops short of
+     the padding, so the stage still reads as one object. */
+  .pg-stage-split {
+    margin-top: 1.75rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+
+  /* ---- headings ---- */
+  .pg-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.625rem 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .pg-head-copy {
+    min-width: 0;
+    max-width: 44rem;
+  }
+  .pg-head-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  /* Tier 1 heading. Sentence case at section-heading size: a title should be
+     read, and eleven uppercase eyebrows are read as furniture. */
+  .pg-title {
+    font-size: var(--t-h2);
+    line-height: var(--lh-h2);
+    letter-spacing: var(--tr-h2);
+    font-weight: 600;
+  }
+  /* Tier 2 heading. */
+  .pg-title-sm {
+    font-size: var(--t-h3);
+    line-height: var(--lh-h3);
+    letter-spacing: var(--tr-h3);
+    font-weight: 600;
+  }
+  /* The one line under a title. Kept for the two or three places where the
+     figure genuinely needs a sentence; everywhere else the explanation moved
+     into a disclosure or went away. */
+  .pg-deck {
+    margin-top: 0.4375rem;
+    font-size: var(--t-sm);
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 40rem;
+  }
+  /* Two-up and three-up section bodies. minmax(0,1fr) rather than 1fr because
+     a chart inside a grid track will otherwise refuse to shrink below its
+     intrinsic width and push the page sideways. */
+  /* Narrow support beside a wide chart. */
+  .pg-aside {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 60rem) {
+    .pg-aside {
+      grid-template-columns: 15rem minmax(0, 1fr);
+      gap: 2.5rem;
+    }
+  }
+
+  /* The insufficient-data state. It has to look deliberate rather than broken:
+     a dashed rule says "this frame is waiting for something" in a way an empty
+     box does not. */
+  .pg-void {
+    /* Its own height, not the row's: as a grid child beside a tall column it
+       was stretching into a 260px dashed rectangle. */
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 7rem;
+    padding: 1.25rem;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+  }
+  .pg-void-title {
+    font-size: var(--t-sm);
+    font-weight: 500;
+  }
+  .pg-void-body {
+    font-size: var(--t-micro);
+    line-height: var(--lh-micro);
+    color: var(--muted);
+    max-width: 26rem;
+  }
+
+  /* A signed delta. The arrow is drawn in text so it inherits the colour and
+     needs no icon system, and `data-good` decides that colour — never the sign,
+     because a falling answer time is progress. */
+  .pg-delta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.1875rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    font-size: var(--t-micro);
+    font-weight: 500;
+    color: var(--faint);
+  }
+  .pg-delta[data-good="true"] {
+    color: var(--success);
+  }
+  .pg-delta[data-good="false"] {
+    color: var(--danger);
+  }
+
+  /* ================= the phone's table of contents ================= */
+  /* Sticky, one row, four destinations. It sits under the app's own mobile
+     header, so it needs its own ground rather than transparency. */
+  .pg-nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: 0 -1.25rem 1.25rem;
+    padding: 0.625rem 1.25rem;
+    background: color-mix(in srgb, var(--background) 88%, transparent);
+    backdrop-filter: blur(8px);
+  }
+  .pg-nav-track {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+  }
+  .pg-nav-item {
+    min-height: 2.125rem;
+    padding: 0 0.375rem;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--t-micro);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition:
+      background 180ms ease,
+      color 180ms ease;
+  }
+  .pg-nav-item[data-on="true"] {
+    background: var(--surface);
+    color: var(--foreground);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 10%, transparent);
+  }
+
+  /* ================= command centre =================
+     One stage holding the score, the four vitals and the trajectory, because
+     they answer one question between them: where am I, and which way am I
+     going. Splitting them into two sections meant the first screen had two
+     headings and no centre. */
+  /*
+   * Three bands rather than two columns.
+   *
+   * The first version put the score in a column and the vitals beside it, which
+   * left the score constrained to 60% of the stage and the vitals column with
+   * three hundred pixels of nothing under it. The masthead now runs the full
+   * width — so the 400–1600 track is nearly a metre of scale rather than a
+   * sliver — and the supporting figures share one band beneath it.
+   */
+  .pg-command {
+    display: grid;
+    gap: 1.75rem;
+  }
+  .pg-command-row {
+    display: grid;
+    gap: 1.75rem 3rem;
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 1.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+  @media (min-width: 56rem) {
+    .pg-command-row {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    }
+  }
+
+  /* ---- the masthead: three numbers and the distance between them ---- */
+  .pg-mast-kind {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: var(--t-micro);
+    color: var(--muted);
+  }
+  .pg-mast-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: var(--t-2xs);
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--brand);
+  }
+  .pg-mast-tag[data-kind="estimate"],
+  .pg-mast-tag[data-kind="none"] {
+    color: var(--muted);
+  }
+  .pg-mast-tag-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /*
+   * The score, the gap and the target on one line.
+   *
+   * The relationship is spatial rather than written: the number you are, the
+   * distance, the number you want — left to right, in descending weight. The
+   * arrow is a hairline drawn in CSS so it scales with the type rather than
+   * being an icon that does not.
+   */
+  .pg-mast {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.125rem;
+    margin-top: 0.625rem;
+  }
+  .pg-mast-now {
+    font-size: clamp(3.5rem, 2.4rem + 4.6vw, 5.25rem);
+    line-height: 0.9;
+    letter-spacing: -0.045em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-mast-now[data-empty="true"] {
+    color: var(--faint);
+  }
+  .pg-mast-gap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1875rem;
+    padding-bottom: 0.375rem;
+  }
+  .pg-mast-gap-value {
+    font-size: var(--t-sm);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--brand);
+    white-space: nowrap;
+  }
+  .pg-mast-gap[data-reached="true"] .pg-mast-gap-value {
+    color: var(--success);
+  }
+  /* The run of hairline between the two numbers, with an arrowhead. */
+  .pg-mast-gap-line {
+    position: relative;
+    width: 3.5rem;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--foreground) 26%, transparent),
+      color-mix(in srgb, var(--foreground) 10%, transparent)
+    );
+  }
+  .pg-mast-gap-line::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: -2px;
+    border-top: 2.5px solid transparent;
+    border-bottom: 2.5px solid transparent;
+    border-left: 4px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  }
+  .pg-mast-target {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding-bottom: 0.25rem;
+  }
+  .pg-mast-target-value {
+    font-size: var(--t-h2);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .pg-mast-label {
+    font-size: var(--t-2xs);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  /* ---- the track: 400 → you → target → 1600 ---- */
+  .pg-track {
+    margin-top: 1.75rem;
+  }
+  .pg-track-rail {
+    position: relative;
+    height: 0.75rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 9%, transparent);
+  }
+  /* Where you are: solid, and the only solid thing on the rail. */
+  .pg-track-have {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%);
+    transition: width 1200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  /* What is left to the target: the same hue at a fraction, hatched, so the
+     distance is a visible object rather than a subtraction the reader performs. */
+  .pg-track-gap {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-color: color-mix(in srgb, var(--brand) 14%, transparent);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--brand) 34%, transparent) 0 1.5px,
+      transparent 1.5px 5px
+    );
+    transition:
+      left 1200ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      width 1200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  /* The destination: a post through the rail, not a tick on it. */
+  .pg-track-post {
+    position: absolute;
+    top: -0.5rem;
+    bottom: -0.5rem;
+    width: 2px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: var(--foreground);
+  }
+  .pg-track-post::after {
+    content: "";
+    position: absolute;
+    top: -0.25rem;
+    left: -0.1875rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--foreground);
+  }
+  /*
+   * The practice estimate, below the rail rather than on it.
+   *
+   * Two readings of the same scale, and one is measured while the other is
+   * inferred — so they are on different channels. Anything on the rail is
+   * something the student actually scored; the caret underneath is what their
+   * practice suggests.
+   */
+  .pg-track-est {
+    position: absolute;
+    top: calc(100% + 0.375rem);
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    white-space: nowrap;
+    transition: left 1200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  /* A stem and a caret: the estimate is anchored to its place on the scale
+     rather than floating under it. */
+  .pg-track-est-caret {
+    width: 1px;
+    height: 0.5rem;
+    background: var(--line-strong);
+  }
+  .pg-track-est-label {
+    font-size: var(--t-2xs);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-track-scale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2.5rem;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-track-scale-post {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  /* ---- the two sections, on one shared axis ---- */
+  .pg-sections {
+    margin-top: 1.75rem;
+  }
+  .pg-sec {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 0.75rem;
+    row-gap: 0.4375rem;
+    padding: 0.625rem 0;
+  }
+  .pg-sec-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--t-sm);
+    font-weight: 500;
+    min-width: 0;
+  }
+  .pg-sec-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 2px;
+    background: var(--tone, var(--brand));
+    flex: none;
+  }
+  .pg-sec-score {
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .pg-sec-score[data-empty="true"] {
+    font-size: var(--t-sm);
+    font-weight: 400;
+    color: var(--faint);
+  }
+  /* One scale under both rows, so the two bars are directly comparable — the
+     first version gave each section its own bar and its own width, which is
+     exactly the comparison this is for. */
+  .pg-sec-bar {
+    grid-column: 1 / -1;
+    position: relative;
+    height: 0.375rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent);
+    overflow: hidden;
+  }
+  .pg-sec-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--tone, var(--brand));
+    transition: width 1200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pg-sec-foot {
+    grid-column: 1 / -1;
+    font-size: var(--t-2xs);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-sec-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.25rem;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- method disclosure ---- */
+  .pg-method {
+    margin-top: 1.25rem;
+  }
+  .pg-method > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    cursor: pointer;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    list-style: none;
+    width: fit-content;
+    border-radius: var(--radius-sm);
+  }
+  .pg-method > summary::-webkit-details-marker {
+    display: none;
+  }
+  .pg-method > summary:hover {
+    color: var(--foreground);
+  }
+  .pg-method-caret {
+    transition: transform 200ms ease;
+  }
+  .pg-method[open] .pg-method-caret {
+    transform: rotate(90deg);
+  }
+  .pg-method-body {
+    margin-top: 0.625rem;
+    max-width: 42rem;
+    font-size: var(--t-micro);
+    line-height: 1.65;
+    color: var(--muted);
+    border-left: 2px solid var(--line);
+    padding-left: 0.875rem;
+  }
+
+  /* ---- vitals ----
+     Not a table. Two figures, then the streak as the one thing on this page
+     that is an achievement rather than a measurement, then a single quiet line
+     for pace and turnout. */
+  .pg-vitals {
+    display: grid;
+    gap: 1.125rem;
+    align-content: start;
+  }
+  .pg-vital-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+  .pg-vital-label {
+    font-size: var(--t-2xs);
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .pg-vital-value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4375rem;
+    margin-top: 0.3125rem;
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .pg-vital-foot {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: var(--t-2xs);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The streak. A tinted slab, the number at display size, and a date rather
+     than a badge — the accomplishment is that it has been going since July. */
+  .pg-streak-card {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--brand) 7%, transparent);
+  }
+  .pg-streak-num {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--brand);
+  }
+  .pg-streak-copy {
+    min-width: 0;
+  }
+  .pg-streak-head {
+    display: block;
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .pg-streak-sub {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: var(--t-2xs);
+    color: var(--muted);
+  }
+  .pg-vital-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-vital-line strong {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  /* --- trend controls and summary --- */
+  /* A heading for a zone *inside* a section — the trajectory inside the command
+     centre, "your next focus" beside the ranking. Smaller than a section
+     heading and quieter, because it is a part rather than a chapter. It wraps:
+     on a phone its note belongs on its own line, not squeezed beside it. */
+  .pg-zone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.625rem;
+    margin-bottom: 0.875rem;
+    font-size: var(--t-micro);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .pg-zone-note {
+    font-size: var(--t-2xs);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--faint);
+  }
+
+  /* The zone heading and its controls share a baseline; on a phone the controls
+     drop under the heading rather than shrinking below a touch target. */
+  .pg-zone-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+  }
+  .pg-zone-row > .pg-zone {
+    margin-bottom: 0;
+  }
+  .pg-trend-aside {
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  /* The one annotation a range is allowed. Set at label size in the ink colour,
+     because a callout nobody can read is decoration. */
+  .pg-annot {
+    transition: opacity 500ms ease 900ms;
+  }
+  .pg-annot-text {
+    font-size: var(--t-micro);
+    font-weight: 600;
+    fill: var(--foreground);
+  }
+  .pg-tip-score {
+    margin-top: 0.125rem;
+    font-size: var(--t-h3);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Two segmented controls on one line: time on the left, section on the right,
+     because that is the order the questions are asked in ("how long, and which
+     part of the exam"). They wrap to two rows on a phone rather than shrinking,
+     since a 30px segment is not a target anybody can hit. */
+  .pg-trend-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .pg-trend-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.875rem;
+    margin-top: 1rem;
+  }
+  .pg-trend-value {
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ================= chart shell =================
+     One frame for every chart on the page: it owns the tooltip layer, the focus
+     ring and the cursor, so no individual chart has to. */
+  .pg-chart {
+    position: relative;
+    touch-action: pan-y;
+  }
+  .pg-chart:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: var(--radius-sm);
+  }
+  .pg-chart svg {
+    display: block;
+    width: 100%;
+    overflow: visible;
+  }
+  .pg-chart-cursor {
+    cursor: crosshair;
+  }
+
+  /* The tooltip. Absolute inside the chart frame, translated so it never leaves
+     the frame, and pointer-events: none so it cannot interrupt the hover it is
+     describing. */
+  .pg-tip {
+    position: absolute;
+    z-index: 2;
+    min-width: 9.5rem;
+    max-width: 15rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--overlay);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity 140ms ease,
+      transform 140ms ease;
+  }
+  .pg-tip[data-show="true"] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .pg-tip-date {
+    font-size: var(--t-micro);
+    font-weight: 600;
+  }
+  .pg-tip-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-top: 0.3125rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-tip-row > span:last-child {
+    margin-left: auto;
+    color: var(--foreground);
+    font-weight: 500;
+  }
+  .pg-tip-swatch {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 2px;
+    background: var(--tone, var(--brand));
+    flex: none;
+  }
+  .pg-tip-note {
+    margin-top: 0.375rem;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+
+  /* Line and area behaviour. The dash animation draws the line on first paint;
+     `data-drawn` flips it to its full length. */
+  .pg-line {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke-dashoffset 1200ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  .pg-area {
+    stroke: none;
+    opacity: 0;
+    transition: opacity 700ms ease 300ms;
+  }
+  .pg-area[data-drawn="true"] {
+    opacity: 1;
+  }
+  .pg-bar {
+    transition:
+      height 600ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      y 600ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pg-tick {
+    font-size: var(--t-2xs);
+    fill: var(--pg-axis);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-gridline {
+    stroke: var(--pg-grid);
+    stroke-width: 1;
+  }
+  /* Dark enough to find at a glance: this is the "you are reading here" line,
+     and at --line-strong it was the same weight as the gridlines behind it. */
+  .pg-crosshair {
+    stroke: color-mix(in srgb, var(--foreground) 38%, transparent);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+  }
+  .pg-dot {
+    transition:
+      r 140ms ease,
+      opacity 140ms ease;
+  }
+
+  /* ================= section balance =================
+     A mirrored comparison. Each row is one measure, the two sections grow out
+     from a shared centre, and the label sits between them — so which half is
+     ahead is a glance rather than a subtraction. The first pass put fourteen
+     table rows in two columns and left the comparing to the reader. */
+  .pg-verdict {
+    max-width: 44rem;
+    margin-bottom: 1.25rem;
+  }
+  .pg-verdict-head {
+    font-size: var(--t-h3);
+    line-height: 1.25;
+    letter-spacing: var(--tr-h3);
+    font-weight: 600;
+  }
+  .pg-verdict-body {
+    margin-top: 0.375rem;
+    font-size: var(--t-sm);
+    line-height: 1.55;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pg-versus {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .pg-versus-heads {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .pg-versus-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .pg-versus-head[data-side="right"] {
+    justify-self: end;
+  }
+
+  .pg-versus-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .pg-versus-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+  }
+  .pg-versus-bar[data-side="left"] {
+    flex-direction: row-reverse;
+  }
+  .pg-versus-track {
+    position: relative;
+    flex: 1;
+    height: 0.8125rem;
+    border-radius: 3px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 7%, transparent);
+    overflow: hidden;
+  }
+  .pg-versus-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--tone, var(--brand));
+    transition: width 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  /* Mirrored: the left section grows leftwards from the centre. */
+  .pg-versus-bar[data-side="left"] .pg-versus-fill {
+    right: 0;
+    border-radius: 3px 0 0 3px;
+  }
+  .pg-versus-bar[data-side="right"] .pg-versus-fill {
+    left: 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .pg-versus-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    min-width: 3.5rem;
+    text-align: right;
+  }
+  .pg-versus-bar[data-side="right"] .pg-versus-value {
+    text-align: left;
+  }
+  .pg-versus-label {
+    display: grid;
+    justify-items: center;
+    gap: 0.0625rem;
+    min-width: 9rem;
+    text-align: center;
+    font-size: var(--t-micro);
+    font-weight: 500;
+  }
+  .pg-versus-note {
+    font-size: var(--t-2xs);
+    font-weight: 400;
+    color: var(--faint);
+  }
+
+  .pg-versus-feet {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 2rem;
+    margin-top: 0.5rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--line);
+  }
+  .pg-versus-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1875rem;
+    font-size: var(--t-2xs);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 0;
+  }
+  .pg-versus-foot[data-side="right"] {
+    text-align: right;
+  }
+  .pg-versus-foot-recent {
+    color: var(--faint);
+  }
+
+  /* On a phone a mirrored chart is two forty-pixel bars, so the comparison
+     unfolds: the measure, then each section on its own line. */
+  @media (max-width: 40rem) {
+    /* The names stay: unfolded, the two bars per row are told apart by colour
+       alone, and colour alone is not a label. They become a legend instead. */
+    .pg-versus-heads {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.25rem;
+      padding-bottom: 0.5rem;
+    }
+    .pg-versus-head[data-side="right"] {
+      justify-self: start;
+    }
+    .pg-versus-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.375rem;
+      padding: 0.625rem 0;
+      border-top: 1px solid var(--line);
+    }
+    .pg-versus-label {
+      justify-items: start;
+      text-align: left;
+      min-width: 0;
+      order: -1;
+    }
+    .pg-versus-bar,
+    .pg-versus-bar[data-side="left"] {
+      flex-direction: row;
+    }
+    .pg-versus-bar[data-side="left"] .pg-versus-fill {
+      right: auto;
+      left: 0;
+      border-radius: 0 3px 3px 0;
+    }
+    .pg-versus-value {
+      order: 2;
+      min-width: 3rem;
+      text-align: left;
+      font-size: var(--t-sm);
+    }
+    .pg-versus-feet {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .pg-versus-foot[data-side="right"] {
+      text-align: left;
+    }
+  }
+
+  /* ================= mastery map =================
+     A region per section; inside it, one block per domain, and the block's width
+     is the domain's share of the real exam. That is the whole idea: the eye
+     should spend its attention in proportion to what the exam does. Colour is
+     mastery, width is weight, and a cell is a skill — three channels, each
+     carrying exactly one thing. */
+  .pg-map {
+    display: grid;
+    gap: 1.5rem;
+  }
+  @media (min-width: 72rem) {
+    .pg-map {
+      gap: 1.75rem;
+    }
+  }
+
+  .pg-region {
+    min-width: 0;
+  }
+  .pg-region-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+  .pg-region-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--t-sm);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .pg-region-meta {
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The row of blocks. Wraps to two rows on a tablet and stacks on a phone,
+     where a 15% block would be forty pixels wide and readable by nobody. */
+  .pg-terrain {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .pg-block {
+    /* flex-grow carries the weight; see the component. */
+    min-width: 100%;
+    padding: 0.875rem 0.9375rem 0.8125rem;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--band) 8%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--band) 18%, transparent);
+    transition:
+      background 200ms ease,
+      box-shadow 200ms ease;
+  }
+  @media (min-width: 34rem) {
+    .pg-block {
+      min-width: 11.5rem;
+    }
+  }
+  /*
+   * Between a phone and a desktop, pair them.
+   *
+   * The weighted row needs about seven hundred pixels before a 15% block is
+   * still readable; below that the flex row wrapped three-and-one and the
+   * orphan stretched to full width. A 2×2 grid keeps the blocks even, and the
+   * exam weight is still stated in words on each one.
+   */
+  @media (min-width: 34rem) and (max-width: 61.99rem) {
+    .pg-terrain {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .pg-block {
+      min-width: 0;
+    }
+  }
+  /* The top edge in the band colour: a contour line, so a region reads as
+     terrain at a glance rather than as four tinted rectangles. */
+  .pg-block {
+    position: relative;
+    overflow: hidden;
+  }
+  .pg-block::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: var(--band);
+    opacity: 0.85;
+  }
+  .pg-block[data-band="unknown"] {
+    background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .pg-block[data-band="unknown"]::before {
+    background: var(--line-strong);
+    opacity: 1;
+  }
+  .pg-block:hover {
+    background: color-mix(in srgb, var(--band) 13%, transparent);
+  }
+
+  .pg-block-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.5rem;
+    min-height: 2.25rem;
+  }
+  .pg-block-name {
+    font-size: var(--t-sm);
+    font-weight: 600;
+    line-height: 1.25;
+    min-width: 0;
+  }
+  .pg-block-weight {
+    font-size: var(--t-2xs);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pg-block-band {
+    font-size: var(--t-micro);
+    font-weight: 600;
+    color: var(--band);
+  }
+  .pg-block-score {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+  .pg-block-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-block-value[data-empty="true"] {
+    font-size: var(--t-body);
+    font-weight: 400;
+    color: var(--faint);
+  }
+
+  /* One cell per skill. Equal size on purpose: sizing them by how much a student
+     has practised would make their own history look like the exam's weighting,
+     and the weighting is already the width of the block. */
+  .pg-cells {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+  }
+  .pg-cell {
+    position: relative;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: var(--band);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 10%, transparent);
+    cursor: pointer;
+    transition:
+      transform 160ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 160ms ease;
+  }
+  @media (max-width: 47.99rem) {
+    .pg-cell {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+  }
+  /* Unexplored territory, not a broken component: the same square, drawn as an
+     outline on the region's own ground. */
+  .pg-cell[data-empty="true"] {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 14%, transparent);
+  }
+  .pg-cell[data-empty="true"]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    background: radial-gradient(
+      color-mix(in srgb, var(--foreground) 18%, transparent) 0.5px,
+      transparent 0.6px
+    );
+    background-size: 4px 4px;
+  }
+  .pg-cell:hover,
+  .pg-cell:focus-visible {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--foreground) 22%, transparent),
+      0 3px 10px color-mix(in srgb, var(--foreground) 20%, transparent);
+  }
+  /* Provisional evidence, marked on the cell, so a confident colour cannot hide
+     a three-question sample. */
+  .pg-cell[data-thin="true"]::after {
+    content: "";
+    position: absolute;
+    inset: auto 0.1875rem 0.1875rem auto;
+    width: 0.25rem;
+    height: 0.25rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--surface) 78%, var(--foreground));
+  }
+
+  /* One detail line per region. Reserved height, so pointing at cells never
+     nudges the page. */
+  .pg-region-detail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.875rem;
+    margin-top: 0.75rem;
+    min-height: 2.25rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-region-detail-name {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .pg-region-detail-value {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .pg-region-detail-hint {
+    color: var(--faint);
+  }
+  .pg-region-detail-warn {
+    color: var(--warning);
+  }
+
+  /* The ramp, in the section head. */
+  .pg-ramp {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+  }
+  .pg-ramp-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    font-size: var(--t-2xs);
+    color: var(--muted);
+  }
+  .pg-ramp-swatch {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 3px;
+    background: var(--band);
+  }
+  .pg-ramp-item[data-band="unknown"] .pg-ramp-swatch {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+  }
+
+  /* ================= opportunities =================
+     The consequence leads: a total, then one row per cause. The bar carries the
+     three quantities the model is about — what you get right, what your own best
+     domain gets right, and the ground between them — so "recoverable" is
+     something you can see rather than a word you have to trust. */
+  /* The total above, the causes and the actions beside each other beneath it. */
+  .pg-opp-layout {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-areas: "total" "list" "focus";
+  }
+  @media (min-width: 60rem) {
+    .pg-opp-layout {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      grid-template-areas:
+        "total total"
+        "list  focus";
+      column-gap: 2.5rem;
+      row-gap: 1.75rem;
+    }
+  }
+  .pg-opp-total {
+    grid-area: total;
+  }
+  .pg-opp-list {
+    grid-area: list;
+    min-width: 0;
+  }
+  .pg-opp-focus {
+    grid-area: focus;
+  }
+
+  .pg-total {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem 1.125rem;
+    flex-wrap: wrap;
+    padding: 1.125rem 1.375rem;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--brand) 8%, transparent);
+  }
+  .pg-total-figure {
+    font-size: clamp(1.875rem, 1.4rem + 1.6vw, 2.5rem);
+    line-height: 0.95;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--brand);
+    white-space: nowrap;
+  }
+  .pg-total-head {
+    font-size: var(--t-sm);
+    font-weight: 600;
+  }
+  .pg-total-sub {
+    margin-top: 0.125rem;
+    font-size: var(--t-micro);
+    line-height: 1.45;
+    color: var(--muted);
+    max-width: 26rem;
+  }
+
+  .pg-opps {
+    display: grid;
+  }
+  .pg-opp {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.5rem 0.875rem;
+    padding: 0.875rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .pg-opp:first-child {
+    border-top: 0;
+    padding-top: 0.25rem;
+  }
+  .pg-opp-rank {
+    font-size: var(--t-micro);
+    font-weight: 600;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-opp-title {
+    font-size: var(--t-body);
+    font-weight: 600;
+    letter-spacing: -0.011em;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .pg-opp-where {
+    font-size: var(--t-2xs);
+    font-weight: 400;
+    color: var(--faint);
+    letter-spacing: 0;
+  }
+  .pg-opp-points {
+    justify-self: end;
+    font-size: var(--t-h3);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--foreground);
+  }
+  .pg-opp-bar {
+    grid-column: 2 / -1;
+    position: relative;
+    height: 0.5rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent);
+    overflow: hidden;
+  }
+  .pg-opp-have {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: var(--radius-pill);
+    background: var(--band);
+    transition: width 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  /* The recoverable ground, in the brand hue rather than the band's: it is not
+     a worse version of the score, it is the part that is available. */
+  .pg-opp-recover {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-color: color-mix(in srgb, var(--brand) 16%, transparent);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--brand) 40%, transparent) 0 1.5px,
+      transparent 1.5px 5px
+    );
+    transition: width 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pg-opp-post {
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    width: 2px;
+    margin-left: -1px;
+    background: color-mix(in srgb, var(--brand) 85%, transparent);
+  }
+  .pg-opp-legend {
+    grid-column: 2 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.125rem 0.75rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-opp-now {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .pg-opp-weight {
+    color: var(--faint);
+  }
+
+  /* ================= next focus =================
+     Three rows that each answer what to do, why, and what it is worth. The first
+     is the recommendation the page is actually making, so it is the one filled
+     slab; the other two are quiet cards rather than settings rows. */
+  .pg-focus {
+    display: grid;
+    gap: 0.625rem;
+  }
+  .pg-focus-item {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem 1.125rem;
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: inherit;
+    text-decoration: none;
+    transition:
+      box-shadow 180ms ease,
+      transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pg-focus-item:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, var(--line)),
+      var(--lift-brand);
+  }
+  .pg-focus-item[data-lead="true"] {
+    background: var(--next-surface);
+    color: var(--next-fg);
+    box-shadow: none;
+    padding: 1.125rem 1.25rem;
+  }
+  .pg-focus-item[data-lead="true"]:hover {
+    box-shadow: var(--lift-brand);
+  }
+  .pg-focus-rank {
+    font-size: var(--t-micro);
+    font-weight: 600;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+    align-self: start;
+    padding-top: 0.1875rem;
+  }
+  .pg-focus-item[data-lead="true"] .pg-focus-rank {
+    color: color-mix(in srgb, var(--next-fg) 55%, transparent);
+  }
+  .pg-focus-name {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: var(--t-body);
+    font-weight: 600;
+    letter-spacing: -0.011em;
+  }
+  .pg-focus-worth {
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    letter-spacing: 0;
+    padding: 0.125rem 0.4375rem;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pg-focus-item[data-lead="true"] .pg-focus-worth {
+    background: color-mix(in srgb, var(--next-fg) 16%, transparent);
+    color: var(--next-fg);
+  }
+  .pg-focus-why {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: var(--t-micro);
+    line-height: 1.45;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-focus-item[data-lead="true"] .pg-focus-why {
+    color: color-mix(in srgb, var(--next-fg) 72%, transparent);
+  }
+  .pg-focus-go {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: var(--t-micro);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pg-focus-arrow {
+    transition: transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pg-focus-item:hover .pg-focus-arrow {
+    transform: translateX(3px);
+  }
+  @media (max-width: 30rem) {
+    .pg-focus-item {
+      grid-template-columns: 1.25rem minmax(0, 1fr);
+      row-gap: 0.625rem;
+    }
+    .pg-focus-go {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+
+  /* ================= difficulty =================
+     A narrow column: the drop as a sentence, then three short bars. Three
+     full-width rows of equal weight buried the only interesting thing in it. */
+  .pg-diff-lede {
+    margin-bottom: 1.125rem;
+  }
+  .pg-diff-head {
+    font-size: var(--t-body);
+    font-weight: 600;
+    letter-spacing: -0.011em;
+    line-height: 1.3;
+  }
+  .pg-diff-body {
+    margin-top: 0.1875rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-levels {
+    display: grid;
+    gap: 0.875rem;
+  }
+  .pg-level {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.3125rem 0.75rem;
+  }
+  .pg-level-name {
+    font-size: var(--t-micro);
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .pg-level-value {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    font-size: var(--t-body);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-level-track {
+    grid-column: 1 / -1;
+    height: 0.375rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 7%, transparent);
+    overflow: hidden;
+  }
+  .pg-level-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--tone, var(--brand));
+    transition: width 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pg-level-meta {
+    grid-column: 1 / -1;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ================= speed × accuracy ================= */
+  .pg-quad {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 62rem) {
+    .pg-quad {
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+      gap: 1.75rem;
+    }
+  }
+  .pg-quad-label {
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    fill: color-mix(in srgb, var(--success) 90%, var(--foreground));
+  }
+  .pg-quad-label[data-warn="true"] {
+    fill: color-mix(in srgb, var(--danger) 90%, var(--foreground));
+  }
+  .pg-quad-list {
+    display: grid;
+    align-content: start;
+  }
+  .pg-quad-you {
+    display: block;
+    padding-bottom: 0.5rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-quad-row {
+    display: grid;
+    grid-template-columns: 1.125rem minmax(0, 1fr) auto auto;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.4375rem 0.375rem;
+    border: 0;
+    border-top: 1px solid var(--line);
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: var(--t-sm);
+    color: inherit;
+    border-radius: 4px;
+    transition: background 140ms ease;
+  }
+  .pg-quad-row:hover,
+  .pg-quad-row[data-active="true"] {
+    background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  }
+  .pg-quad-index {
+    font-size: var(--t-2xs);
+    font-weight: 600;
+    color: var(--surface);
+    background: var(--tone, var(--brand));
+    border-radius: 50%;
+    width: 1.125rem;
+    height: 1.125rem;
+    display: grid;
+    place-items: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-quad-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pg-quad-row[data-worst="true"] .pg-quad-name {
+    font-weight: 600;
+  }
+  /* Flagged through the badge rather than with a word: a fifth column of text
+     wrapped the row it was meant to annotate. */
+  .pg-quad-row[data-worst="true"] .pg-quad-index {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 55%, transparent);
+  }
+  .pg-quad-num {
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ================= consistency =================
+     The streak as a sentence above the grid; the grid at whatever size the
+     viewport allows; one line of totals underneath. The first pass put four KPI
+     cells under it, which turned an achievement into a table row. */
+  .pg-streak-lede {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+    font-size: var(--t-h3);
+    line-height: 1.2;
+    letter-spacing: var(--tr-h3);
+    font-weight: 600;
+  }
+  .pg-streak-lede-since {
+    font-size: var(--t-sm);
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+
+  /*
+   * A grid that fills its column rather than a row of fixed squares.
+   *
+   * The columns are a known count — 27 weeks at six months, 53 at a year — so
+   * the cells can be fractions of the width and stay square with aspect-ratio.
+   * At six months on a desktop that is a wall-planner square you can actually
+   * point at; at a year it is the familiar small one. The old fixed 22px left
+   * three hundred pixels of nothing to the right of the grid.
+   */
+  .pg-year {
+    --pg-gap: 4px;
+    --pg-min: 0.6875rem;
+    margin-top: 1.25rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+  @media (min-width: 48rem) {
+    .pg-year {
+      --pg-gap: 5px;
+    }
+  }
+  /* The positioning context for the day tooltip: it travels with the grid inside
+     the scroller rather than floating over the page. */
+  .pg-year-inner {
+    position: relative;
+    /* Below this the squares would be unreadable, so the box scrolls instead. */
+    min-width: calc(var(--pg-cols) * (var(--pg-min) + var(--pg-gap)));
+    /* And above this they stop being squares and start being tiles: the grid
+       caps out and centres in its column rather than growing to fill it. */
+    max-width: calc(var(--pg-cols) * (1.625rem + var(--pg-gap)));
+    margin-inline: auto;
+  }
+  .pg-year-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--pg-cols), minmax(0, 1fr));
+    gap: var(--pg-gap);
+  }
+  .pg-year-col {
+    display: grid;
+    grid-template-rows: repeat(7, auto);
+    gap: var(--pg-gap);
+    min-width: 0;
+  }
+  .pg-year-cell {
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 5%, transparent);
+    cursor: pointer;
+    transition: transform 120ms ease;
+  }
+  .pg-year-cell[data-level="1"] {
+    background: color-mix(in srgb, var(--accent) 24%, var(--surface));
+  }
+  .pg-year-cell[data-level="2"] {
+    background: color-mix(in srgb, var(--accent) 48%, var(--surface));
+  }
+  .pg-year-cell[data-level="3"] {
+    background: color-mix(in srgb, var(--accent) 72%, var(--surface));
+  }
+  .pg-year-cell[data-level="4"] {
+    background: var(--accent);
+  }
+  .pg-year-cell:hover,
+  .pg-year-cell[data-active="true"] {
+    transform: scale(1.18);
+  }
+  .pg-year-cell-pad {
+    visibility: hidden;
+  }
+  .pg-year-months {
+    display: grid;
+    grid-template-columns: repeat(var(--pg-cols), minmax(0, 1fr));
+    gap: var(--pg-gap);
+    margin-bottom: 0.375rem;
+    height: 0.875rem;
+  }
+  .pg-year-month {
+    position: relative;
+    min-width: 0;
+  }
+  .pg-year-month > span {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    white-space: nowrap;
+    font-size: var(--t-2xs);
+    color: var(--muted);
+  }
+  /* Three-character month labels over eleven-pixel columns collide on a phone,
+     and the tooltip carries the exact date anyway. Declared after the base rule
+     rather than before it: same specificity, so source order decides. */
+  @media (max-width: 34rem) {
+    .pg-year-months {
+      display: none;
+    }
+  }
+  .pg-year-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    margin-top: 1rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-year-key-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: var(--t-2xs);
+    color: var(--faint);
+  }
+  .pg-year-key {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 6%, transparent);
+    flex: none;
+  }
+  .pg-year-key[data-level="0"] {
+    background: var(--surface-2);
+  }
+  .pg-year-key[data-level="1"] {
+    background: color-mix(in srgb, var(--accent) 24%, var(--surface));
+  }
+  .pg-year-key[data-level="2"] {
+    background: color-mix(in srgb, var(--accent) 48%, var(--surface));
+  }
+  .pg-year-key[data-level="3"] {
+    background: color-mix(in srgb, var(--accent) 72%, var(--surface));
+  }
+  .pg-year-key[data-level="4"] {
+    background: var(--accent);
+  }
+
+  /* ================= records =================
+     Tier 3, but a training log rather than a table: the figure leads, the label
+     is small above it, and the date it was set is the note. No badges. */
+  .pg-records {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.125rem 1.5rem;
+  }
+  @media (min-width: 48rem) {
+    .pg-records {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 72rem) {
+    .pg-records {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
+  }
+  .pg-record {
+    min-width: 0;
+  }
+  .pg-record-label {
+    font-size: var(--t-2xs);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pg-record-value {
+    margin-top: 0.25rem;
+    font-size: 1.375rem;
+    /* A shade more presence from the width where the whole row is on one line;
+       the phone version already reads at 22px. */
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+  }
+  .pg-record-value[data-empty="true"] {
+    font-size: var(--t-sm);
+    font-weight: 400;
+    color: var(--faint);
+  }
+  @media (min-width: 48rem) {
+    .pg-record-value {
+      font-size: 1.5625rem;
+    }
+  }
+  .pg-record-note {
+    margin-top: 0.1875rem;
+    font-size: var(--t-2xs);
+    line-height: 1.4;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-record-track {
+    display: block;
+    height: 0.1875rem;
+    margin-top: 0.4375rem;
+    border-radius: var(--radius-pill);
+    background: var(--line);
+    overflow: hidden;
+  }
+  .pg-record-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--brand);
+    transition: width 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  /* ================= period comparison =================
+     Tier 3. Six figures on one ruled strip: the same information the old
+     two-column table carried, in a third of the height and without competing
+     with the sections above it. */
+  .pg-period {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+  }
+  .pg-period-label {
+    font-size: var(--t-2xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 0.875rem;
+  }
+  .pg-period-cells {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.875rem 1.5rem;
+  }
+  @media (min-width: 48rem) {
+    .pg-period-cells {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+  .pg-period-cell {
+    min-width: 0;
+  }
+  .pg-period-cell > dt {
+    font-size: var(--t-2xs);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pg-period-cell > dd {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    margin-top: 0.1875rem;
+  }
+  .pg-period-value {
+    font-size: var(--t-body);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .pg-period-value[data-empty="true"] {
+    font-weight: 400;
+    color: var(--faint);
+  }
+
+  /* ================= insights =================
+     The interpretation the analytics have actually made, set like an editorial
+     page: one lead with a figure at display size, then three compact readings
+     separated by rules that divide *data* rather than sections. The first pass
+     set all four at the same size with a coloured left border, which made the
+     most valuable content on the page look like a changelog. */
+  .pg-insights {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .pg-spot {
+    display: grid;
+    gap: 0.375rem 1.75rem;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.375rem 1.5rem;
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--tone, var(--brand)) 6%, transparent);
+  }
+  @media (min-width: 48rem) {
+    .pg-spot {
+      grid-template-columns: minmax(7rem, auto) minmax(0, 1fr);
+      align-items: center;
+      padding: 1.5rem 1.75rem;
+    }
+  }
+  .pg-spot-figure {
+    font-size: clamp(2.25rem, 1.6rem + 2vw, 3rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--tone, var(--brand));
+    white-space: nowrap;
+  }
+  .pg-spot-role {
+    font-size: var(--t-2xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tone, var(--brand));
+  }
+  .pg-spot-title {
+    margin-top: 0.25rem;
+    font-size: var(--t-h3);
+    line-height: 1.25;
+    letter-spacing: var(--tr-h3);
+    font-weight: 600;
+  }
+  .pg-spot-body {
+    margin-top: 0.375rem;
+    font-size: var(--t-sm);
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 44rem;
+  }
+
+  /* The supporting readings. */
+  .pg-ins-row {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 40rem) {
+    .pg-ins-row {
+      grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+      gap: 0;
+    }
+  }
+  .pg-ins {
+    min-width: 0;
+    padding: 0.25rem 0;
+  }
+  @media (min-width: 40rem) {
+    .pg-ins {
+      padding: 0.125rem 1.5rem;
+    }
+    .pg-ins + .pg-ins {
+      border-left: 1px solid var(--line);
+    }
+    .pg-ins:first-child {
+      padding-left: 0;
+    }
+    .pg-ins:last-child {
+      padding-right: 0;
+    }
+  }
+  /* Stacked, not inline: the figure and its role were competing for one
+     baseline, which made both of them small. */
+  .pg-ins-figure {
+    font-size: 1.625rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--tone, var(--foreground));
+    line-height: 1;
+  }
+  .pg-ins-role {
+    margin-top: 0.375rem;
+    font-size: var(--t-2xs);
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .pg-ins-title {
+    margin-top: 0.25rem;
+    font-size: var(--t-sm);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  /* The quietest text on the page, deliberately: it is the working behind a
+     number that has already been read. */
+  .pg-ins-body {
+    margin-top: 0.3125rem;
+    font-size: var(--t-2xs);
+    line-height: 1.5;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ================= mock history =================
+     The journey leads: one number at display size for the distance travelled,
+     then the sittings as a ribbon of columns against the target. Everything
+     else — raw section accuracy, incomplete sittings — sits behind a
+     disclosure, because the score progression is the story. */
+  .pg-journey {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem 1.25rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .pg-journey-figure {
+    font-size: clamp(2.75rem, 1.9rem + 3vw, 4rem);
+    line-height: 0.9;
+    letter-spacing: -0.045em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .pg-journey-figure[data-good="true"] {
+    color: var(--success);
+  }
+  .pg-journey-head {
+    font-size: var(--t-h3);
+    line-height: 1.25;
+    letter-spacing: var(--tr-h3);
+    font-weight: 600;
+    max-width: 22rem;
+  }
+  .pg-journey-sub {
+    margin-top: 0.25rem;
+    font-size: var(--t-sm);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pg-mock-line {
+    margin-top: 0.875rem;
+    font-size: var(--t-micro);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-mock-more {
+    display: grid;
+    gap: 0.375rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+  }
+  .pg-mock-rows {
+    margin-top: 0.75rem;
+  }
+  .pg-mock-row {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--line);
+    font-size: var(--t-micro);
+  }
+  .pg-mock-row:first-child {
+    border-top: 0;
+  }
+  .pg-mock-row-date {
+    font-size: var(--t-2xs);
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-mock-split {
+    display: flex;
+    height: 0.4375rem;
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+  .pg-mock-split > span {
+    height: 100%;
+    background: var(--tone, var(--brand));
+    transition: width 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pg-mock-score {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pg-mock-note {
+    margin-top: 0.625rem;
+    font-size: var(--t-2xs);
+    line-height: 1.5;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    max-width: 40rem;
+  }
+
+  /* ================= motion ================= */
+  /* Section entrance. One rule, applied per section with a staggered delay from
+     the component, so the page assembles itself top-down instead of appearing
+     all at once — and so nothing below the fold animates while unread. */
+  .pg-enter {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 520ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .pg-enter[data-in="true"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Border colours, unlayered.
+ *
+ * `* { border-color: var(--line) }` in globals.css is an unlayered declaration,
+ * and an unlayered declaration beats anything inside `@layer` whatever its
+ * specificity — so every border colour that is not `--line` has to be stated out
+ * here or it silently does nothing. (The same trap is documented on `.env-badge`
+ * in globals.css.) These are the borders on this page that carry meaning: a
+ * section's own hue, an insight's tone, a waiting panel's dashed edge.
+ */
+.pg-insight {
+  border-left-color: var(--tone, var(--line-strong));
+}
+.pg-void {
+  border-color: var(--line-strong);
+}
+.pg-method-body {
+  border-left-color: var(--line);
+}
+
+/*
+ * Reduced motion.
+ *
+ * Unlayered and last, so it beats every transition declared above whatever the
+ * cascade order. The global rule in globals.css already collapses durations for
+ * the OS-level preference and for the in-app setting; this adds the two things a
+ * duration of zero does not fix — an element that starts translated, and a line
+ * whose dash offset is its whole length.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .pg-enter {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .pg-line {
+    stroke-dashoffset: 0 !important;
+  }
+  .pg-area {
+    opacity: 1 !important;
+  }
+}
+:root[data-motion="reduce"] .pg-enter {
+  opacity: 1 !important;
+  transform: none !important;
+}
+:root[data-motion="reduce"] .pg-line {
+  stroke-dashoffset: 0 !important;
+}
+:root[data-motion="reduce"] .pg-area {
+  opacity: 1 !important;
+}

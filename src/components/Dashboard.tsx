@@ -7,6 +7,7 @@ import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
 import { maxScore, overall, pct, reviewQueue, weakTopics } from "@/lib/stats";
+import { isFullMock } from "@/lib/analytics";
 import { SubjectIllustration } from "./landing/SubjectIllustration";
 import { CountUp, ProgressBar, Reveal } from "./motion";
 import { ExamCountdown } from "./dashboard/ExamCountdown";
@@ -28,7 +29,15 @@ export function Dashboard({ account }: { account: Account }) {
   const totals = bankStats(bank);
   const queue = reviewQueue(data, bank);
   const weak = weakTopics(examAttempts, 2, 3);
-  const lastMock = [...data.mocks].reverse().find((m) => m.exam === exam);
+  /*
+   * The last full-length sitting, not simply the last one.
+   *
+   * A shortened mock is a real thing a student can sit, and scoring two
+   * questions on the 400–1600 scale reads 400 if they miss both — which then
+   * headlined this page as their standing. `isFullMock` is the same rule
+   * /progress applies, so the two screens cannot quote different scores.
+   */
+  const lastMock = [...data.mocks].reverse().find((m) => m.exam === exam && isFullMock(m));
   const fresh = stats.total === 0;
 
   /*

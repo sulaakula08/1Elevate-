@@ -15,12 +15,29 @@
  *         https://satsuite.collegeboard.org/sat/whats-on-the-test/math
  */
 
-export type Domain = { name: string; skills: string[] };
+export type Domain = {
+  name: string;
+  /**
+   * Share of its section's questions this domain carries on the real exam,
+   * 0–1, as published by College Board in the same "What's on the Test" pages
+   * the names come from — Reading & Writing 26/28/20/26, Math 35/35/15/15.
+   *
+   * It is here rather than in the analytics that use it because it is a fact
+   * about the SAT, not a modelling choice: it is what turns "you are weaker at
+   * Geometry than at Algebra" into "and Algebra is worth more than twice as
+   * much of the section", which is the difference between a ranking and a
+   * study plan. The published figures are ranges of question counts; these are
+   * the midpoints College Board itself states as percentages.
+   */
+  weight: number;
+  skills: string[];
+};
 
 /** Reading & Writing — four domains, in the order the exam lists them. */
 export const RW_DOMAINS: Domain[] = [
   {
     name: "Information and Ideas",
+    weight: 0.26,
     skills: [
       "Central Ideas and Details",
       "Command of Evidence (Textual)",
@@ -30,14 +47,17 @@ export const RW_DOMAINS: Domain[] = [
   },
   {
     name: "Craft and Structure",
+    weight: 0.28,
     skills: ["Words in Context", "Text Structure and Purpose", "Cross-Text Connections"],
   },
   {
     name: "Expression of Ideas",
+    weight: 0.2,
     skills: ["Rhetorical Synthesis", "Transitions"],
   },
   {
     name: "Standard English Conventions",
+    weight: 0.26,
     skills: ["Boundaries", "Form, Structure, and Sense"],
   },
 ];
@@ -46,6 +66,7 @@ export const RW_DOMAINS: Domain[] = [
 export const MATH_DOMAINS: Domain[] = [
   {
     name: "Algebra",
+    weight: 0.35,
     skills: [
       "Linear equations in one variable",
       "Linear equations in two variables",
@@ -56,6 +77,7 @@ export const MATH_DOMAINS: Domain[] = [
   },
   {
     name: "Advanced Math",
+    weight: 0.35,
     skills: [
       "Equivalent expressions",
       "Nonlinear equations in one variable",
@@ -65,6 +87,7 @@ export const MATH_DOMAINS: Domain[] = [
   },
   {
     name: "Problem-Solving and Data Analysis",
+    weight: 0.15,
     skills: [
       "Ratios, rates, proportional relationships, and units",
       "Percentages",
@@ -77,6 +100,7 @@ export const MATH_DOMAINS: Domain[] = [
   },
   {
     name: "Geometry and Trigonometry",
+    weight: 0.15,
     skills: [
       "Area and volume",
       "Lines, angles, and triangles",

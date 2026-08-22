@@ -67,7 +67,9 @@ export function weakTopics(attempts: Attempt[], minAttempts = 2, limit = 5): Buc
     .slice(0, limit);
 }
 
-function dayKey(ms: number): string {
+/** Local calendar date of a timestamp, YYYY-MM-DD. The key every daily
+    aggregate in this file and in lib/analytics.ts is grouped by. */
+export function dayKey(ms: number): string {
   const d = new Date(ms);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate(),
@@ -133,6 +135,10 @@ export type HeatCell = {
   day: string;
   ms: number;
   count: number;
+  /** How many of that day's answers were right. */
+  correct: number;
+  /** Time spent that day, ms, summed over answers that recorded one. */
+  spent: number;
   /** 0–4. 0 means nothing answered that day. */
   level: number;
   /**
@@ -159,8 +165,18 @@ export type HeatWeek = { days: HeatCell[] };
 export function contributionYear(attempts: Attempt[], now = Date.now()) {
   const DAY = 86_400_000;
 
-  const counts = new Map<string, number>();
-  for (const a of attempts) counts.set(dayKey(a.at), (counts.get(dayKey(a.at)) ?? 0) + 1);
+  /* One pass, three tallies per day: how many, how many right, how long. The
+     count alone draws the grid; the other two are what let a square say
+     "42 questions, 86% right, 31 minutes" instead of just "42". */
+  const counts = new Map<string, { count: number; correct: number; spent: number }>();
+  for (const a of attempts) {
+    const key = dayKey(a.at);
+    const day = counts.get(key) ?? { count: 0, correct: 0, spent: 0 };
+    day.count += 1;
+    if (a.correct) day.correct += 1;
+    if (typeof a.ms === "number" && a.ms > 0) day.spent += a.ms;
+    counts.set(key, day);
+  }
 
   // Local midnight today, so a cell flips over at the student's midnight.
   const today = new Date(now);
@@ -183,17 +199,46 @@ export function contributionYear(attempts: Attempt[], now = Date.now()) {
   const cursor = new Date(start);
   while (cursor.getTime() <= today.getTime()) {
     const key = dayKey(cursor.getTime());
-    const count = counts.get(key) ?? 0;
+    const day = counts.get(key);
+    const count = day?.count ?? 0;
     total += count;
     if (count > peak) peak = count;
-    cells.push({ day: key, ms: cursor.getTime(), count, level: 0, future: false });
+    cells.push({
+      day: key,
+      ms: cursor.getTime(),
+      count,
+      correct: day?.correct ?? 0,
+      spent: day?.spent ?? 0,
+      level: 0,
+      future: false,
+    });
     cursor.setDate(cursor.getDate() + 1);
     cursor.setHours(0, 0, 0, 0);
   }
 
+  /*
+   * Levels are scaled to a busy day, not to the busiest one.
+   *
+   * The busiest day is an outlier by construction: sitting a mock records 98
+   * answers with one timestamp, so a student who has sat one has a single day
+   * five times heavier than any practice day they will ever have. Scaled to
+   * that, a year of real work renders as the palest level and the grid says
+   * nothing.
+   *
+   * The reference is the 90th percentile of days that had any activity —
+   * "a heavy day for this student" — and anything at or above it is level 4.
+   * That keeps the ramp relative, which is the point (see above), without one
+   * exceptional day flattening the other three hundred.
+   */
+  const active = cells.filter((c) => c.count > 0).map((c) => c.count).sort((a, b) => a - b);
+  const reference =
+    active.length > 0
+      ? Math.max(1, active[Math.min(active.length - 1, Math.floor(active.length * 0.9))])
+      : 1;
+
   for (const cell of cells) {
     if (cell.count === 0) continue;
-    const share = cell.count / Math.max(1, peak);
+    const share = Math.min(1, cell.count / reference);
     cell.level = share >= 0.75 ? 4 : share >= 0.5 ? 3 : share >= 0.25 ? 2 : 1;
   }
 

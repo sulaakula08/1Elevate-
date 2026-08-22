@@ -11,6 +11,7 @@ import { LANDING_COPY } from "./landing";
 import { SHOWCASE_COPY } from "./showcase";
 import { STUDY_COPY } from "./study";
 import { PLAN_COPY } from "./plan";
+import { PROGRESS_COPY } from "./progress";
 import { COMMUNITY_COPY } from "./community";
 import { UNIVERSITY_COPY } from "./universities";
 
@@ -24,6 +25,7 @@ export const COPY: CopyDict = {
   ...SHOWCASE_COPY,
   ...STUDY_COPY,
   ...PLAN_COPY,
+  ...PROGRESS_COPY,
   ...COMMUNITY_COPY,
   ...UNIVERSITY_COPY,
 };

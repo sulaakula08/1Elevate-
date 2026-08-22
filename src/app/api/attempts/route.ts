@@ -154,19 +154,59 @@ export async function GET(request: Request) {
    * This route answers exactly one question — what has *this* account done — so
    * it says so in the query rather than depending on who is asking.
    */
-  const { data, error } = await client
-    .from("attempts")
-    .select("question_id, subject_id, exam, topic, difficulty, chosen, correct, mode, ms, at")
-    .eq("account_id", auth.user.id)
-    .order("at", { ascending: false })
-    .limit(5000);
+  /*
+   * Read in pages, because `.limit()` is not the limit.
+   *
+   * PostgREST enforces its own `db-max-rows` ceiling — 1000 on Supabase — and
+   * silently truncates any larger request to it. A single `.limit(5000)` looked
+   * like it asked for five thousand rows and quietly returned the newest
+   * thousand, so a student who had answered more than that had the rest of
+   * their history disappear: their streak reset, their all-time trend started
+   * mid-story, and their personal records were the best of a truncated window.
+   * That is worse than an error, because nothing about it looks wrong.
+   *
+   * Paging with explicit ranges is the only way to get past the ceiling. The
+   * page size stays under it, the loop stops as soon as a short page comes back,
+   * and MAX_ROWS is a real ceiling rather than a hopeful one: a client asking
+   * for a hundred thousand attempts is a bug, and this endpoint should not spend
+   * a minute serving it.
+   */
+  const PAGE = 1000;
+  const MAX_ROWS = 20_000;
+  const COLUMNS =
+    "question_id, subject_id, exam, topic, difficulty, chosen, correct, mode, ms, at";
 
-  if (error) {
-    if (process.env.NODE_ENV !== "production") console.error("[attempts]", error);
-    return NextResponse.json({ error: "Could not load." }, { status: 502 });
+  const rows: {
+    question_id: string;
+    subject_id: string;
+    exam: string;
+    topic: string;
+    difficulty: number | null;
+    chosen: number;
+    correct: boolean;
+    mode: Attempt["mode"];
+    ms: number;
+    at: string;
+  }[] = [];
+
+  for (let from = 0; from < MAX_ROWS; from += PAGE) {
+    const { data, error } = await client
+      .from("attempts")
+      .select(COLUMNS)
+      .eq("account_id", auth.user.id)
+      .order("at", { ascending: false })
+      .range(from, from + PAGE - 1);
+
+    if (error) {
+      if (process.env.NODE_ENV !== "production") console.error("[attempts]", error);
+      return NextResponse.json({ error: "Could not load." }, { status: 502 });
+    }
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < PAGE) break;
   }
 
-  const attempts = (data ?? []).map((r) => ({
+  const attempts = rows.map((r) => ({
     questionId: r.question_id,
     subjectId: r.subject_id,
     exam: r.exam,

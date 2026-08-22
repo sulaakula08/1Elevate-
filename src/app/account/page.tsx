@@ -7,6 +7,7 @@ import { SAT, getSubject, subjectColor, subjectColorSoft } from "@/data/exams";
 import { useApp } from "@/lib/app-state";
 import { uploadAvatar } from "@/lib/avatars";
 import { useI18n } from "@/lib/i18n";
+import { isFullMock } from "@/lib/analytics";
 import {
   bySubject,
   medianSeconds,
@@ -76,7 +77,13 @@ function Profile() {
   const stats = overall(data.attempts);
   const days = streak(data.attempts);
   const pace = medianSeconds(data.attempts);
-  const standing = scoreStanding(data.mocks, account!.targetScore);
+  /*
+   * Full-length sittings only, the same rule /progress and the dashboard use.
+   * A shortened mock scored on the 400–1600 scale is not comparable with a
+   * whole exam, and three screens quoting three different "latest scores" for
+   * one student is worse than any of them being slightly out of date.
+   */
+  const standing = scoreStanding(data.mocks.filter(isFullMock), account!.targetScore);
   const subjects = bySubject(data.attempts).filter((b) => b.total >= 3);
   const strongest = subjects.reduce<(typeof subjects)[number] | null>(
     (top, b) => (!top || b.accuracy > top.accuracy ? b : top),
