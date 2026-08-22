@@ -1,11 +1,11 @@
-import type { Question } from "./types";
+import type { AuthoredQuestion } from "./types";
 
 /**
  * Deterministic snapshot of custom_questions.sat-math-dev-001 from the verified
  * development project. Keeping it in the bundle makes the public preview
  * immediate; Hero uses the current bank row when the same id is available.
  */
-export const LANDING_SAMPLE_QUESTION: Question = {
+export const LANDING_SAMPLE_QUESTION: AuthoredQuestion = {
   id: "sat-math-dev-001",
   exam: "sat",
   subjectId: "sat-math",
@@ -42,7 +42,7 @@ export const LANDING_SAMPLE_QUESTION: Question = {
  * Domain and skill are taken verbatim from `taxonomy.ts` (the College Board
  * names), so the chips the loop draws read exactly like the ones in Review.
  */
-export const LOOP_MISS_QUESTION: Question = {
+export const LOOP_MISS_QUESTION: AuthoredQuestion = {
   id: "landing-loop-01",
   exam: "sat",
   subjectId: "sat-math",
@@ -66,7 +66,7 @@ export const LOOP_MISS_QUESTION: Question = {
 /** The choice the loop picks: right arithmetic, lost sign. */
 export const LOOP_MISS_CHOICE = 2;
 
-export const LOOP_NEXT_QUESTION: Question = {
+export const LOOP_NEXT_QUESTION: AuthoredQuestion = {
   id: "landing-loop-02",
   exam: "sat",
   subjectId: "sat-math",

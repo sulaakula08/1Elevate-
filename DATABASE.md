@@ -258,8 +258,58 @@ a browser with the anon key. The rules are:
 - **`attempts` / `mocks`** — you can read your own rows and insert rows under
   your own id. An admin can read everyone's. Nobody can insert under someone
   else's id, because the check is on the row being written, not on the request.
-- **`custom_questions`** — any signed-in student can read; only an admin can
-  write.
+- **`custom_questions`** — a signed-in student can read the **taxonomy** and
+  nothing else; only an admin can write; question content and answers come out
+  through three functions, never off the table.
+
+  This is the third place row-level security is not enough on its own, and the
+  most important one. The old policy was `for select to authenticated using
+  (true)`, and the publishable key is in every browser — so one request to
+  PostgREST (`supabase.from('custom_questions').select('*')`) returned the entire
+  bank: prompts, passages, choices, every explanation and every answer index. No
+  API route was involved, so nothing written in TypeScript could have prevented
+  it. "Students may read questions but not their answers" is a claim about
+  **columns**, so it is a `GRANT`: `SELECT` is revoked on the table and granted
+  back on `id, exam, subject_id, topic, domain, skill, difficulty, created_at`
+  only.
+
+  `skill` is a generated column mirroring `payload ->> 'skill'`, because the
+  review queue groups by it and a column grant cannot reach inside jsonb.
+
+  Content is reached through four `SECURITY DEFINER` functions, each of which
+  checks its own caller — the same pattern as `moderate_hide()`:
+
+  - `question_bodies(ids)` — content for at most 30 ids, **without** the answer
+    and **without** the explanation. The cap is the point: an unbounded id list
+    is `select *` with extra steps. The API enforces a tighter figure derived from
+    the blueprint (see `lib/questions/limits.ts`); this is the backstop.
+  - `check_answer(id, choice)` — grades one submitted choice and returns the
+    verdict, the answer and the explanation. This is the only way either of those
+    two ever leaves the database for a student.
+  - `question_bank_admin()` — whole rows for the editor, `is_admin()` only.
+  - `question_author_count()` — one integer for the admin statistics page, which
+    cannot count distinct `created_by` values it is not allowed to read.
+
+  Two consequences worth knowing before touching the write path, both found by
+  testing rather than by reading:
+
+  - **`insert … on conflict do update` does not work here.** Postgres wants
+    table-level `SELECT` for an upsert and column-level grants do not satisfy it —
+    it fails with 42501 and a hint recommending the very grant this boundary
+    withholds. So an edit is a plain `UPDATE` filtered on `id`, which needs only
+    `SELECT (id)`. See the note in `POST /api/questions`.
+  - **`created_by` is unreadable by staff as well as students**, because a grant
+    applies to the whole `authenticated` role. The save path therefore never reads
+    it: an edit leaves the column out of the `SET` list, so authorship is
+    preserved by not being written.
+
+  Rate limiting sits in the API routes in front of these, through the existing
+  `consume_rate`, not inside them: these answer "may this caller see this row",
+  and folding a counter in would make a read fail for two unrelated reasons with
+  one error. `consume_rate` gained a four-argument overload so a limit can be
+  charged by weight — question bodies and gradings are counted per question, not
+  per request, because one request can ask for thirty. See the
+  `rate_limit_cost` migration.
 - **`community_posts` / `community_comments`** — any signed-in student reads
   anything not hidden; you insert only under your own id; you delete only your
   own, and an admin deletes anyone's.

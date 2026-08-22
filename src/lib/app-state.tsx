@@ -6,10 +6,11 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { SEED_QUESTIONS } from "@/data";
-import type { ExamId, Question } from "@/data/types";
+import type { ExamId, Question, QuestionIndexEntry } from "@/data/types";
 import {
   type Account,
   type Attempt,
@@ -18,18 +19,27 @@ import {
   EMPTY_USER_DATA,
   ensureDataEpoch,
   ensureVersion,
-  loadCustomQuestions,
   loadLocalDrafts,
+  loadQuestionIndex,
   loadTheme,
   loadUserData,
   migrateKeys,
   purgeLegacyAccounts,
   resetEverything,
-  saveCustomQuestions,
   saveLocalDrafts,
+  saveQuestionIndex,
   saveTheme,
   saveUserData,
 } from "./storage";
+import {
+  type Verdict,
+  fetchAdminBank,
+  fetchBodies,
+  fetchIndex,
+  grade,
+  score,
+  toIndexEntry,
+} from "./questions/client";
 import {
   type AuthOutcome,
   signInWithPassword,
@@ -83,8 +93,44 @@ type Ctx = {
   /** False when NEXT_PUBLIC_SUPABASE_* is missing, so the UI can explain itself. */
   authConfigured: boolean;
   data: UserData;
-  /** Seed questions plus admin-created ones. */
-  bank: Question[];
+  /**
+   * The whole bank, as taxonomy only — id, subject, topic, domain, skill,
+   * difficulty. No prompt, no passage, no choices, no answer, no explanation.
+   *
+   * This is the shape every screen that reasons about the bank in aggregate
+   * actually wants: the practice browser and its filters, the review queue, the
+   * progress charts, mock assembly. It used to be the entire bank in full, held
+   * in this context and mirrored into localStorage, which meant a student's tab
+   * contained the product. Content is now fetched for the handful of questions on
+   * screen — see `loadQuestions` — and answers only in exchange for a submitted
+   * choice, through `checkAnswer`.
+   */
+  bank: QuestionIndexEntry[];
+  /**
+   * Question content the client has been given, by id.
+   *
+   * An entry appears once `loadQuestions` has fetched it, and gains its `answer`
+   * and `explanation` only once `checkAnswer` has graded it. Reading a question
+   * out of here and finding no `answer` is the normal state, not a bug.
+   */
+  questions: Record<string, Question>;
+  /** Fetch content for these ids, in pages the server will accept. Idempotent. */
+  loadQuestions: (ids: string[]) => Promise<void>;
+  /**
+   * Submit a choice for grading and merge the revealed answer and explanation
+   * into `questions`. -1 means "reveal it, I give up". Null means the check
+   * failed and the caller must not pretend it was answered.
+   */
+  checkAnswer: (questionId: string, choice: number) => Promise<Verdict | null>;
+  /**
+   * Tally a batch of choices without revealing anything — the mock's path.
+   * Returns id → correct; an id the server could not grade is absent.
+   */
+  scoreAnswers: (
+    submissions: { id: string; choice: number }[],
+  ) => Promise<Record<string, boolean>>;
+  /** Whole rows for the editor. Refused by the database for anyone but staff. */
+  loadAdminBank: () => Promise<Question[] | null>;
   theme: "light" | "dark";
   toggleTheme: () => void;
 
@@ -133,9 +179,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [bankReady, setBankReady] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
   const [data, setData] = useState<UserData>(EMPTY_USER_DATA);
-  const [custom, setCustom] = useState<Question[]>([]);
+  /** The shared bank's taxonomy, from the server. Never its content. */
+  const [custom, setCustom] = useState<QuestionIndexEntry[]>([]);
   /** Read from localStorage after mount, like every other stored preference. */
   const [localDrafts, setLocalDrafts] = useState<Question[]>([]);
+  /**
+   * Content for the questions this browser has actually been shown.
+   *
+   * Kept as one flat map rather than per-session lists because the same question
+   * is reached from three places — practice, review and a mock — and fetching it
+   * again on each would spend a rate-limited request to learn something already
+   * in memory. It is deliberately not persisted: this is where the product's
+   * content lives while it is on screen, and it should not outlive the tab.
+   */
+  const [fetched, setQuestions] = useState<Record<string, Question>>({});
+  /**
+   * Ids already fetched or in flight, so two components mounting at once — the
+   * practice runner and its question navigator, say — do not each ask for the
+   * same page. A ref rather than state: nothing renders from it, and it has to be
+   * correct synchronously between two calls in the same tick.
+   */
+  const inFlight = useRef<Set<string>>(new Set());
   /**
    * Seeded from what the boot script already decided, not from a guess.
    *
@@ -218,7 +282,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     ensureDataEpoch();
     // The pre-Supabase browser profiles go here, once.
     purgeLegacyAccounts();
-    setCustom(loadCustomQuestions());
+    setCustom(loadQuestionIndex());
     // Unlike the custom bank, these are never refetched or replaced — this read
     // is the only place they come from.
     setLocalDrafts(loadLocalDrafts());
@@ -292,17 +356,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         saveUserData(profile.id, result.data);
       }
 
-      // The shared question bank. The database is the record here, not a merge
-      // target: an admin deleting a question must remove it for everyone, so a
-      // successful fetch replaces the local cache outright.
+      // The shared bank's taxonomy — not its content, which is fetched per
+      // screen. The database is the record here, not a merge target: an admin
+      // deleting a question must remove it for everyone, so a successful fetch
+      // replaces the local cache outright.
       try {
-        const response = await apiFetch("/api/questions");
-        if (!live || !response.ok) return;
-        const body = (await response.json()) as { questions: Question[] };
-        setCustom(body.questions);
-        saveCustomQuestions(body.questions);
+        const entries = await fetchIndex();
+        if (!live || !entries) return;
+        setCustom(entries);
+        saveQuestionIndex(entries);
       } catch {
-        // Offline: the cached bank stays in use.
+        // Offline: the cached index stays in use.
       } finally {
         if (live) setBankReady(true);
       }
@@ -369,9 +433,109 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
    * list, so an id collision with a real question resolves to the real one.
    */
   const bank = useMemo(
-    () => [...SEED_QUESTIONS, ...custom, ...localDrafts],
+    () => [
+      ...SEED_QUESTIONS.map(toIndexEntry),
+      ...custom,
+      ...localDrafts.map(toIndexEntry),
+    ],
     [custom, localDrafts],
   );
+
+  /*
+   * Local drafts are already whole, so they are laid over the fetched content
+   * rather than fetched.
+   *
+   * They never went to the database and never will, so there is nothing to fetch
+   * them from — without this an admin trying a generated draft in practice would
+   * meet an empty prompt. They carry their own `answer` and `explanation` too,
+   * which is correct: the point of a draft is to read it end to end before
+   * deciding whether the bank should have it.
+   *
+   * Derived, not synchronised into state by an effect. An effect would be a second
+   * copy of the same facts and a render to keep it in step, and there is nothing
+   * here that React cannot compute from what it already has.
+   */
+  const questions = useMemo(() => {
+    if (localDrafts.length === 0) return fetched;
+    const merged = { ...fetched };
+    for (const draft of localDrafts) merged[draft.id] = draft;
+    return merged;
+  }, [fetched, localDrafts]);
+
+  /**
+   * Fetch content for these ids, skipping anything already held or on its way.
+   *
+   * Callers ask freely and often — a runner asks on every navigation — so the
+   * cheap path has to be doing nothing at all, and it is: an id already in the
+   * map costs a set lookup.
+   */
+  const loadQuestions = useCallback<Ctx["loadQuestions"]>(async (ids) => {
+    const wanted = ids.filter(
+      (id) =>
+        id &&
+        // Local drafts live in this browser and nowhere else — see `keepLocally`,
+        // which gives them their own id namespace precisely so they can be told
+        // apart from database rows. Asking the server for one is a wasted request
+        // that can only ever come back empty.
+        !id.startsWith("local-") &&
+        !inFlight.current.has(id),
+    );
+    if (wanted.length === 0) return;
+    for (const id of wanted) inFlight.current.add(id);
+
+    const fetched = await fetchBodies(wanted);
+
+    if (fetched.length > 0) {
+      setQuestions((previous) => {
+        const next = { ...previous };
+        for (const question of fetched) next[question.id] = question;
+        return next;
+      });
+    }
+    /*
+     * Ids the server did not return are released rather than left marked.
+     * Otherwise one failed page — a rate limit, a dropped connection — would be
+     * remembered as "already fetched" and the question would stay blank until
+     * the tab was reloaded.
+     */
+    const arrived = new Set(fetched.map((question) => question.id));
+    for (const id of wanted) if (!arrived.has(id)) inFlight.current.delete(id);
+  }, []);
+
+  /**
+   * Grade one choice, and keep what the server revealed.
+   *
+   * The answer and the explanation are merged into the content map so that
+   * everything downstream — the choice styling, the explanation panel, the tutor —
+   * carries on reading them off the question, exactly as it did when they arrived
+   * with it. The difference is when they arrive, not where they live.
+   */
+  const checkAnswer = useCallback<Ctx["checkAnswer"]>(async (questionId, choice) => {
+    const verdict = await grade(questionId, choice);
+    if (!verdict) return null;
+
+    setQuestions((previous) => {
+      const held = previous[questionId];
+      if (!held) return previous;
+      return {
+        ...previous,
+        [questionId]: {
+          ...held,
+          answer: verdict.answer,
+          explanation: verdict.explanation ?? held.explanation,
+        },
+      };
+    });
+    return verdict;
+  }, []);
+
+  /** The mock's tally. Nothing is revealed and nothing is merged. */
+  const scoreAnswers = useCallback<Ctx["scoreAnswers"]>(
+    (submissions) => score(submissions),
+    [],
+  );
+
+  const loadAdminBank = useCallback<Ctx["loadAdminBank"]>(() => fetchAdminBank(), []);
 
   /**
    * Always derive the next value from the previous state. `recordAttempts` and
@@ -474,9 +638,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
    * the record. Writes go to both: the editor stays instant, and every other
    * student sees the question.
    */
-  const persistCustom = useCallback((next: Question[]) => {
+  const persistCustom = useCallback((next: QuestionIndexEntry[]) => {
     setCustom(next);
-    saveCustomQuestions(next);
+    saveQuestionIndex(next);
   }, []);
 
   /* ---------------- local AI drafts ---------------- */
@@ -520,13 +684,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const clearLocalDrafts = useCallback(() => persistLocalDrafts([]), [persistLocalDrafts]);
 
-  /** Pulls the shared bank back from the database and replaces the cache. */
+  /** Pulls the shared bank's taxonomy back from the database, replacing the cache. */
   const refreshBank = useCallback(async () => {
-    const response = await apiFetch("/api/questions");
-    if (!response.ok) return;
-    const body = (await response.json()) as { questions: Question[] };
-    setCustom(body.questions);
-    saveCustomQuestions(body.questions);
+    const entries = await fetchIndex();
+    if (!entries) return;
+    setCustom(entries);
+    saveQuestionIndex(entries);
   }, []);
 
   const saveQuestion = useCallback<Ctx["saveQuestion"]>(
@@ -549,17 +712,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // means a question the admin just saved shows an author and a time
       // straight away instead of blanks until the next reload. An edit keeps
       // whatever the original author and time were.
-      const marked = {
+      const marked: Question = {
         ...question,
         id: localId,
         custom: true,
-        authorEmail: previous?.authorEmail ?? question.authorEmail ?? account?.email,
+        authorEmail: question.authorEmail ?? account?.email,
         createdAt: previous?.createdAt ?? question.createdAt ?? Date.now(),
       };
       const exists = previous !== undefined;
+      const entry = toIndexEntry(marked);
       persistCustom(
-        exists ? custom.map((q) => (q.id === marked.id ? marked : q)) : [...custom, marked],
+        exists ? custom.map((q) => (q.id === entry.id ? entry : q)) : [...custom, entry],
       );
+      /*
+       * The author already has the whole question in front of them, so it goes
+       * into the content map directly rather than being fetched back. Without
+       * this, saving and then previewing would spend a request to be told what
+       * the editor just typed.
+       */
+      setQuestions((current) => ({ ...current, [localId]: marked }));
+      inFlight.current.add(localId);
 
       const response = await apiFetch("/api/questions", {
         method: "POST",
@@ -573,9 +745,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!incomingId) {
           setCustom((current) => {
             const next = current.filter((q) => q.id !== localId);
-            saveCustomQuestions(next);
+            saveQuestionIndex(next);
             return next;
           });
+          setQuestions((current) => {
+            const next = { ...current };
+            delete next[localId];
+            return next;
+          });
+          inFlight.current.delete(localId);
         }
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         return { ok: false as const, error: body.error ?? "Could not save the question." };
@@ -602,6 +780,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const doomed = new Set(ids);
       if (doomed.size === 0) return;
       persistCustom(custom.filter((q) => !doomed.has(q.id)));
+      // Forget the content as well, or a deleted question stays readable in this
+      // tab for as long as it is open.
+      setQuestions((current) => {
+        const next = { ...current };
+        for (const id of doomed) delete next[id];
+        return next;
+      });
+      for (const id of doomed) inFlight.current.delete(id);
       for (const id of doomed) {
         void apiFetch(`/api/questions?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       }
@@ -619,9 +805,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
    * is the operation the admin actually performed.
    */
   const replaceCustom = useCallback<Ctx["replaceCustomQuestions"]>(
-    (questions) => {
-      const marked = questions.map((q) => ({ ...q, custom: true }));
-      persistCustom(marked);
+    (incoming) => {
+      const marked = incoming.map((q) => ({ ...q, custom: true }));
+      persistCustom(marked.map(toIndexEntry));
+      setQuestions((current) => {
+        const next = { ...current };
+        for (const question of marked) next[question.id] = question;
+        return next;
+      });
+      for (const question of marked) inFlight.current.add(question.id);
       if (marked.length > 0) {
         void apiFetch("/api/questions", {
           method: "POST",
@@ -659,6 +851,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     authConfigured: supabaseReady(),
     data,
     bank,
+    questions,
+    loadQuestions,
+    checkAnswer,
+    scoreAnswers,
+    loadAdminBank,
     theme,
     toggleTheme,
     signUp,

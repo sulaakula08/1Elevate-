@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { Question } from "@/data/types";
 import { SEED_QUESTIONS } from "@/data";
+import { MAX_IDS_PER_REQUEST } from "@/lib/questions/limits";
+import { readAdminBank, readBodies, readIndex } from "@/lib/questions/server";
+import { consumeRate } from "@/lib/rate-limit";
 import { supabaseConfigured, tokenFrom, userClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -12,9 +15,22 @@ export const runtime = "nodejs";
  * lived in the author's own browser and no student ever saw it. Now every
  * signed-in student reads the same rows.
  *
- * Authorisation is not decided here. The policies on custom_questions allow any
- * signed-in reader and only an admin (or owner) writer, so a mistake in this
- * handler cannot turn into a student editing the bank.
+ * Authorisation is not decided here, and neither is what a caller may see of a
+ * question. Both live in Postgres: `authenticated` may select only the taxonomy
+ * columns of custom_questions, content comes back through SECURITY DEFINER
+ * functions that check the caller themselves, and only an admin may write. So a
+ * mistake in this handler cannot turn into a student editing the bank, and it
+ * cannot turn into a student reading an answer either. See the question-bank
+ * migration and `lib/questions/server.ts`.
+ *
+ * GET serves three different readers, because they need three different amounts:
+ *
+ *   (default)      the taxonomy index for the whole bank — what the practice
+ *                  browser, the review queue and the progress charts count.
+ *   ?ids=a,b,c     content for the questions actually on screen, at most
+ *                  MAX_IDS_PER_REQUEST of them, never including an answer.
+ *   ?view=full     whole rows for the editor. Admins only, enforced in the
+ *                  database rather than here.
  */
 
 function notConfigured() {
@@ -72,57 +88,27 @@ function toRow(question: Question, authorId: string) {
   };
 }
 
-type Row = {
-  id: string;
-  exam: string;
-  subject_id: string;
-  topic: string;
-  domain: string | null;
-  difficulty: number;
-  answer: number;
-  payload: {
-    passage?: Question["passage"] | null;
-    figure?: Question["figure"] | null;
-    prompt: Question["prompt"];
-    choices: Question["choices"];
-    explanation: Question["explanation"];
-    skill?: string | null;
-    generatedBy?: string | null;
-  };
-  created_at?: string | null;
-  /**
-   * Embedded author profile. Null for a student caller — the profiles read
-   * policy only shows them their own row — and null for an author whose account
-   * was deleted, so the UI must cope with an unknown author either way.
-   */
-  author?: { email: string | null } | { email: string | null }[] | null;
-};
-
-/** The embed is a to-one join, but PostgREST's typing widens it to an array. */
-function authorEmail(author: Row["author"]): string | undefined {
-  const one = Array.isArray(author) ? author[0] : author;
-  return one?.email ?? undefined;
-}
-
-function toQuestion(row: Row): Question {
+/**
+ * The same row for an edit, minus `created_by`.
+ *
+ * Leaving the column out of the SET list is what preserves the original author:
+ * the row keeps whatever it already had, so nobody has to read it back first and
+ * the last admin to touch a question cannot end up owning it. `id` goes too — it
+ * is the filter, not a field to rewrite.
+ */
+function toUpdate(question: Question) {
+  // Built by naming the columns rather than by discarding two from `toRow`, so
+  // that adding a column to `toRow` is a decision here as well: a new field that
+  // should not be rewritten on an edit stays out of this list on purpose.
+  const row = toRow(question, "");
   return {
-    id: row.id,
-    exam: row.exam as Question["exam"],
-    subjectId: row.subject_id,
+    exam: row.exam,
+    subject_id: row.subject_id,
     topic: row.topic,
-    domain: row.domain ?? undefined,
-    difficulty: row.difficulty as Question["difficulty"],
-    passage: row.payload?.passage ?? undefined,
-    figure: row.payload?.figure ?? undefined,
-    prompt: row.payload?.prompt,
-    choices: row.payload?.choices ?? [],
+    domain: row.domain,
+    difficulty: row.difficulty,
     answer: row.answer,
-    explanation: row.payload?.explanation,
-    skill: row.payload?.skill ?? undefined,
-    generatedBy: row.payload?.generatedBy ?? undefined,
-    custom: true,
-    authorEmail: authorEmail(row.author),
-    createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined,
+    payload: row.payload,
   };
 }
 
@@ -134,10 +120,15 @@ function invalid(question: Question): string | null {
   if (!Array.isArray(question.choices) || question.choices.length < 2) {
     return "Every question needs at least two choices.";
   }
+  // Read into a local first: `answer` is optional on the delivered shape, and a
+  // save that arrives without one is a malformed paste rather than a question
+  // whose answer is merely unknown.
+  const answer = question.answer;
   if (
-    !Number.isInteger(question.answer) ||
-    question.answer < 0 ||
-    question.answer >= question.choices.length
+    typeof answer !== "number" ||
+    !Number.isInteger(answer) ||
+    answer < 0 ||
+    answer >= question.choices.length
   ) {
     return "The answer must be the index of one of the choices.";
   }
@@ -238,24 +229,141 @@ function highestUsed(subjectId: string, existingIds: string[]): number {
 
 const formatId = (subjectId: string, n: number) => `${subjectId}-${String(n).padStart(3, "0")}`;
 
+/*
+ * Ceilings on the shared counter in Postgres, sized from measured usage.
+ *
+ * ── The unit ───────────────────────────────────────────────────────────────
+ * Bodies are charged per QUESTION, not per request, which is the only unit that
+ * separates a student from a scraper. Measured against the real app: opening a
+ * practice set costs 8-10, each Next costs exactly 1, a review page costs 6-12,
+ * and a mock module costs 27. A scraper wants the maximum every time. Counting
+ * requests charged both the same, and therefore had to be loose enough for the
+ * scraper — 30 requests a minute at 30 ids was 900 questions a minute.
+ *
+ * ── The numbers ────────────────────────────────────────────────────────────
+ * A whole heavy session, measured end to end — open practice, answer five,
+ * refresh, browse and page through review, sit a complete four-module mock —
+ * costs 55 questions. The worst legitimate burst is a mock: entering module one
+ * (27), submitting it and entering module two (27) inside the same minute, with
+ * practice or review alongside.
+ *
+ *   per minute  120  ≈ 2× that worst burst
+ *   per hour    900  ≈ 3× the heaviest hour anyone could actually study
+ *
+ * Against the old effective ceiling of 900 a minute that is 7.5× tighter by the
+ * minute and 60× tighter by the hour. It is a real limit, not an impossible one.
+ *
+ * The index keeps a request-counted limit. It carries no proprietary text — the
+ * same taxonomy labels as data/taxonomy.ts — and it is fetched about three times
+ * per full page load, so it is sized for page loads and several tabs.
+ */
+/*
+ * Generous, because the index is fetched once per full page load and again on
+ * every auth event, and because it is 400 bytes of taxonomy rather than anything
+ * worth rationing. Measured against a real session — six navigations produced a
+ * dozen calls — a tight ceiling here would 429 a student for browsing.
+ */
+const INDEX_PER_MINUTE = 60;
+const BODY_QUESTIONS_PER_MINUTE = 120;
+const BODY_QUESTIONS_PER_HOUR = 900;
+const ADMIN_PER_MINUTE = 30;
+
+
+
+function tooMany(retryAfter: number) {
+  return NextResponse.json(
+    { error: "Too many requests in a row. Give it a moment." },
+    { status: 429, headers: { "retry-after": String(retryAfter) } },
+  );
+}
+
 export async function GET(request: Request) {
   if (!supabaseConfigured()) return notConfigured();
   const found = await caller(request);
   if (!found) return unauthorized();
 
-  const { data, error } = await found.client
-    .from("custom_questions")
-    .select(
-      "id, exam, subject_id, topic, domain, difficulty, answer, payload, created_at, author:profiles(email)",
-    )
-    .order("created_at", { ascending: true });
+  const url = new URL(request.url);
+  const view = url.searchParams.get("view");
+  const rawIds = url.searchParams.get("ids");
 
-  if (error) {
-    if (process.env.NODE_ENV !== "production") console.error("[questions]", error);
-    return NextResponse.json({ error: "Could not load." }, { status: 502 });
+  /* ---- content for the questions on screen ---- */
+  if (rawIds !== null) {
+    const ids = [...new Set(rawIds.split(",").map((id) => id.trim()).filter(Boolean))];
+    if (ids.length === 0) return NextResponse.json({ questions: [] });
+    if (ids.length > MAX_IDS_PER_REQUEST) {
+      return NextResponse.json(
+        { error: `At most ${MAX_IDS_PER_REQUEST} questions per request.` },
+        { status: 400 },
+      );
+    }
+
+    /*
+     * Both windows, charged by question. The minute is checked first so that a
+     * caller who has spent the hour still gets the shorter Retry-After when the
+     * minute is also gone. Two counter round trips on a request that is already
+     * making an RPC is an acceptable price for the ceiling that actually bounds
+     * extraction.
+     */
+    const perMinute = await consumeRate(
+      found.client,
+      "questions:bodies",
+      found.user.id,
+      BODY_QUESTIONS_PER_MINUTE,
+      60,
+      ids.length,
+    );
+    if (!perMinute.ok) return tooMany(perMinute.retryAfter);
+
+    const perHour = await consumeRate(
+      found.client,
+      "questions:bodies:hour",
+      found.user.id,
+      BODY_QUESTIONS_PER_HOUR,
+      3_600,
+      ids.length,
+    );
+    if (!perHour.ok) return tooMany(perHour.retryAfter);
+
+    const result = await readBodies(found.client, ids);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    return NextResponse.json({ questions: result.questions });
   }
 
-  return NextResponse.json({ questions: (data ?? []).map((r) => toQuestion(r as Row)) });
+  /* ---- whole rows, for the editor ---- */
+  if (view === "full") {
+    const verdict = await consumeRate(
+      found.client,
+      "questions:admin",
+      found.user.id,
+      ADMIN_PER_MINUTE,
+      60,
+    );
+    if (!verdict.ok) return tooMany(verdict.retryAfter);
+
+    const result = await readAdminBank(found.client);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    return NextResponse.json({ questions: result.questions });
+  }
+
+  /* ---- the taxonomy index, which is the default on purpose ---- */
+  const verdict = await consumeRate(
+    found.client,
+    "questions:index",
+    found.user.id,
+    INDEX_PER_MINUTE,
+    60,
+  );
+  if (!verdict.ok) return tooMany(verdict.retryAfter);
+
+  const result = await readIndex(found.client);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+  return NextResponse.json({ questions: result.entries });
 }
 
 /** Create or update. Editing a question the author already saved is the norm. */
@@ -284,9 +392,6 @@ export async function POST(request: Request) {
     if (problem) return NextResponse.json({ error: problem }, { status: 400 });
   }
 
-  // An edit must not rewrite authorship: the upsert sends every column, so
-  // without this the last admin to touch a question would appear to have
-  // written it. Rows that do not exist yet fall back to the caller.
   /*
    * Only real ids are looked up, and a blank one is never treated as an
    * existing row.
@@ -302,17 +407,24 @@ export async function POST(request: Request) {
     .map((q) => String(q.id ?? "").trim())
     .filter((id) => id.length > 0);
 
-  const { data: existing } = lookupIds.length
-    ? await found.client
-        .from("custom_questions")
-        .select("id, created_by")
-        .in("id", lookupIds)
-    : { data: [] as { id: string; created_by: string | null }[] };
+  /*
+   * Which of these ids already exist — and that is all this needs to know.
+   *
+   * It used to read `created_by` too, to carry authorship through the upsert.
+   * Edits are a plain UPDATE now and simply do not write that column, so the
+   * question collapses to "is this a row or not", answerable with `id` alone —
+   * which is in the column grant, so no privileged doorway is involved.
+   */
+  const { data: existing, error: existingError } = lookupIds.length
+    ? await found.client.from("custom_questions").select("id").in("id", lookupIds)
+    : { data: [] as { id: string }[], error: null };
 
-  const originalAuthor = new Map(
-    (existing ?? []).map((row) => [row.id as string, row.created_by as string | null]),
-  );
-  const known = new Set(originalAuthor.keys());
+  if (existingError) {
+    if (process.env.NODE_ENV !== "production") console.error("[questions:lookup]", existingError);
+    return NextResponse.json({ error: "Could not check the question numbers." }, { status: 502 });
+  }
+
+  const known = new Set((existing ?? []).map((row) => (row as { id: string }).id));
   /** A question is an edit only if its id names a row that is actually there. */
   const isEdit = (q: Question) => {
     const id = String(q.id ?? "").trim();
@@ -397,13 +509,31 @@ export async function POST(request: Request) {
     }
   }
 
-  if (edits.length > 0) {
+  /*
+   * Edits are an UPDATE, one row at a time, and not an upsert.
+   *
+   * Two reasons, one of them fatal. The fatal one: `insert ... on conflict do
+   * update` requires table-level SELECT, which column-level grants cannot
+   * satisfy — Postgres refuses it with 42501 and a hint reading "GRANT SELECT ON
+   * public.custom_questions TO authenticated", which is exactly the grant this
+   * whole boundary exists to withhold. A plain UPDATE filtered on `id` needs only
+   * SELECT on `id`, which every signed-in caller has. Verified against dev: the
+   * upsert 42501s, the update does not.
+   *
+   * The good reason: `created_by` is simply left out of the SET list, so
+   * authorship is preserved by never being written rather than by being read back
+   * and sent again. That removed the only thing the save path wanted `created_by`
+   * for, and with it a round trip and a privileged function.
+   *
+   * One statement per question rather than one for the batch. An edit batch is
+   * almost always a single question — the editor saves one at a time — and the
+   * alternative is the upsert that does not work.
+   */
+  for (const question of edits) {
     const { error } = await found.client
       .from("custom_questions")
-      .upsert(
-        edits.map((q) => toRow(q, originalAuthor.get(String(q.id)) ?? found.user.id)),
-        { onConflict: "id" },
-      );
+      .update(toUpdate(question))
+      .eq("id", String(question.id));
 
     if (error) {
       if (process.env.NODE_ENV !== "production") console.error("[questions:edit]", error);

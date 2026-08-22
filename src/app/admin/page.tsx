@@ -11,6 +11,7 @@ import type {
   QuestionFigure,
 } from "@/data/types";
 import { useApp } from "@/lib/app-state";
+import { useAdminBank } from "@/lib/questions/admin";
 import { findDuplicates } from "@/lib/duplicates";
 import { numberOf, questionLabel } from "@/lib/question-number";
 import { uploadFigure } from "@/lib/figures";
@@ -119,7 +120,10 @@ function toDraft(question: Question): Draft {
     figure: question.figure,
     prompt: { ...EMPTY_TEXT, ...question.prompt },
     choices: question.choices.map((c) => ({ ...EMPTY_TEXT, ...c })),
-    answer: question.answer,
+    // A question opened in the editor always has both — it came from the admin
+    // bank endpoint, which returns whole rows. The fallbacks are for the type,
+    // which has to allow the delivered copy a student's browser gets.
+    answer: question.answer ?? 0,
     explanation: { ...EMPTY_TEXT, ...question.explanation },
   };
 }
@@ -134,7 +138,9 @@ export default function AdminPage() {
 
 function AdminInner() {
   const { t, tx } = useI18n();
-  const { account, bank, saveQuestion, deleteQuestion, replaceCustomQuestions } = useApp();
+  const { account, saveQuestion, deleteQuestion, replaceCustomQuestions } = useApp();
+  /* Whole rows, because this is the screen that edits them. See useAdminBank. */
+  const { bank } = useAdminBank();
   const [tab, setTab] = useState<Tab>("questions");
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [notice, setNotice] = useState<string | null>(null);
@@ -798,7 +804,7 @@ function AdminInner() {
             <div className="mt-4 rounded-[var(--radius-sm)] border p-4">
               <QuestionView
                 question={previewQuestion}
-                selected={previewQuestion.answer}
+                selected={previewQuestion.answer ?? null}
                 onSelect={() => {}}
                 revealed
                 disabled

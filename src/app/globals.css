@@ -2701,3 +2701,150 @@ body[data-exam] .notif-dock {
   place-items: center;
   min-height: 60vh;
 }
+
+/* ===========================================================================
+   content protection
+
+   The CSS half of a layered deterrent. It stops casual selection; the document
+   listeners in `components/ContentProtection.tsx` stop copy, cut, select-all,
+   the context menu and dragging. Neither is the security boundary — that is the
+   column grants and definer functions on `custom_questions`, which mean a browser
+   is never sent the whole bank or any answer it has not earned. This is here so
+   that what a student *is* looking at cannot be lifted with two keystrokes.
+
+   Three states, and the difference between the last two is the point:
+
+     default                  not selectable, no iOS callout, not draggable.
+     [data-protected-content]  selectable, because a feature needs a live
+                               selection — but still not copyable, and still no
+                               callout. This is what the exam panes use: the
+                               passage highlighter is built on
+                               window.getSelection(), so `user-select: none`
+                               would delete the highlighter. Selecting a passage
+                               and pressing Ctrl+C still yields nothing.
+     [data-allow-copy]         ordinary text. Form fields get this automatically;
+                               everything else has to ask for it, and the only
+                               things that do are legal copy a reader is entitled
+                               to keep.
+   =========================================================================== */
+
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Suppresses the iOS long-press callout, which is the mobile copy workflow. */
+  -webkit-touch-callout: none;
+}
+
+/*
+ * Selectable so the highlighter works, and nothing more than selectable.
+ *
+ * No `-webkit-touch-callout`, so a long press on a passage marks it rather than
+ * offering to copy it. Comes before the editable rule below, which has to be able
+ * to beat it — see the note there.
+ */
+[data-protected-content],
+[data-protected-content] * {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: none;
+}
+
+/*
+ * Anything a person types into stays completely normal — selection, copy, paste,
+ * select-all and the callout — and so does any region explicitly opened with
+ * `[data-allow-copy]`, descendants included.
+ *
+ * The first selector is not redundant. Fields live *inside* protected regions —
+ * the tutor's composer and the report textarea both sit in the exam panes — and
+ * `[data-protected-content] *` is more specific than a bare `input`, so without
+ * an equally specific rule the pane would win and suppress the paste callout on
+ * an iPhone. Specificity, not source order, is what decides that, so it is spelt
+ * out rather than left to the order of these two blocks.
+ */
+[data-protected-content] :is(input, textarea, select, [contenteditable]),
+[data-allow-copy] :is(input, textarea, select, [contenteditable]),
+input,
+textarea,
+select,
+[contenteditable=""],
+[contenteditable="true"],
+[contenteditable="true"] *,
+[data-allow-copy],
+[data-allow-copy] * {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/*
+ * Dragging an image out of the page is a copy with no keyboard involved, and it
+ * is the one route that survives every listener because Firefox will not let a
+ * `dragstart` be cancelled for a native image drag in every case. The CSS covers
+ * WebKit and Blink; ContentProtection cancels `dragstart` for the rest.
+ *
+ * `[draggable="true"]` is excluded so that anything deliberately built to be
+ * dragged keeps working. Nothing in the app does today; the exclusion is here so
+ * that adding one does not have to come back and find this rule.
+ */
+img:not([draggable="true"]),
+svg:not([draggable="true"]),
+canvas:not([draggable="true"]),
+video:not([draggable="true"]) {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/*
+ * The attribution watermark on the exam surfaces.
+ *
+ * Tiled, rotated, and at four per cent — legible in a screenshot that is looked
+ * at, invisible while reading. It sits in its own layer above the page and below
+ * nothing: `pointer-events: none` means it cannot intercept a tap on an answer
+ * choice, and it is `aria-hidden`, so no screen reader ever reads a session id
+ * out loud in the middle of a question.
+ *
+ * Not drawn at all unless a short id is supplied — see the Watermark component.
+ */
+.wm-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  grid-auto-rows: 7rem;
+  place-items: center;
+  opacity: 0.04;
+}
+.wm-layer span {
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  transform: rotate(-24deg);
+  color: var(--foreground);
+}
+/* On a phone the panes are narrow and a tiled overlay starts to read as texture
+   rather than as a faint mark, so it thins out. */
+@media (max-width: 47.99rem) {
+  .wm-layer {
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    grid-auto-rows: 9rem;
+    opacity: 0.03;
+  }
+}
+@media print {
+  /* A print or "save as PDF" is the most likely way a whole section leaves, so
+     the mark earns its keep by being clearer there than on screen. */
+  .wm-layer {
+    opacity: 0.12;
+  }
+}

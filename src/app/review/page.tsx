@@ -1,8 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SAT, getSubject, subjectsFor } from "@/data/exams";
-import type { Difficulty, Question } from "@/data/types";
+import type {
+  Difficulty,
+  LocalizedText,
+  Question,
+  QuestionIndexEntry,
+} from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useI18n } from "@/lib/i18n";
 import { difficultyColor, reviewQueue } from "@/lib/stats";
@@ -41,7 +46,7 @@ type Record_ = { wrong: number; correct: number; last: number };
 
 function ReviewInner() {
   const { t, tx } = useI18n();
-  const { data, bank } = useApp();
+  const { data, bank, questions: content, loadQuestions } = useApp();
   const [running, setRunning] = useState(false);
   /**
    * How big the queue was when this sitting started, once it has emptied.
@@ -66,7 +71,7 @@ function ReviewInner() {
    * before they could see how they had done. A session is a fixed set of
    * questions; the queue behind it can do what it likes.
    */
-  const [sitting, setSitting] = useState<Question[]>([]);
+  const [sitting, setSitting] = useState<QuestionIndexEntry[]>([]);
 
   const [section, setSection] = useState<string | null>(null);
   const [domain, setDomain] = useState<string | null>(null);
@@ -175,7 +180,7 @@ function ReviewInner() {
 
   /** The queue folded into its skills, biggest first. */
   const groups = useMemo(() => {
-    const map = new Map<string, Question[]>();
+    const map = new Map<string, QuestionIndexEntry[]>();
     for (const question of ordered) {
       const key = question.skill ?? question.topic;
       const list = map.get(key);
@@ -184,6 +189,24 @@ function ReviewInner() {
     }
     return [...map.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
   }, [ordered]);
+
+  /*
+   * Fetch prompts for the rows actually on screen, and nothing else.
+   *
+   * The queue is a list of ids and can be hundreds long — its whole point is that
+   * it grows with every miss — so the previews are paged with the list. In the
+   * flat view that is the twelve rows shown so far; in the grouped view it is the
+   * groups the student has folded open. "Show all" therefore pages in as far as
+   * the request ceiling allows and the remaining rows simply render without a
+   * preview, which they are built to do.
+   */
+  useEffect(() => {
+    const visible = grouped
+      ? groups.filter(([name]) => open.has(name)).flatMap(([, list]) => list)
+      : ordered.slice(0, page);
+    if (visible.length === 0) return;
+    void loadQuestions(visible.map((question) => question.id));
+  }, [grouped, groups, open, ordered, page, loadQuestions]);
 
   /** The exact questions the button below will serve, so the list can say so. */
   const session = useMemo(
@@ -492,6 +515,7 @@ function ReviewInner() {
               <SkillGroup
                 name={name}
                 questions={questions}
+                content={content}
                 records={records}
                 session={session}
                 open={open.has(name)}
@@ -507,6 +531,7 @@ function ReviewInner() {
               <Reveal as="li" key={question.id} delay={Math.min(i, 8) * 40}>
                 <Item
                   question={question}
+                  prompt={content[question.id]?.prompt}
                   record={records.get(question.id)}
                   inSession={session.has(question.id)}
                 />
@@ -546,13 +571,16 @@ function ReviewInner() {
 function SkillGroup({
   name,
   questions,
+  content,
   records,
   session,
   open,
   onToggle,
 }: {
   name: string;
-  questions: Question[];
+  questions: QuestionIndexEntry[];
+  /** Content for the rows whose prompts have been fetched, by id. */
+  content: Record<string, Question>;
   records: Map<string, Record_>;
   session: Set<string>;
   open: boolean;
@@ -617,6 +645,7 @@ function SkillGroup({
               <li key={question.id}>
                 <Item
                   question={question}
+                  prompt={content[question.id]?.prompt}
                   record={records.get(question.id)}
                   inSession={session.has(question.id)}
                   compact
@@ -633,11 +662,14 @@ function SkillGroup({
 /** One queued question: where it comes from, how badly, and what it says. */
 function Item({
   question,
+  prompt,
   record,
   inSession = false,
   compact = false,
 }: {
-  question: Question;
+  question: QuestionIndexEntry;
+  /** The prompt preview, once its content has been fetched. */
+  prompt?: LocalizedText;
   record?: Record_;
   /** Marked when this is one of the questions the next sitting will serve. */
   inSession?: boolean;
@@ -672,10 +704,22 @@ function Item({
         </span>
       </div>
 
-      <RichText
-        className="mt-1.5 block text-sm text-muted line-clamp-2 leading-relaxed"
-        text={tx(question.prompt)}
-      />
+      {/*
+        The two-line preview, when the content for this row has arrived.
+
+        The queue is a list of ids and can be hundreds long; its prompts are
+        fetched a page at a time (see the effect in the list below), so a row can
+        legitimately exist before its words do. Rendering nothing rather than a
+        placeholder is deliberate — the row is already fully labelled by skill,
+        domain and difficulty, and a shimmer on every line would make a settled
+        list look like it was still loading.
+      */}
+      {prompt && (
+        <RichText
+          className="mt-1.5 block text-sm text-muted line-clamp-2 leading-relaxed"
+          text={tx(prompt)}
+        />
+      )}
 
       {/* Why it is here, in the two numbers that decide the order. */}
       {record && (

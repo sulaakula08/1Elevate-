@@ -1,4 +1,4 @@
-import type { ExamBlueprint, Question } from "@/data/types";
+import type { ExamBlueprint, QuestionIndexEntry } from "@/data/types";
 
 /**
  * Several distinct mock tests, dealt from one bank.
@@ -36,7 +36,7 @@ export type MockSetSection = {
   subjectId: string;
   module: number;
   minutes: number;
-  questions: Question[];
+  questions: QuestionIndexEntry[];
   /**
    * Which form of a second module this is.
    *
@@ -145,8 +145,11 @@ function adaptiveNeedBySubject(blueprint: ExamBlueprint): Map<string, number> {
  * at all — it would only look deterministic until a row came back in a
  * different position.
  */
-function decksFor(bank: Question[], blueprint: ExamBlueprint): Map<string, Question[]> {
-  const decks = new Map<string, Question[]>();
+function decksFor(
+  bank: QuestionIndexEntry[],
+  blueprint: ExamBlueprint,
+): Map<string, QuestionIndexEntry[]> {
+  const decks = new Map<string, QuestionIndexEntry[]>();
   for (const subjectId of needBySubject(blueprint).keys()) {
     const pool = bank
       .filter((question) => question.subjectId === subjectId)
@@ -163,7 +166,7 @@ function decksFor(bank: Question[], blueprint: ExamBlueprint): Map<string, Quest
  * Zero means the bank cannot fill even one, which is a real state — a new
  * install has an empty bank — and the caller falls back to a shortened test.
  */
-export function fullSetCount(bank: Question[], blueprint: ExamBlueprint): number {
+export function fullSetCount(bank: QuestionIndexEntry[], blueprint: ExamBlueprint): number {
   const decks = decksFor(bank, blueprint);
   const need = needBySubject(blueprint);
 
@@ -182,7 +185,10 @@ export function fullSetCount(bank: Question[], blueprint: ExamBlueprint): number
  * built from everything there is — the behaviour the page had before, kept
  * because an empty list would leave a new account with nothing to press.
  */
-export function buildMockSets(bank: Question[], blueprint: ExamBlueprint): MockSet[] {
+export function buildMockSets(
+  bank: QuestionIndexEntry[],
+  blueprint: ExamBlueprint,
+): MockSet[] {
   const decks = decksFor(bank, blueprint);
   const need = needBySubject(blueprint);
   const full = fullSetCount(bank, blueprint);
@@ -277,7 +283,10 @@ export function buildMockSets(bank: Question[], blueprint: ExamBlueprint): MockS
 }
 
 /** Everything the bank has, with the clock cut to match. */
-function shortenedSet(decks: Map<string, Question[]>, blueprint: ExamBlueprint): MockSet {
+function shortenedSet(
+  decks: Map<string, QuestionIndexEntry[]>,
+  blueprint: ExamBlueprint,
+): MockSet {
   const cursors = new Map<string, number>();
 
   const sections = blueprint.sections

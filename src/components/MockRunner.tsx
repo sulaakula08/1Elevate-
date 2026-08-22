@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Question } from "@/data/types";
+import type { Question, QuestionIndexEntry } from "@/data/types";
 import { useApp } from "@/lib/app-state";
+import { Watermark } from "./Watermark";
 import { useExamMode } from "@/lib/exam-mode";
 import { useFullscreen } from "@/lib/fullscreen";
 import { readingDisplayParts } from "@/lib/reading-parts";
@@ -38,7 +39,15 @@ export type MockSection = {
   subjectId: string;
   name: string;
   minutes: number;
-  questions: Question[];
+  /**
+   * The module's running order, as taxonomy.
+   *
+   * Content is fetched a module at a time — 27 questions, inside the request cap —
+   * when the module is entered. A whole sitting is 98 questions and the browser
+   * has no business holding all of them, still less their answers: scoring and
+   * adaptive routing both happen on the server now (see `scoreAnswers`).
+   */
+  questions: QuestionIndexEntry[];
   /** SAT runs two modules per subject, so subjectId alone isn't unique. */
   module?: number;
 };
@@ -91,7 +100,14 @@ function formatClock(seconds: number): string {
 export function MockRunner({ sections: plannedSections, alternates, onFinish, onExit }: Props) {
   const { t } = useI18n();
   const { settings } = useSettings();
-  const { theme, toggleTheme } = useApp();
+  const {
+    account,
+    theme,
+    toggleTheme,
+    questions: content,
+    loadQuestions,
+    scoreAnswers,
+  } = useApp();
   const fullscreen = useFullscreen();
   useExamMode();
 
@@ -139,7 +155,8 @@ export function MockRunner({ sections: plannedSections, alternates, onFinish, on
   }, []);
 
   const section = sections[sectionIndex];
-  const question = section.questions[questionIndex];
+  const entry = section.questions[questionIndex];
+  const question = entry ? content[entry.id] : undefined;
   const isLastSection = sectionIndex + 1 >= sections.length;
   const onBreak = breakBefore !== null;
 
@@ -152,21 +169,26 @@ export function MockRunner({ sections: plannedSections, alternates, onFinish, on
    */
   const readingParts = question ? readingDisplayParts(question) : null;
   const hasReadingPane = Boolean(readingParts);
-  const displayQuestion = readingParts
-    ? { ...question, passage: undefined, prompt: readingParts.prompt }
-    : question;
-  const passageQuestion = readingParts
-    ? { ...question, passage: readingParts.passage }
-    : question;
 
   // Highlighting belongs to whichever pane holds the prose, and on a passage the
   // flow is select-then-choose-a-colour rather than draw-immediately.
   const highlighter = useHighlighter(
     hasReadingPane ? passageRef : questionRef,
     highlightMode,
-    question?.id ?? "",
+    entry?.id ?? "",
     { contextual: hasReadingPane },
   );
+
+  /*
+   * The module's questions, fetched when the module is entered.
+   *
+   * One request per module rather than one per question: a module is 27 items,
+   * comfortably inside the request cap, and a timed exam is the last place to put
+   * a network round trip between pressing Next and reading the next question.
+   */
+  useEffect(() => {
+    void loadQuestions(section.questions.map((candidate) => candidate.id));
+  }, [section, loadQuestions]);
 
   /** Move into a module: fresh clock, first question, tools reset. */
   const enterSection = useCallback(
@@ -216,7 +238,7 @@ export function MockRunner({ sections: plannedSections, alternates, onFinish, on
     };
   }, [resizing]);
 
-  const submitSection = useCallback(() => {
+  const submitSection = useCallback(async () => {
     setConfirmSubmit(false);
     if (isLastSection) {
       onFinish(answers, startedAt.current ? Date.now() - startedAt.current : 0, sections, routes);
@@ -234,9 +256,28 @@ export function MockRunner({ sections: plannedSections, alternates, onFinish, on
     const next = sections[nextIndex];
     const upper = alternates?.get(section.subjectId);
     if (section.module === 1 && upper && next?.subjectId === section.subjectId) {
-      const correct = section.questions.filter(
-        (q) => answers[q.id] === q.answer,
-      ).length;
+      /*
+       * The server marks the module.
+       *
+       * This was `answers[q.id] === q.answer`, and it is the single worst place
+       * the old shape showed: to decide the routing the browser had to be holding
+       * the correct answer to all 27 questions of a module the student was still
+       * sitting. `scoreAnswers` returns nothing but correct/incorrect, which is
+       * all this has ever needed.
+       *
+       * A tally that cannot be fetched routes to the lower form rather than
+       * failing the sitting. That is the same direction the real test errs in, and
+       * it costs a student the harder module rather than the whole attempt.
+       */
+      const marks = await scoreAnswers(
+        section.questions.map((candidate) => ({
+          id: candidate.id,
+          // -1 is a question the student never answered, which the grader accepts
+          // and marks wrong rather than rejecting.
+          choice: answers[candidate.id] ?? -1,
+        })),
+      );
+      const correct = section.questions.filter((candidate) => marks[candidate.id]).length;
       const route = routeFor(correct, section.questions.length);
       setRoutes((previous) => ({ ...previous, [section.subjectId]: route }));
       if (route === "upper") {
@@ -260,6 +301,7 @@ export function MockRunner({ sections: plannedSections, alternates, onFinish, on
     isLastSection,
     onFinish,
     routes,
+    scoreAnswers,
     section,
     sections,
     sectionIndex,
@@ -299,6 +341,40 @@ export function MockRunner({ sections: plannedSections, alternates, onFinish, on
   const unanswered = section.questions.length - answeredInSection;
   const lowTime = secondsLeft <= 60;
   const isMath = section.subjectId === "sat-math";
+
+  /*
+   * Content in flight.
+   *
+   * One guard here rather than a hundred optional reads through the exam tree:
+   * below this line `question` is a whole question again, which is what every
+   * pane, tool and control in the rest of this component already assumes.
+   *
+   * It sits after the break screen — a break is a legitimate state with no
+   * question on screen at all — and before the sitting itself. In practice it is
+   * one frame at the top of each module, because the module's content is
+   * requested the moment the module is entered.
+   */
+  if (!entry || !question) {
+    return (
+      <div className="test-shell" aria-busy="true" aria-live="polite">
+        <div className="container-app space-y-3 py-10">
+          <span className="sr-only">{t("common.loading")}</span>
+          <div className="skeleton h-7 w-1/3 rounded-lg" />
+          <div className="skeleton h-48 rounded-xl mt-6" />
+          <div className="skeleton h-11 rounded-lg" />
+          <div className="skeleton h-11 rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  /* Split panes, now that `question` is known to exist. */
+  const displayQuestion: Question = readingParts
+    ? { ...question, passage: undefined, prompt: readingParts.prompt }
+    : question;
+  const passageQuestion: Question = readingParts
+    ? { ...question, passage: readingParts.passage }
+    : question;
 
   if (onBreak) {
     return (
@@ -491,12 +567,16 @@ export function MockRunner({ sections: plannedSections, alternates, onFinish, on
         </FloatingTool>
       )}
 
-      {/* ---------------- work area ---------------- */}
+      {/* ---------------- work area ----------------
+          Selectable but not copyable, so the passage highlighter still works —
+          see the content-protection block in globals.css. */}
       <div
         className={`test-body ${resizing ? "is-resizing" : ""}`}
         ref={questionRef}
+        data-protected-content
         style={{ ["--passage-ratio" as string]: `${splitRatio}%` }}
       >
+        <Watermark accountId={account?.id} />
         {hasReadingPane && (
           <section className="test-passage-pane" ref={passageRef} aria-label={t("study.passage")}>
             <div className="test-passage-inner">

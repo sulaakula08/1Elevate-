@@ -746,6 +746,9 @@
   }
 
   .test-body {
+    /* The containing block for the attribution watermark, which is absolutely
+       positioned over this pane. See `.wm-layer` in globals.css. */
+    position: relative;
     flex: 1;
     min-height: 0;
     display: grid;

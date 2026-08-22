@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import type { Question } from "@/data/types";
+import type { QuestionIndexEntry } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { useExamMode } from "@/lib/exam-mode";
 import { useFullscreen } from "@/lib/fullscreen";
@@ -18,6 +18,7 @@ import { LETTERS, QuestionPassage, QuestionView } from "./QuestionView";
 import { ComposerModal, type ComposerPrefill } from "./community/ComposerModal";
 import { AiTutor } from "./AiTutor";
 import { ProgressBar, Toast } from "./motion";
+import { Watermark } from "./Watermark";
 import { ProgressMark, SuccessTick } from "./illustrations";
 import { CalculatorPanel } from "./test/CalculatorPanel";
 import { FloatingTool } from "./test/FloatingTool";
@@ -48,7 +49,16 @@ import {
 } from "./test/TestIcons";
 
 type Props = {
-  questions: Question[];
+  /**
+   * The session, in order, as taxonomy only.
+   *
+   * Content arrives separately: the runner asks `loadQuestions` for a window
+   * around wherever the student is standing and reads the result out of the app
+   * store. A session can be a whole section — 150 questions — and the browser is
+   * only entitled to the few it is showing, so the list of what to serve and the
+   * questions themselves are deliberately two different things.
+   */
+  questions: QuestionIndexEntry[];
   /** Stable id represented by the active question route. */
   activeQuestionId?: string;
   mode: QuizMode;
@@ -119,7 +129,15 @@ export function PracticeRunner({
   onRestart,
 }: Props) {
   const { t, tx } = useI18n();
-  const { recordAttempts, theme, toggleTheme } = useApp();
+  const {
+    account,
+    recordAttempts,
+    theme,
+    toggleTheme,
+    questions: content,
+    loadQuestions,
+    checkAnswer,
+  } = useApp();
   const { settings } = useSettings();
   const fullscreen = useFullscreen();
   useExamMode();
@@ -169,11 +187,25 @@ export function PracticeRunner({
   const [timerHidden, setTimerHidden] = useState(settings.hideTimer);
 
   const [streak, setStreak] = useState(0);
+  /** A grading request is in flight, so the Check button cannot be double-fired. */
+  const [checking, setChecking] = useState(false);
+  /** The last grading attempt could not reach the server. */
+  const [checkFailed, setCheckFailed] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [completedAtQuestionId, setCompletedAtQuestionId] = useState<string | null>(null);
 
-  const question = questions[index];
-  const questionId = question?.id ?? "";
+  /*
+   * Where the student is (taxonomy) and what it says (content), kept apart.
+   *
+   * `entry` always exists once a session has been built; `question` exists only
+   * once its content has arrived. Everything below reads `question`, so the one
+   * new state the runner has to handle is "the session knows where we are but the
+   * words are still in flight" — which is what `awaitingContent` renders.
+   */
+  const entry = questions[index];
+  const question = entry ? content[entry.id] : undefined;
+  const questionId = entry?.id ?? "";
+  const awaitingContent = Boolean(entry) && !question;
   const selected = question ? answers[question.id] ?? null : null;
   const outcome = question ? outcomes[question.id] : undefined;
   const isRevealed = outcome !== undefined;
@@ -258,6 +290,58 @@ export function PracticeRunner({
     };
   }, [moreOpen, infoOpen]);
 
+  /* ---------------- content ---------------- */
+
+  /*
+   * Fetch a window around wherever the student is standing.
+   *
+   * Two behind and eight ahead: enough that pressing Next never waits, small
+   * enough that opening a 150-question section asks for ten questions rather
+   * than a hundred and fifty. The window also covers going backwards, because
+   * students re-read the previous question far more often than they jump.
+   *
+   * `loadQuestions` skips anything already held, so this effect firing on every
+   * navigation costs a set lookup per id once the session is warm.
+   */
+  useEffect(() => {
+    if (questions.length === 0) return;
+    const from = Math.max(0, index - 2);
+    void loadQuestions(questions.slice(from, index + 8).map((candidate) => candidate.id));
+  }, [index, questions, loadQuestions]);
+
+  /*
+   * If the content for the question on screen does not arrive, ask again.
+   *
+   * The prefetch above only fires when the index moves, so a single failed
+   * request — a dropped connection, or a rate limit met by a student with several
+   * tabs open — used to leave a skeleton with nothing to end it. `loadQuestions`
+   * releases the ids it could not fetch, so asking again actually re-requests.
+   *
+   * Four tries two seconds apart, then a message with a button. Bounded on
+   * purpose: an unbounded retry against a rate limit is how a stuck tab turns
+   * into the thing that keeps it stuck.
+   */
+  /* Which question gave up, rather than a bare boolean: storing the id means
+     moving to another question clears the state by derivation instead of by an
+     effect writing to it, which is a cascading render for no reason. */
+  const [stalledFor, setStalledFor] = useState<string | null>(null);
+  const stalled = stalledFor !== null && stalledFor === questionId;
+
+  useEffect(() => {
+    if (!awaitingContent || !questionId) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      if (tries > 4) {
+        window.clearInterval(timer);
+        setStalledFor(questionId);
+        return;
+      }
+      void loadQuestions([questionId]);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [awaitingContent, questionId, loadQuestions]);
+
   /* ---------------- answering ---------------- */
 
   const select = useCallback(
@@ -269,7 +353,8 @@ export function PracticeRunner({
   );
 
   const openExplanation = useCallback(() => {
-    setExplanationOpen((current) => ({ ...current, [question.id]: true }));
+    if (!questionId) return;
+    setExplanationOpen((current) => ({ ...current, [questionId]: true }));
     window.requestAnimationFrame(() =>
       window.requestAnimationFrame(() =>
         questionRef.current
@@ -277,11 +362,34 @@ export function PracticeRunner({
           ?.scrollIntoView({ behavior: "smooth", block: "start" }),
       ),
     );
-  }, [question]);
+  }, [questionId]);
 
-  const check = useCallback(() => {
-    if (selected === null || isRevealed) return;
-    const isCorrect = selected === question.answer;
+  const check = useCallback(async () => {
+    if (selected === null || isRevealed || !question || checking) return;
+
+    /*
+     * The server decides. This used to be `selected === question.answer`, which
+     * only worked because every answer in the bank was sitting in the tab.
+     *
+     * The verdict comes back with the right choice and the worked solution
+     * attached, and `checkAnswer` merges both into the question in the store — so
+     * everything below this line, and every component downstream, carries on
+     * reading `question.answer` exactly as before. What changed is when it exists,
+     * not where it lives.
+     */
+    setChecking(true);
+    const verdict = await checkAnswer(question.id, selected);
+    setChecking(false);
+    if (!verdict) {
+      // Nothing is recorded and nothing is revealed. Marking it wrong because the
+      // network failed would put a miss the student never made into their review
+      // queue, and that queue is what the product plans their study around.
+      setCheckFailed(true);
+      return;
+    }
+    setCheckFailed(false);
+
+    const isCorrect = verdict.correct;
     setOutcomes((current) => ({
       ...current,
       [question.id]: isCorrect ? "correct" : "incorrect",
@@ -322,6 +430,8 @@ export function PracticeRunner({
     selected,
     isRevealed,
     question,
+    checking,
+    checkAnswer,
     recordAttempts,
     mode,
     t,
@@ -342,8 +452,8 @@ export function PracticeRunner({
             category: reportReason === "Technical issue" ? "bug" : "content",
             message: [
               "Practice question report",
-              `Question: ${question.id}`,
-              `Subject: ${question.subjectId}`,
+              `Question: ${entry?.id ?? "unknown"}`,
+              `Subject: ${entry?.subjectId ?? "unknown"}`,
               `Reason: ${reportReason}`,
               reportDetails.trim() ? `Details: ${reportDetails.trim()}` : "",
             ]
@@ -363,7 +473,7 @@ export function PracticeRunner({
         setReportBusy(false);
       }
     },
-    [question, reportBusy, reportDetails, reportReason],
+    [entry, reportBusy, reportDetails, reportReason],
   );
 
   const goTo = useCallback(
@@ -378,13 +488,60 @@ export function PracticeRunner({
   );
 
   const next = useCallback(() => {
-    if (index + 1 >= count) setCompletedAtQuestionId(question.id);
+    if (index + 1 >= count) setCompletedAtQuestionId(questionId);
     else goTo(index + 1);
-  }, [index, count, goTo, question]);
+  }, [index, count, goTo, questionId]);
+
+  /* ---------------- waiting for content ---------------- */
+
+  /*
+   * This branch has to come before the results screen below, and the ordering is
+   * the whole point.
+   *
+   * That screen fires on `!question`, which used to mean "the session has run off
+   * its end" — the only way content could be missing when a session existed.
+   * Content now arrives over the network, so the same condition is also true for
+   * a moment at the start of every session, and left in that order a student
+   * opening practice would meet their results before their first question.
+   *
+   * A skeleton rather than a spinner, and at the shape of a question, because on
+   * a warm session this is one frame and a spinner would only flash.
+   */
+  if (awaitingContent) {
+    if (stalled) {
+      return (
+        <div className="container-app py-16 text-center fade-in" role="alert">
+          <p className="label-xs">{t("quiz.contentStalled")}</p>
+          <p className="text-sm text-muted mt-3 max-w-sm mx-auto">
+            {t("quiz.contentStalledBody")}
+          </p>
+          <button
+            className="btn btn-primary mt-6"
+            onClick={() => {
+              setStalledFor(null);
+              void loadQuestions([questionId]);
+            }}
+          >
+            {t("common.retry")}
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="container-app space-y-3 py-6" aria-busy="true" aria-live="polite">
+        <span className="sr-only">{t("common.loading")}</span>
+        <div className="skeleton h-7 w-1/3 rounded-lg" />
+        <div className="skeleton h-4 w-1/2 rounded" />
+        <div className="skeleton h-48 rounded-xl mt-6" />
+        <div className="skeleton h-11 rounded-lg" />
+        <div className="skeleton h-11 rounded-lg" />
+      </div>
+    );
+  }
 
   /* ---------------- results ---------------- */
 
-  if (done || !question) {
+  if (done || !entry || !question) {
     const attempted = questions.filter((candidate) => outcomes[candidate.id]).length || count;
     const accuracy = attempted ? correctCount / attempted : 0;
     const great = accuracy >= 0.8;
@@ -585,6 +742,15 @@ export function PracticeRunner({
           {selected === question.answer ? t("quiz.correct") : t("quiz.incorrect")}
         </p>
       )}
+
+      {/* Marking now needs the server, so it can fail, and saying so is the only
+          honest option: guessing at a verdict would file an attempt the student
+          never made into the queue their study plan is built from. */}
+      {checkFailed && !isRevealed && (
+        <p className="test-result-message fade-in" style={{ color: "var(--danger)" }} role="alert">
+          {t("quiz.checkFailed")}
+        </p>
+      )}
     </main>
   );
 
@@ -772,12 +938,18 @@ export function PracticeRunner({
         </FloatingTool>
       )}
 
-      {/* ---------------- work area ---------------- */}
+      {/* ---------------- work area ----------------
+          `data-protected-content` makes this pane selectable while leaving it
+          uncopyable: the highlighter is built on window.getSelection(), so the
+          global `user-select: none` would remove the feature. See the
+          content-protection block in globals.css. */}
       <div
         className={`test-body ${splitActive ? "has-active-split" : ""} ${resizing ? "is-resizing" : ""}`}
         ref={questionRef}
+        data-protected-content
         style={{ ["--passage-ratio" as string]: `${splitRatio}%` }}
       >
+        <Watermark accountId={account?.id} />
 
         {isMath && calculatorMounted && (
           <section

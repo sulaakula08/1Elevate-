@@ -5,6 +5,7 @@ import { subjectsFor } from "@/data/exams";
 import { domainsFor, skillsFor } from "@/data/taxonomy";
 import type { Difficulty, Question } from "@/data/types";
 import { useApp } from "@/lib/app-state";
+import { useAdminBank } from "@/lib/questions/admin";
 import { apiFetch } from "@/lib/supabase/client";
 import { QuestionView } from "@/components/QuestionView";
 
@@ -34,8 +35,10 @@ const MIN_ATTEMPTS = 30;
 type Draft = Question & { keep: boolean };
 
 export function GenerateQuestions() {
-  const { bank, data, saveQuestion, localDrafts, keepLocally, dropLocalDraft, clearLocalDrafts } =
+  const { data, saveQuestion, localDrafts, keepLocally, dropLocalDraft, clearLocalDrafts } =
     useApp();
+  /* Whole rows: calibration quotes real prompts and their measured accuracy. */
+  const { bank } = useAdminBank();
   const subjects = subjectsFor("sat");
 
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "sat-rw");
@@ -285,7 +288,7 @@ export function GenerateQuestions() {
               <div className="mt-3 rounded-[var(--radius-sm)] border p-4">
                 <QuestionView
                   question={draft}
-                  selected={draft.answer}
+                  selected={draft.answer ?? null}
                   onSelect={() => {}}
                   revealed
                   disabled

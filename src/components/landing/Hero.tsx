@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
 import { LANDING_SAMPLE_QUESTION } from "@/data/landing-sample";
-import type { Question } from "@/data/types";
 import { useI18n } from "@/lib/i18n";
 import { HeroProductDemo } from "./HeroProductDemo";
 
@@ -11,13 +9,20 @@ import { HeroProductDemo } from "./HeroProductDemo";
  * The first screen explains the product's mechanism and proves it with the
  * same question component students use in practice.
  */
-export function Hero({ bank }: { bank: Question[] }) {
+export function Hero() {
   const { t } = useI18n();
 
-  const sampleQuestion = useMemo(
-    () => bank.find((question) => question.id === LANDING_SAMPLE_QUESTION.id) ?? LANDING_SAMPLE_QUESTION,
-    [bank],
-  );
+  /*
+   * The authored sample, always — this used to prefer a live bank row with the
+   * same id and fall back to the sample.
+   *
+   * That lookup cannot succeed any more and should not: the visitor reading this
+   * is signed out, the bank is no longer delivered to the browser in full, and
+   * the marketing page has no business holding a real question. One sample that
+   * ships with the page is also the honest thing to show a stranger — it is the
+   * same `QuestionView` students use, running content written to be shown.
+   */
+  const sampleQuestion = LANDING_SAMPLE_QUESTION;
 
   return (
     <section className="hero-section relative" data-motion="hero">

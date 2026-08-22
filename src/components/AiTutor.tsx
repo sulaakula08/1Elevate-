@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSubject } from "@/data/exams";
 import type { Question } from "@/data/types";
 import { useI18n } from "@/lib/i18n";
 import { RichText } from "@/lib/math/markdown";
@@ -92,7 +91,7 @@ function Done({ text }: { text: string }) {
 }
 
 export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }: Props) {
-  const { t, tx } = useI18n();
+  const { t } = useI18n();
   const controlled = openProp !== undefined;
   const [openState, setOpenState] = useState(false);
   const open = controlled ? openProp : openState;
@@ -153,24 +152,23 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
         );
 
       try {
-        const subject = getSubject(question.subjectId);
+        /*
+         * An id and what the student picked. Nothing else.
+         *
+         * The whole question used to go up, including the correct index and the
+         * official explanation — which is only possible if the browser already has
+         * them, and is the reason it used to. The route reads the question from the
+         * bank itself now, so asking the tutor about a question no longer requires
+         * knowing its answer.
+         */
         const response = await apiFetch("/api/explain", {
           method: "POST",
           headers: { "content-type": "application/json" },
           signal: controller.signal,
           body: JSON.stringify({
             messages: [...history, { role: "user", content: trimmed }],
-            question: {
-              exam: question.exam,
-              subject: subject ? tx(subject.name) : question.subjectId,
-              topic: question.topic,
-              passage: question.passage ? tx(question.passage) : undefined,
-              prompt: tx(question.prompt),
-              choices: question.choices.map((choice) => tx(choice)),
-              correctIndex: question.answer,
-              officialExplanation: tx(question.explanation),
-              chosenIndex: chosenIndex ?? null,
-            },
+            questionId: question.id,
+            chosenIndex: chosenIndex ?? null,
           }),
         });
 
@@ -205,7 +203,7 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
         setStreaming(false);
       }
     },
-    [chosenIndex, question, streaming, t, turns, tx],
+    [chosenIndex, question, streaming, t, turns],
   );
 
   const copy = useCallback(async (turn: Turn) => {
@@ -225,7 +223,13 @@ export function AiTutor({ question, chosenIndex, open: openProp, onOpenChange }:
   const quickAsks = [
     t("tutor.explain"),
     t("tutor.hint"),
-    ...(chosenIndex !== null && chosenIndex !== undefined && chosenIndex !== question.answer
+    /* Only once the question has been graded: before that the client has no
+       answer to compare against, and offering "why was mine wrong" for an
+       answer nobody has checked would be guessing. */
+    ...(chosenIndex !== null &&
+    chosenIndex !== undefined &&
+    question.answer !== undefined &&
+    chosenIndex !== question.answer
       ? [t("tutor.whyWrong")]
       : []),
     t("tutor.simpler"),

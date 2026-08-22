@@ -1,4 +1,4 @@
-import type { Difficulty, ExamId, Question } from "@/data/types";
+import type { Difficulty, ExamId, Question, QuestionIndexEntry } from "@/data/types";
 
 export const SCHEMA_VERSION = 1;
 
@@ -263,14 +263,23 @@ export function saveUserData(accountId: string, data: UserData) {
   write(K.user(accountId), data);
 }
 
-/* ---------------- custom questions (shared bank) ---------------- */
+/* ---------------- the shared bank, as taxonomy ----------------
+   Only the index is cached, never question content.
 
-export function loadCustomQuestions(): Question[] {
-  return read<Question[]>(K.custom, []);
+   This used to hold whole questions — every prompt, passage, choice list,
+   explanation and answer the bank contained, written to localStorage on sign-in
+   and left there. That is a copy of the product sitting in a file on disk that
+   any script on the origin can read, and it outlived the session that fetched
+   it. The bank is no longer delivered in bulk at all, so there is nothing to
+   cache but the labels, and the labels are what the offline case actually needed:
+   they are what the practice browser and the progress charts count. */
+
+export function loadQuestionIndex(): QuestionIndexEntry[] {
+  return read<QuestionIndexEntry[]>(K.custom, []);
 }
 
-export function saveCustomQuestions(questions: Question[]) {
-  write(K.custom, questions);
+export function saveQuestionIndex(entries: QuestionIndexEntry[]) {
+  write(K.custom, entries);
 }
 
 /* ---------------- local AI drafts ----------------

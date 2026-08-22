@@ -1,5 +1,5 @@
 import { getExam } from "@/data/exams";
-import type { ExamId, Question } from "@/data/types";
+import type { ExamId, QuestionIndexEntry } from "@/data/types";
 import type { Attempt, UserData } from "./storage";
 
 export type Bucket = {
@@ -212,7 +212,19 @@ export function contributionYear(attempts: Attempt[], now = Date.now()) {
   };
 }
 
-export function reviewQueue(data: UserData, bank: Question[]): Question[] {
+/**
+ * The review queue: taxonomy in, taxonomy out.
+ *
+ * It is built entirely from the attempt log and the ids in the bank — which
+ * question was missed, how often, and whether the last two were right. None of
+ * that needs a prompt, so the queue can be computed over the index the browser
+ * already holds and the content fetched only for the questions a session
+ * actually serves.
+ */
+export function reviewQueue(
+  data: UserData,
+  bank: QuestionIndexEntry[],
+): QuestionIndexEntry[] {
   const byQuestion = new Map<string, Attempt[]>();
   for (const a of data.attempts) {
     const list = byQuestion.get(a.questionId) ?? [];
@@ -220,7 +232,7 @@ export function reviewQueue(data: UserData, bank: Question[]): Question[] {
     byQuestion.set(a.questionId, list);
   }
 
-  const scored: { q: Question; priority: number }[] = [];
+  const scored: { q: QuestionIndexEntry; priority: number }[] = [];
   for (const [questionId, rawAttempts] of byQuestion) {
     const attempts = [...rawAttempts].sort((x, y) => x.at - y.at);
     const wrong = attempts.filter((a) => !a.correct).length;

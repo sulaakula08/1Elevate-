@@ -589,6 +589,14 @@ const D: Dict = {
   "quiz.finish": { en: "Finish" },
   "quiz.correct": { en: "Correct" },
   "quiz.incorrect": { en: "Incorrect" },
+  "quiz.contentStalled": { en: "Could not load this question" },
+  "quiz.contentStalledBody": {
+    en: "The question could not be fetched. Check your connection — if you have several tabs open, closing the others may help.",
+  },
+  "common.retry": { en: "Try again" },
+  "quiz.checkFailed": {
+    en: "Could not check that answer. Nothing was recorded — check your connection and try again.",
+  },
   "quiz.explanation": { en: "Explanation" },
   "quiz.exit": { en: "Exit" },
   "quiz.result": { en: "Result" },
@@ -608,6 +616,8 @@ const D: Dict = {
   "mock.module": { en: "Module" },
   "mock.timeLeft": { en: "Time left" },
   "mock.submitSection": { en: "Submit section" },
+  "mock.marking": { en: "Marking" },
+  "mock.markingNote": { en: "Scoring your test and preparing the questions you missed." },
   "mock.timeUp": { en: "Time is up — moving on." },
   "mock.scoreReport": { en: "Score report" },
   "mock.estimated": { en: "Estimated score" },

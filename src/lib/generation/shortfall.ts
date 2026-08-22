@@ -6,9 +6,9 @@
  * can never disagree with each other.
  */
 
-import type { ExamBlueprint, Difficulty, Question } from "@/data/types";
+import type { ExamBlueprint, Difficulty, QuestionIndexEntry } from "@/data/types";
 import { bankStats, statsFor } from "@/lib/bank-stats";
-import { MAX_AVOID, MAX_TOPICS, type GenerateRequest, type LevelRequest } from "./schema";
+import { MAX_TOPICS, type GenerateRequest, type LevelRequest } from "./schema";
 
 const LEVELS: Difficulty[] = [1, 2, 3];
 
@@ -29,7 +29,7 @@ export type Shortfall = {
   missing: number;
 };
 
-export function shortfall(bank: Question[], blueprint: ExamBlueprint): Shortfall {
+export function shortfall(bank: QuestionIndexEntry[], blueprint: ExamBlueprint): Shortfall {
   const stats = bankStats(bank);
   const subjectIds = [...new Set(blueprint.sections.map((section) => section.subjectId))];
 
@@ -58,7 +58,7 @@ export function shortfall(bank: Question[], blueprint: ExamBlueprint): Shortfall
  * lopsided difficulty mix, so the deficits are measured against an even split of
  * the blueprint's own question count before anything is asked for.
  */
-function levelMix(bank: Question[], subjectId: string, needed: number, missing: number): LevelRequest[] {
+function levelMix(bank: QuestionIndexEntry[], subjectId: string, needed: number, missing: number): LevelRequest[] {
   if (missing <= 0) return [];
   const have = statsFor(bankStats(bank), subjectId).byLevel;
   const target = Math.floor(needed / 3);
@@ -91,7 +91,10 @@ function levelMix(bank: Question[], subjectId: string, needed: number, missing: 
 }
 
 /** One generation request per subject that is short, or an empty list when the bank is full. */
-export function fillRequests(bank: Question[], blueprint: ExamBlueprint): GenerateRequest[] {
+export function fillRequests(
+  bank: QuestionIndexEntry[],
+  blueprint: ExamBlueprint,
+): GenerateRequest[] {
   return shortfall(bank, blueprint)
     .bySubject.filter((subject) => subject.missing > 0)
     .map((subject) => {
@@ -105,7 +108,21 @@ export function fillRequests(bank: Question[], blueprint: ExamBlueprint): Genera
             pool.map((question) => question.domain).filter((domain): domain is string => !!domain),
           ),
         ].slice(0, MAX_TOPICS),
-        avoid: pool.map((question) => question.prompt.en).slice(0, MAX_AVOID),
+        /*
+         * Empty from here on, and filled in by the server.
+         *
+         * This used to be the existing prompts for the subject, so the model
+         * could be told what not to write again — which meant the browser had to
+         * be holding every prompt in the bank to build it. It no longer is, and
+         * should not be. `/api/generate` now seeds this list itself from the rows
+         * for the subject being topped up, which is strictly better: it sees the
+         * whole bank rather than whatever the client happened to have, and the
+         * prompts never leave the server.
+         *
+         * The client still appends to it during a run — see `generation/client.ts`
+         * — so one batch does not repeat the batch before it.
+         */
+        avoid: [],
       };
     });
 }

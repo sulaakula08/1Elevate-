@@ -40,17 +40,25 @@ export type RateVerdict = {
 };
 
 /** Best-effort, single instance. Used only when the shared counter is absent. */
-export function rateLimitInMemory(key: string, limit: number, windowMs: number): RateVerdict {
+export function rateLimitInMemory(
+  key: string,
+  limit: number,
+  windowMs: number,
+  cost = 1,
+): RateVerdict {
   const now = Date.now();
   sweep(now);
 
+  const charge = Math.max(1, Math.trunc(cost) || 1);
   const current = windows.get(key);
   if (!current || current.resetAt <= now) {
-    windows.set(key, { count: 1, resetAt: now + windowMs });
-    return { ok: true, retryAfter: 0 };
+    windows.set(key, { count: charge, resetAt: now + windowMs });
+    return charge > limit
+      ? { ok: false, retryAfter: Math.max(1, Math.ceil(windowMs / 1000)) }
+      : { ok: true, retryAfter: 0 };
   }
 
-  current.count += 1;
+  current.count += charge;
   if (current.count > limit) {
     return { ok: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
   }
@@ -64,6 +72,11 @@ export function rateLimitInMemory(key: string, limit: number, windowMs: number):
  *                 is the person being counted
  * @param bucket   what is being limited, e.g. "explain"
  * @param userId   only for the in-memory fallback key
+ * @param cost     how much this request spends. Defaults to one, which is what a
+ *                 limit counted in requests means. Pass the number of questions
+ *                 for anything where one request can ask for many — see the
+ *                 question routes, and the rate-limit-cost migration for why the
+ *                 unit matters.
  */
 export async function consumeRate(
   client: SupabaseClient,
@@ -71,11 +84,13 @@ export async function consumeRate(
   userId: string,
   limit: number,
   windowSeconds: number,
+  cost = 1,
 ): Promise<RateVerdict> {
   const { data, error } = await client.rpc("consume_rate", {
     bucket_name: bucket,
     max_count: limit,
     window_seconds: windowSeconds,
+    cost,
   });
 
   if (error) {
@@ -84,7 +99,7 @@ export async function consumeRate(
     if (process.env.NODE_ENV !== "production") {
       console.warn(`[rate-limit] falling back to memory: ${error.message}`);
     }
-    return rateLimitInMemory(`${bucket}:${userId}`, limit, windowSeconds * 1000);
+    return rateLimitInMemory(`${bucket}:${userId}`, limit, windowSeconds * 1000, cost);
   }
 
   // A set-returning function comes back as an array of one row.

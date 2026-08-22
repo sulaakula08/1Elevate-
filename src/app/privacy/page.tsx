@@ -43,7 +43,17 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="container-read pb-20">
+    /*
+     * Copyable, deliberately.
+     *
+     * This is the one page whose text a reader is entitled to keep: it is the
+     * statement of what the product does with their data, and a privacy notice
+     * you cannot quote, save or paste to a parent is a worse privacy notice. It
+     * is also not the content the protection exists for — nothing here is a
+     * question. `data-allow-copy` opens the whole subtree; see the
+     * content-protection block in globals.css.
+     */
+    <div className="container-read pb-20" data-allow-copy>
       <header className="pt-4">
         <p className="label-xs">Privacy</p>
         <h1 className="display text-h1 mt-2">Privacy and cookies</h1>

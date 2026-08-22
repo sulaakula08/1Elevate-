@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import type { Question } from "@/data/types";
 import { Capabilities } from "./landing/Capabilities";
 import { Closing } from "./landing/Closing";
 import { ExamAnatomy } from "./landing/ExamAnatomy";
@@ -47,13 +46,13 @@ import { useLandingMotion } from "./useLandingMotion";
  * measure that moves between sections is the fastest way to make a long page
  * feel assembled from parts.
  */
-export function Landing({ bank }: { bank: Question[] }) {
+export function Landing() {
   const scope = useRef<HTMLDivElement>(null);
   useLandingMotion(scope);
 
   return (
     <div className="max-w-5xl mx-auto lp-page" ref={scope}>
-      <Hero bank={bank} />
+      <Hero />
       <Stats />
       <Manifesto />
       <LearningLoop />

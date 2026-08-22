@@ -1,7 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { consumeRate } from "@/lib/rate-limit";
-import { requireUser } from "@/lib/supabase/guard";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { MAX_IDS_PER_REQUEST } from "@/lib/questions/limits";
+import { readBodies } from "@/lib/questions/server";
+import { requireAdmin } from "@/lib/supabase/guard";
 import { getSubject } from "@/data/exams";
 import {
   MAX_AVOID,
@@ -243,10 +246,58 @@ function readDrafts(text: string): QuestionDraft[] | null {
  */
 const BATCHES_PER_HOUR = 6;
 
+/**
+ * Prompts already in the bank for one subject, newest first.
+ *
+ * Read with the caller's own client: `payload` is not selectable by a signed-in
+ * role any more, so this goes through the same `question_bodies` doorway
+ * everything else does, one page of it. One page is the right amount — the list
+ * is a hint to the model, capped at MAX_AVOID either way, and a second round trip
+ * to lengthen a hint would be a poor trade on a route a student is waiting on.
+ */
+async function existingPrompts(
+  client: SupabaseClient,
+  subjectId: string,
+): Promise<string[]> {
+  // Ids first, from the taxonomy columns a signed-in role can still read.
+  const { data, error } = await client
+    .from("custom_questions")
+    .select("id")
+    .eq("subject_id", subjectId)
+    .order("created_at", { ascending: false })
+    .limit(MAX_IDS_PER_REQUEST);
+  if (error || !data?.length) return [];
+
+  const bodies = await readBodies(client, data.map((row) => row.id as string));
+  if (!bodies.ok) return [];
+  return bodies.questions
+    .map((question) => question.prompt?.en ?? "")
+    .filter((prompt) => prompt.trim().length > 0);
+}
+
 export async function POST(request: Request) {
-  // Signed in, not admin-only: a student meeting a short mock test can press
-  // "generate" on that screen, and locking this to staff would break that.
-  const guarded = await requireUser(request);
+  /*
+   * Staff only, and checked before anything else in this handler runs.
+   *
+   * This was `requireUser`, on the reasoning that a student meeting a short mock
+   * could press "generate" on that screen. That reasoning was wrong twice over.
+   * The budget is the obvious half: every call here spends the project's
+   * Anthropic allowance, and an authenticated account is not a payment method.
+   * The half that made it pointless as well as expensive is that writes to
+   * `custom_questions` are admin-only at the database — so a student's generated
+   * questions were produced, charged for, and then refused by the insert. The
+   * button burned money and saved nothing.
+   *
+   * `requireAdmin` is the project's existing gate (lib/supabase/guard.ts) and it
+   * asks Postgres for the caller's role; there is no second permission system
+   * here. It is the first statement in the handler on purpose: authorisation
+   * before the rate limiter, before the key check, before the body is even read,
+   * and a very long way before `new Anthropic()`.
+   *
+   * The student-facing path is the shortened test, which needs no generation and
+   * is what the mock page now offers them — see the note beside `fill` there.
+   */
+  const guarded = await requireAdmin(request);
   if (!guarded.ok) return guarded.response;
 
   const verdict = await consumeRate(
@@ -290,6 +341,24 @@ export async function POST(request: Request) {
 
   const subject = getSubject(body.subjectId)!;
   const total = body.wanted.reduce((sum, level) => sum + level.count, 0);
+
+  /*
+   * Seed the "do not write these again" list from the bank itself.
+   *
+   * The client used to send it, which required the browser to be holding every
+   * prompt in the bank — so it stopped being possible when the bank stopped being
+   * delivered in bulk, and it should not have been the client's job anyway. Read
+   * here it is both more complete (the whole subject, not whatever that tab
+   * happened to have) and cheaper to trust: the prompts never leave the server,
+   * and they are the one thing this route already handles in the clear.
+   *
+   * Whatever the client does send is kept and merged, because during a multi-batch
+   * run it appends the prompts it has just generated — which are not in the bank
+   * yet and are exactly what the next batch must not repeat.
+   */
+  const existing = await existingPrompts(guarded.caller.client, body.subjectId);
+  body.avoid = [...new Set([...body.avoid, ...existing])].slice(0, MAX_AVOID);
+
   const client = new Anthropic();
 
   let text = "";

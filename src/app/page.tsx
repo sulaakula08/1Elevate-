@@ -6,7 +6,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { BootScreen } from "@/components/BootScreen";
 
 export default function HomePage() {
-  const { account, ready, authBusy, bank } = useApp();
+  const { account, ready, authBusy } = useApp();
 
   /*
    * An identity in flight beats both branches below. Signing in used to fall
@@ -37,7 +37,7 @@ export default function HomePage() {
     <>
       <BootScreen />
       <div className="boot-landing">
-        <Landing bank={bank} />
+        <Landing />
       </div>
     </>
   );

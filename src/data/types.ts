@@ -65,9 +65,21 @@ export type Question = {
   figure?: QuestionFigure;
   prompt: LocalizedText;
   choices: LocalizedText[];
-  /** Index into `choices`. */
-  answer: number;
-  explanation: LocalizedText;
+  /**
+   * Index into `choices`.
+   *
+   * Optional because of where questions come from. An admin writing one always
+   * has it, and so does anything reading the bank server-side — but a student's
+   * browser is deliberately never sent it until they submit a choice and the
+   * server grades it (see `lib/questions/server.ts` and the `check_answer`
+   * function in the question-bank migration). So on the client this is `number`
+   * once a question has been graded and `undefined` before that, and the type
+   * has to say so or every reveal path would be silently reading a field that
+   * is not there.
+   */
+  answer?: number;
+  /** The worked solution. Absent until graded, for the same reason as `answer`. */
+  explanation?: LocalizedText;
   /** True for questions created in the admin editor (stored in the browser). */
   custom?: boolean;
   /**
@@ -85,6 +97,39 @@ export type Question = {
    * display-only — nothing schedules or scores on them.
    */
   authorEmail?: string;
+  createdAt?: number;
+};
+
+/**
+ * A question with its answer attached — what an author writes, and what the
+ * server reads out of the bank.
+ *
+ * The editor, the generator and the grading path all genuinely have these two
+ * fields and would rather not guard on them, so they say so in their types. This
+ * is the shape `Question` had before the bank was closed; the optionality on
+ * `Question` exists for the delivered copy, not for the authored one.
+ */
+export type AuthoredQuestion = Question & {
+  answer: number;
+  explanation: LocalizedText;
+};
+
+/**
+ * The taxonomy half of a question: what it is about, never what it says.
+ *
+ * This is what a student's browser is allowed to hold for the whole bank, and it
+ * is enough for every screen that reasons about the bank in aggregate — the
+ * practice browser and its filters, the review queue, the progress charts, mock
+ * assembly. None of those read a prompt; they count and group by these labels,
+ * and the labels are already public in `data/taxonomy.ts`.
+ *
+ * Question content is fetched separately, by id, for the handful of questions
+ * actually on screen. See `useQuestionBodies` in `lib/app-state.tsx`.
+ */
+export type QuestionIndexEntry = Pick<
+  Question,
+  "id" | "exam" | "subjectId" | "topic" | "domain" | "skill" | "difficulty"
+> & {
   createdAt?: number;
 };
 

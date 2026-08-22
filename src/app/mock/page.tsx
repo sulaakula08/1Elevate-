@@ -50,7 +50,17 @@ type Report = {
 
 function MockInner() {
   const { t, tx } = useI18n();
-  const { account, bank, data, recordAttempts, recordMock, saveQuestion } = useApp();
+  const {
+    account,
+    bank,
+    data,
+    recordAttempts,
+    recordMock,
+    saveQuestion,
+    questions: content,
+    scoreAnswers,
+    checkAnswer,
+  } = useApp();
   const [sections, setSections] = useState<MockSection[] | null>(null);
   /**
    * Which numbered test is on screen.
@@ -79,9 +89,19 @@ function MockInner() {
   const [filling, setFilling] = useState(false);
   const [made, setMade] = useState(0);
   const [fillNote, setFillNote] = useState<string | null>(null);
+  /** The sitting is over and the server is marking it. */
+  const [scoring, setScoring] = useState(false);
 
   const exam = SAT.exam;
   const blueprint = SAT;
+  /*
+   * Whether this account may top the bank up.
+   *
+   * Generation is staff-only at the route now (see /api/generate), so offering a
+   * student the button would only get them a 403. The same role test the rail and
+   * the account page use, rather than a new notion of staff.
+   */
+  const staff = Boolean(account && account.role !== "student");
   const gap = shortfall(bank, blueprint);
 
   /**
@@ -204,7 +224,7 @@ function MockInner() {
   const sittingMinutes = plan.reduce((sum, s) => sum + s.minutes, 0);
 
   const finish = useCallback(
-    (
+    async (
       built: MockSection[],
       answers: MockAnswers,
       msSpent: number,
@@ -217,11 +237,29 @@ function MockInner() {
       const msPerQuestion = totalQuestions ? Math.round(msSpent / totalQuestions) : 0;
       const now = Date.now();
 
+      /*
+       * The whole sitting, marked by the server in one request.
+       *
+       * This was `chosen === question.answer` per question, which is only possible
+       * if the browser is holding all 98 answers — during the exam. The tally that
+       * comes back carries correctness and nothing else, which is all a score
+       * report is built from.
+       */
+      setScoring(true);
+      const marks = await scoreAnswers(
+        built.flatMap((section) =>
+          section.questions.map((question) => ({
+            id: question.id,
+            choice: answers[question.id] ?? -1,
+          })),
+        ),
+      );
+
       for (const section of built) {
         let correct = 0;
         for (const question of section.questions) {
           const chosen = answers[question.id];
-          const isCorrect = chosen === question.answer;
+          const isCorrect = marks[question.id] === true;
           if (isCorrect) correct += 1;
           else wrong.push(question.id);
           attempts.push({
@@ -289,11 +327,69 @@ function MockInner() {
 
       recordAttempts(attempts);
       recordMock(result);
+
+      /*
+       * Reveal the missed questions, and only those.
+       *
+       * The report walks the student through what they got wrong, which needs the
+       * right choice and the worked solution — so each one is submitted for
+       * grading, which is what returns them. Nothing is revealed for a question
+       * they answered correctly, and nothing was revealed at any point during the
+       * sitting itself.
+       */
+      if (wrong.length > 0) {
+        /*
+         * A few at a time, not all at once.
+         *
+         * A student who got everything wrong has 98 reveals to make, and
+         * `Promise.all` over the lot meant 98 simultaneous requests, each taking
+         * two round trips at the rate limiter. That is a self-inflicted spike on
+         * the one screen where the work is already done and nobody is waiting on a
+         * particular question — eight in flight keeps it quick without asking the
+         * counter to serialise a hundred conflicting upserts on one row.
+         */
+        const REVEAL_AT_ONCE = 8;
+        for (let i = 0; i < wrong.length; i += REVEAL_AT_ONCE) {
+          await Promise.all(
+            wrong
+              .slice(i, i + REVEAL_AT_ONCE)
+              .map((id) => checkAnswer(id, answers[id] ?? -1)),
+          );
+        }
+      }
+
+      setScoring(false);
       setSections(null);
       setReport({ result, sections: built, answers });
     },
-    [blueprint.maxScore, blueprint.minScore, exam, recordAttempts, recordMock, runningSet],
+    [
+      blueprint.maxScore,
+      blueprint.minScore,
+      checkAnswer,
+      exam,
+      recordAttempts,
+      recordMock,
+      runningSet,
+      scoreAnswers,
+    ],
   );
+
+  /*
+   * Marking.
+   *
+   * Scoring is a server round trip now, plus one reveal per missed question, so
+   * there is a real moment between the last answer and the report. Saying so beats
+   * leaving the student looking at a question they have already submitted.
+   */
+  if (scoring) {
+    return (
+      <div className="container-read py-24 text-center fade-in" aria-live="polite" aria-busy="true">
+        <p className="label-xs">{t("mock.marking")}</p>
+        <p className="lede mt-3">{t("mock.markingNote")}</p>
+        <div className="skeleton h-2 w-40 mx-auto mt-8 rounded-[var(--radius-pill)]" />
+      </div>
+    );
+  }
 
   if (sections) {
     return (
@@ -318,9 +414,20 @@ function MockInner() {
   }
 
   if (report) {
-    const wrongQuestions: Question[] = report.sections
-      .flatMap((s) => s.questions)
-      .filter((q) => report.result.wrong.includes(q.id));
+    /*
+     * The missed questions, as far as their content has been revealed.
+     *
+     * `content` is the app store's copy: the prompts arrived when each module was
+     * sat, and the answers and explanations were added by the reveal at the end of
+     * `finish`. A question whose reveal failed is dropped from the walkthrough
+     * rather than rendered half-marked.
+     */
+    const wrongQuestions: Question[] = report.result.wrong
+      .map((id) => content[id])
+      .filter(
+        (question): question is Question =>
+          Boolean(question) && typeof question.answer === "number",
+      );
     const hitGoal = report.result.score >= account!.targetScore;
 
     return (
@@ -515,20 +622,27 @@ function MockInner() {
                   <span className="pl-ai-badge">{t("plan.aiBadge")}</span>
                   {t("plan.mockPartial")}
                 </p>
-                <p className="pl-notice-body">{t("plan.mockShortBody")}</p>
+                <p className="pl-notice-body">
+                  {staff ? t("plan.mockShortBody") : t("plan.mockShortBodyStudent")}
+                </p>
 
                 <div className="pl-notice-actions">
+                  {staff && (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      disabled={filling}
+                      onClick={fill}
+                    >
+                      {filling
+                        ? `${t("plan.mockGenerating")} ${made > 0 ? made : ""}`.trim()
+                        : `${t("plan.mockGenerate")} · ${gap.missing}`}
+                    </button>
+                  )}
+                  {/* The student's route through a short bank, and now the only
+                      one they are offered. It becomes the primary action for
+                      them, since there is nothing beside it to be secondary to. */}
                   <button
-                    className="btn btn-primary btn-sm"
-                    disabled={filling}
-                    onClick={fill}
-                  >
-                    {filling
-                      ? `${t("plan.mockGenerating")} ${made > 0 ? made : ""}`.trim()
-                      : `${t("plan.mockGenerate")} · ${gap.missing}`}
-                  </button>
-                  <button
-                    className="btn btn-sm"
+                    className={`btn btn-sm ${staff ? "" : "btn-primary"}`}
                     disabled={filling}
                     onClick={() => sets[0] && startSet(sets[0])}
                   >

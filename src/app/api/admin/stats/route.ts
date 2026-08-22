@@ -224,15 +224,18 @@ export async function GET(request: Request) {
     if (row.role in roles) roles[row.role] += 1;
   }
 
-  const { data: authorRows } = await client
-    .from("custom_questions")
-    .select("created_by")
-    .limit(5000);
-  const authors = new Set(
-    ((authorRows ?? []) as { created_by: string | null }[])
-      .map((r) => r.created_by)
-      .filter((id): id is string => Boolean(id)),
-  ).size;
+  /*
+   * Counted in the database, not here.
+   *
+   * This was `select created_by ... limit 5000`, deduplicated in TypeScript.
+   * `created_by` is no longer selectable by a signed-in role — a student has no
+   * business knowing who writes the bank — so that select now fails, and it fails
+   * silently: the error was destructured away and the figure read zero.
+   * `question_author_count` is the admin-gated doorway, and it is exact rather
+   * than capped at the first five thousand rows.
+   */
+  const { data: authorCount } = await client.rpc("question_author_count");
+  const authors = typeof authorCount === "number" ? authorCount : 0;
 
   return NextResponse.json({
     users: { total: users, week: usersWeek, month: usersMonth, roles },

@@ -37,6 +37,11 @@ export const PLAN_COPY: CopyDict = {
   "plan.mockReady": { en: "The test is complete" },
   "plan.mockPartial": { en: "Some questions will be generated" },
   "plan.mockShortBody": { en: "The bank currently holds fewer questions than the full format needs. We can fill the gap with AI-written questions built to the same blueprint, with the same explanations. Without generation the test runs shortened, and each module's clock shortens with it." },
+  /* The same situation, described to somebody who cannot act on it. Writing to the
+     bank is staff-only, so a student offered "generate" would meet a refusal —
+     what they actually have is a shorter sitting, and it is worth saying that it
+     is still a real one rather than leaving them to wonder what is missing. */
+  "plan.mockShortBodyStudent": { en: "The bank currently holds fewer questions than the full format needs, so this test runs shortened and each module's clock shortens with it. The structure, the timing and the scoring are otherwise the real ones." },
   "plan.mockGenerate": { en: "Fill in the questions" },
   "plan.mockGenerating": { en: "Generating…" },
   "plan.mockShortenedOk": { en: "Take the shortened test" },

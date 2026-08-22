@@ -9,10 +9,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Question } from "@/data/types";
+import type { QuestionIndexEntry } from "@/data/types";
 
 export type PracticeSessionInput = {
-  questions: Question[];
+  /**
+   * The session's running order, as taxonomy.
+   *
+   * A session is a list of which questions to serve and in what order — it has
+   * never needed their content, and holding content here would mean a whole
+   * section's worth of prompts living in a context for as long as the session
+   * does. The runner fetches the few it is showing; see `PracticeRunner`.
+   */
+  questions: QuestionIndexEntry[];
   title: string;
 };
 

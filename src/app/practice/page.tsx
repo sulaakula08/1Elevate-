@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SAT, getSubject, subjectColor, subjectGradient, subjectsFor } from "@/data/exams";
 import { SubjectIllustration } from "@/components/landing/SubjectIllustration";
-import type { Difficulty, Question } from "@/data/types";
+import type { Difficulty, QuestionIndexEntry } from "@/data/types";
 import { useApp } from "@/lib/app-state";
 import { bankStats, statsFor } from "@/lib/bank-stats";
 import { useI18n } from "@/lib/i18n";
@@ -103,7 +103,7 @@ function BankInner() {
   );
 
   const matches = useMemo(() => {
-    return (question: Question) => {
+    return (question: QuestionIndexEntry) => {
       if (section && question.subjectId !== section) return false;
       if (level && question.difficulty !== level) return false;
       const record = seen.get(question.id);
@@ -200,7 +200,7 @@ function BankInner() {
    * easy → hard when no single level was chosen. Both behaviours predate this
    * redesign and are the reason a session feels targeted rather than random.
    */
-  function start(pick: (question: Question) => boolean, title: string) {
+  function start(pick: (question: QuestionIndexEntry) => boolean, title: string) {
     const draw = pool.filter(pick);
     if (draw.length === 0) return;
 

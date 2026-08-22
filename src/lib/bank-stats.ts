@@ -5,11 +5,16 @@
  * cards, mock-test coverage — is derived here from the real bank, so no screen
  * can drift from another or from the data. Nothing in this module invents a
  * number: pass it the bank you actually render and it counts what is there.
+ *
+ * It takes the taxonomy index rather than whole questions, and always could
+ * have: every figure below is a count or a distinct-label set. That is what makes
+ * it safe for a browser to hold the whole bank in this shape — see the note on
+ * `bank` in lib/app-state.tsx.
  */
 
 import { SEED_QUESTIONS } from "@/data";
 import { SAT, subjectsFor } from "@/data/exams";
-import type { Difficulty, Question } from "@/data/types";
+import type { Difficulty, QuestionIndexEntry } from "@/data/types";
 
 export type LevelCounts = Record<Difficulty, number>;
 
@@ -44,14 +49,14 @@ function emptyLevels(): LevelCounts {
   return { 1: 0, 2: 0, 3: 0 };
 }
 
-function countLevels(questions: Question[]): LevelCounts {
+function countLevels(questions: QuestionIndexEntry[]): LevelCounts {
   const out = emptyLevels();
   for (const q of questions) out[q.difficulty] += 1;
   return out;
 }
 
 /** Stats for one subject within a bank. */
-export function subjectStats(bank: Question[], subjectId: string): SubjectStats {
+export function subjectStats(bank: QuestionIndexEntry[], subjectId: string): SubjectStats {
   const pool = bank.filter((q) => q.subjectId === subjectId);
   return {
     subjectId,
@@ -69,7 +74,7 @@ export function subjectStats(bank: Question[], subjectId: string): SubjectStats 
  * should be included; the default is the built-in bank, which is what the
  * signed-out landing page can safely show.
  */
-export function bankStats(bank: Question[] = SEED_QUESTIONS): BankStats {
+export function bankStats(bank: QuestionIndexEntry[] = SEED_QUESTIONS): BankStats {
   const exam = bank.filter((q) => q.exam === SAT.exam);
   return {
     total: exam.length,
